@@ -30,7 +30,7 @@ export function AppSidebar() {
   const isCollapsed = state === 'collapsed';
 
   return (
-    <Sidebar className={isCollapsed ? 'w-14' : 'w-60'} collapsible>
+    <Sidebar className={isCollapsed ? 'w-14' : 'w-60'} collapsible="icon">
       <SidebarHeader className="border-b">
         <div className="flex items-center gap-2 p-2">
           <ScanBarcode className="w-6 h-6 text-green-600" />

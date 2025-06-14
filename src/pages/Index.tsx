@@ -21,7 +21,9 @@ interface CartItem extends Product {
 
 const Index: React.FC = () => {
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [orderData, setOrderData] = useState<any>(null);
+  const [showQRCode, setShowQRCode] = useState(false);
+  const [showPrintSimulator, setShowPrintSimulator] = useState(false);
+  const [currentOrderId, setCurrentOrderId] = useState('');
 
   // Base de produtos disponíveis
   const products: Product[] = [
@@ -74,16 +76,22 @@ const Index: React.FC = () => {
       return;
     }
 
-    const order = {
-      id: `PED-${Date.now()}`,
-      items: cart,
-      total: getTotalPrice(),
-      timestamp: new Date().toISOString(),
-      deeplink: `stone://payment?amount=${getTotalPrice() * 100}&transactionId=PED-${Date.now()}`
-    };
-
-    setOrderData(order);
+    const orderId = `PED-${Date.now()}`;
+    setCurrentOrderId(orderId);
+    setShowQRCode(true);
     toast.success('Pedido gerado! Apresente o QR Code para pagamento.');
+  };
+
+  const handleQRCodeClose = () => {
+    setShowQRCode(false);
+    setShowPrintSimulator(true);
+  };
+
+  const handlePrintClose = () => {
+    setShowPrintSimulator(false);
+    setCart([]);
+    setCurrentOrderId('');
+    toast.success('Novo pedido iniciado!');
   };
 
   return (
@@ -189,14 +197,27 @@ const Index: React.FC = () => {
       )}
 
       {/* QR Code Generator */}
-      {orderData && (
-        <div className="mt-8">
-          <QRCodeGenerator orderData={orderData} />
+      {showQRCode && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <QRCodeGenerator 
+            orderId={currentOrderId}
+            amount={getTotalPrice()}
+            onClose={handleQRCodeClose}
+          />
         </div>
       )}
 
       {/* Print Simulator */}
-      <PrintSimulator />
+      {showPrintSimulator && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <PrintSimulator 
+            orderId={currentOrderId}
+            cart={cart}
+            total={getTotalPrice()}
+            onClose={handlePrintClose}
+          />
+        </div>
+      )}
     </div>
   );
 };
