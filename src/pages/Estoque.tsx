@@ -28,21 +28,32 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
-interface EstoqueItem {
+// Using the actual Supabase type instead of custom interface
+type EstoqueItem = {
   id: string;
   nome: string;
   categoria: string;
   estoque: number;
-  codigo_barras: string;
+  codigo_barras: string | null;
   preco: number;
-  status: 'ativo' | 'inativo';
-}
+  status: string;
+  created_at: string;
+  updated_at: string;
+};
 
 const Estoque: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [alertFilter, setAlertFilter] = useState('all');
   const [editingEstoque, setEditingEstoque] = useState<{[key: string]: number}>({});
+  const [newProduct, setNewProduct] = useState({
+    nome: '',
+    categoria: 'Bebidas',
+    preco: 0,
+    estoque: 0,
+    codigo_barras: ''
+  });
+  const [showAddProduct, setShowAddProduct] = useState(false);
   const queryClient = useQueryClient();
 
   const categories = ['Bebidas', 'Salgados', 'Sanduíches', 'Doces', 'Outros'];
@@ -62,6 +73,36 @@ const Estoque: React.FC = () => {
       }
       
       return data || [];
+    },
+  });
+
+  // Mutation para criar produto
+  const createProductMutation = useMutation({
+    mutationFn: async (productData: typeof newProduct) => {
+      const { error } = await supabase
+        .from('produtos')
+        .insert([{
+          ...productData,
+          status: 'ativo'
+        }]);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['estoque'] });
+      toast.success('Produto adicionado com sucesso!');
+      setNewProduct({
+        nome: '',
+        categoria: 'Bebidas',
+        preco: 0,
+        estoque: 0,
+        codigo_barras: ''
+      });
+      setShowAddProduct(false);
+    },
+    onError: (error) => {
+      console.error('Erro ao criar produto:', error);
+      toast.error('Erro ao adicionar produto');
     },
   });
 
@@ -128,6 +169,14 @@ const Estoque: React.FC = () => {
     return { variant: 'secondary' as const, text: 'Normal' };
   };
 
+  const handleAddProduct = () => {
+    if (!newProduct.nome.trim()) {
+      toast.error('Nome do produto é obrigatório');
+      return;
+    }
+    createProductMutation.mutate(newProduct);
+  };
+
   if (isLoading) {
     return (
       <div className="p-3 sm:p-6 flex items-center justify-center">
@@ -147,15 +196,95 @@ const Estoque: React.FC = () => {
           <Archive className="w-6 h-6 text-green-600" />
           <h1 className="text-xl sm:text-2xl font-bold text-gray-800">Controle de Estoque</h1>
         </div>
-        <Button 
-          onClick={() => refetch()}
-          variant="outline"
-          className="flex items-center space-x-2 w-full sm:w-auto"
-        >
-          <RefreshCw className="w-4 h-4" />
-          <span>Atualizar</span>
-        </Button>
+        <div className="flex gap-2 w-full sm:w-auto">
+          <Button 
+            onClick={() => setShowAddProduct(!showAddProduct)}
+            className="flex items-center space-x-2 flex-1 sm:flex-none"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Adicionar Produto</span>
+          </Button>
+          <Button 
+            onClick={() => refetch()}
+            variant="outline"
+            className="flex items-center space-x-2 flex-1 sm:flex-none"
+          >
+            <RefreshCw className="w-4 h-4" />
+            <span>Atualizar</span>
+          </Button>
+        </div>
       </div>
+
+      {/* Add Product Form */}
+      {showAddProduct && (
+        <Card>
+          <CardHeader className="p-3 sm:p-6">
+            <CardTitle>Adicionar Novo Produto</CardTitle>
+          </CardHeader>
+          <CardContent className="p-3 sm:p-6 pt-0">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">Nome do Produto</label>
+                <Input
+                  value={newProduct.nome}
+                  onChange={(e) => setNewProduct(prev => ({ ...prev, nome: e.target.value }))}
+                  placeholder="Digite o nome do produto"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Categoria</label>
+                <select 
+                  value={newProduct.categoria}
+                  onChange={(e) => setNewProduct(prev => ({ ...prev, categoria: e.target.value }))}
+                  className="w-full border rounded-md px-3 py-2"
+                >
+                  {categories.map(cat => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Preço (R$)</label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={newProduct.preco}
+                  onChange={(e) => setNewProduct(prev => ({ ...prev, preco: parseFloat(e.target.value) || 0 }))}
+                  placeholder="0.00"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Quantidade Inicial</label>
+                <Input
+                  type="number"
+                  min="0"
+                  value={newProduct.estoque}
+                  onChange={(e) => setNewProduct(prev => ({ ...prev, estoque: parseInt(e.target.value) || 0 }))}
+                  placeholder="0"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Código de Barras (Opcional)</label>
+                <Input
+                  value={newProduct.codigo_barras}
+                  onChange={(e) => setNewProduct(prev => ({ ...prev, codigo_barras: e.target.value }))}
+                  placeholder="Digite o código de barras"
+                />
+              </div>
+              <div className="flex items-end">
+                <Button 
+                  onClick={handleAddProduct}
+                  disabled={createProductMutation.isPending}
+                  className="w-full"
+                >
+                  {createProductMutation.isPending ? 'Adicionando...' : 'Adicionar Produto'}
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Cards de Resumo */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
@@ -291,7 +420,7 @@ const Estoque: React.FC = () => {
                       </TableCell>
                       <TableCell className="hidden md:table-cell">
                         <code className="bg-gray-100 px-2 py-1 rounded text-xs">
-                          {item.codigo_barras}
+                          {item.codigo_barras || 'N/A'}
                         </code>
                       </TableCell>
                       <TableCell>

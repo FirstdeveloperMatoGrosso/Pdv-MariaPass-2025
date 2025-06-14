@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -38,6 +37,13 @@ interface SystemConfig {
   impressaoAutomatica: boolean;
 }
 
+interface ScannerConfigType {
+  autoScan: boolean;
+  soundEnabled: boolean;
+  scanDelay: number;
+  duplicateFilter: boolean;
+}
+
 const Configuracoes: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [activeTab, setActiveTab] = useState('geral');
@@ -51,6 +57,13 @@ const Configuracoes: React.FC = () => {
     impressaoAutomatica: false
   });
 
+  const [scannerConfig, setScannerConfig] = useState<ScannerConfigType>({
+    autoScan: false,
+    soundEnabled: true,
+    scanDelay: 1000,
+    duplicateFilter: true
+  });
+
   const handleProductScanned = (product: Product) => {
     console.log('Produto escaneado:', product);
     toast.success(`Produto ${product.name} escaneado com sucesso!`);
@@ -58,6 +71,10 @@ const Configuracoes: React.FC = () => {
 
   const handleSaveConfig = () => {
     toast.success('Configurações salvas com sucesso!');
+  };
+
+  const handleScannerConfigChange = (newConfig: ScannerConfigType) => {
+    setScannerConfig(newConfig);
   };
 
   const tabs = [
@@ -216,7 +233,10 @@ const Configuracoes: React.FC = () => {
               </CardHeader>
               <CardContent className="p-3 sm:p-6 pt-0">
                 <div className="space-y-6">
-                  <ScannerConfig />
+                  <ScannerConfig 
+                    config={scannerConfig}
+                    onConfigChange={handleScannerConfigChange}
+                  />
                   <BarcodeScanner onProductScanned={handleProductScanned} />
                 </div>
               </CardContent>
