@@ -111,7 +111,7 @@ const Produtos: React.FC = () => {
   };
 
   const toggleProductStatus = (id: string, currentStatus: 'ativo' | 'inativo') => {
-    const newStatus = currentStatus === 'ativo' ? 'inativo' : 'ativo';
+    const newStatus: 'ativo' | 'inativo' = currentStatus === 'ativo' ? 'inativo' : 'ativo';
     updateStatusMutation.mutate({ id, status: newStatus });
   };
 
