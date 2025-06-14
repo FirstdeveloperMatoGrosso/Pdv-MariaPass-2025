@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,51 +21,110 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 interface Product {
   id: string;
-  name: string;
-  price: number;
-  barcode: string;
-  category: string;
-  stock: number;
-  status: 'active' | 'inactive';
+  nome: string;
+  preco: number;
+  codigo_barras: string;
+  categoria: string;
+  estoque: number;
+  status: 'ativo' | 'inativo';
 }
 
 const Produtos: React.FC = () => {
-  const [products, setProducts] = useState<Product[]>([
-    { id: '1', name: 'Suco Natural Laranja', price: 10.00, barcode: '7891234567890', category: 'Bebidas', stock: 25, status: 'active' },
-    { id: '2', name: 'Pão de Queijo Tradicional', price: 5.00, barcode: '7891234567891', category: 'Salgados', stock: 15, status: 'active' },
-    { id: '3', name: 'Sanduíche Natural Frango', price: 15.00, barcode: '7891234567892', category: 'Sanduíches', stock: 8, status: 'active' },
-    { id: '4', name: 'Água Mineral 500ml', price: 3.00, barcode: '7891234567893', category: 'Bebidas', stock: 50, status: 'active' },
-    { id: '5', name: 'Café Expresso Premium', price: 8.00, barcode: '7891234567894', category: 'Bebidas', stock: 30, status: 'active' },
-  ]);
-
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const queryClient = useQueryClient();
 
   const categories = ['Bebidas', 'Salgados', 'Sanduíches', 'Doces', 'Outros'];
 
+  // Buscar produtos do Supabase
+  const { data: products = [], isLoading } = useQuery({
+    queryKey: ['produtos'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('produtos')
+        .select('*')
+        .order('nome');
+      
+      if (error) {
+        console.error('Erro ao buscar produtos:', error);
+        throw error;
+      }
+      
+      return data || [];
+    },
+  });
+
+  // Mutation para deletar produto
+  const deleteProductMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('produtos')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['produtos'] });
+      toast.success('Produto removido com sucesso!');
+    },
+    onError: (error) => {
+      console.error('Erro ao deletar produto:', error);
+      toast.error('Erro ao remover produto');
+    },
+  });
+
+  // Mutation para atualizar status do produto
+  const updateStatusMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: 'ativo' | 'inativo' }) => {
+      const { error } = await supabase
+        .from('produtos')
+        .update({ status, updated_at: new Date().toISOString() })
+        .eq('id', id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['produtos'] });
+      toast.success('Status do produto atualizado!');
+    },
+    onError: (error) => {
+      console.error('Erro ao atualizar status:', error);
+      toast.error('Erro ao atualizar status');
+    },
+  });
+
   const filteredProducts = products.filter(product => {
-    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         product.barcode.includes(searchTerm);
-    const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory;
+    const matchesSearch = product.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         product.codigo_barras?.includes(searchTerm);
+    const matchesCategory = selectedCategory === 'all' || product.categoria === selectedCategory;
     return matchesSearch && matchesCategory;
   });
 
   const handleDeleteProduct = (id: string) => {
-    setProducts(products.filter(p => p.id !== id));
-    toast.success('Produto removido com sucesso!');
+    deleteProductMutation.mutate(id);
   };
 
-  const toggleProductStatus = (id: string) => {
-    setProducts(products.map(p => 
-      p.id === id ? { ...p, status: p.status === 'active' ? 'inactive' : 'active' } : p
-    ));
-    toast.success('Status do produto atualizado!');
+  const toggleProductStatus = (id: string, currentStatus: 'ativo' | 'inativo') => {
+    const newStatus = currentStatus === 'ativo' ? 'inativo' : 'ativo';
+    updateStatusMutation.mutate({ id, status: newStatus });
   };
+
+  if (isLoading) {
+    return (
+      <div className="p-6 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-green-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Carregando produtos...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -75,7 +134,6 @@ const Produtos: React.FC = () => {
           <h1 className="text-2xl font-bold text-gray-800">Gestão de Produtos</h1>
         </div>
         <Button 
-          onClick={() => setShowAddForm(true)}
           className="flex items-center space-x-2"
         >
           <Plus className="w-4 h-4" />
@@ -136,45 +194,42 @@ const Produtos: React.FC = () => {
             <TableBody>
               {filteredProducts.map((product) => (
                 <TableRow key={product.id}>
-                  <TableCell className="font-medium">{product.name}</TableCell>
+                  <TableCell className="font-medium">{product.nome}</TableCell>
                   <TableCell>
-                    <Badge variant="outline">{product.category}</Badge>
+                    <Badge variant="outline">{product.categoria}</Badge>
                   </TableCell>
                   <TableCell>
                     <code className="bg-gray-100 px-2 py-1 rounded text-xs">
-                      {product.barcode}
+                      {product.codigo_barras}
                     </code>
                   </TableCell>
-                  <TableCell>R$ {product.price.toFixed(2)}</TableCell>
+                  <TableCell>R$ {product.preco.toFixed(2)}</TableCell>
                   <TableCell>
                     <Badge 
-                      variant={product.stock < 10 ? "destructive" : "secondary"}
+                      variant={product.estoque < 10 ? "destructive" : "secondary"}
                     >
-                      {product.stock} un.
+                      {product.estoque} un.
                     </Badge>
                   </TableCell>
                   <TableCell>
                     <Badge 
-                      variant={product.status === 'active' ? "default" : "secondary"}
+                      variant={product.status === 'ativo' ? "default" : "secondary"}
                       className="cursor-pointer"
-                      onClick={() => toggleProductStatus(product.id)}
+                      onClick={() => toggleProductStatus(product.id, product.status)}
                     >
-                      {product.status === 'active' ? 'Ativo' : 'Inativo'}
+                      {product.status === 'ativo' ? 'Ativo' : 'Inativo'}
                     </Badge>
                   </TableCell>
                   <TableCell>
                     <div className="flex space-x-2">
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        onClick={() => setEditingProduct(product)}
-                      >
+                      <Button size="sm" variant="outline">
                         <Edit className="w-3 h-3" />
                       </Button>
                       <Button 
                         size="sm" 
                         variant="destructive"
                         onClick={() => handleDeleteProduct(product.id)}
+                        disabled={deleteProductMutation.isPending}
                       >
                         <Trash2 className="w-3 h-3" />
                       </Button>
