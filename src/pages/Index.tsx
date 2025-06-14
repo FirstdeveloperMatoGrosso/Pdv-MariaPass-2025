@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import QRCodeGenerator from '../components/QRCodeGenerator';
 import PrintSimulator from '../components/PrintSimulator';
+import BarcodeModal from '../components/BarcodeModal';
 
 interface Product {
   id: string;
@@ -25,6 +26,7 @@ const Index: React.FC = () => {
   const [showQRCode, setShowQRCode] = useState(false);
   const [showPrintSimulator, setShowPrintSimulator] = useState(false);
   const [currentOrderId, setCurrentOrderId] = useState('');
+  const [showBarcodeModal, setShowBarcodeModal] = useState(false);
 
   // Base de produtos disponíveis
   const products: Product[] = [
@@ -95,6 +97,12 @@ const Index: React.FC = () => {
     toast.success('Novo pedido iniciado!');
   };
 
+  const handleBarcodeProductScanned = (product: Product) => {
+    addToCart(product);
+    // Opcional: você pode mostrar um toast aqui se quiser
+    // toast.success(`${product.name} adicionado ao carrinho via código de barras!`);
+  };
+
   return (
     <div className="p-6 space-y-6">
       <div className="text-center mb-8">
@@ -104,7 +112,7 @@ const Index: React.FC = () => {
         {/* Botão Scanner */}
         <div className="mt-4">
           <Button
-            onClick={() => navigate('/configuracoes')}
+            onClick={() => setShowBarcodeModal(true)}
             variant="outline"
             size="lg"
             className="flex items-center space-x-2 bg-blue-50 hover:bg-blue-100 border-blue-200"
@@ -114,6 +122,13 @@ const Index: React.FC = () => {
           </Button>
         </div>
       </div>
+
+      {/* Barcode Modal */}
+      <BarcodeModal
+        open={showBarcodeModal}
+        onClose={() => setShowBarcodeModal(false)}
+        onProductScanned={handleBarcodeProductScanned}
+      />
 
       {/* Grid de Produtos */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
