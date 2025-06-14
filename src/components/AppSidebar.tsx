@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { 
   Sidebar, 
@@ -25,7 +24,9 @@ import {
   Archive,
   Printer,
   Monitor,
-  Lock
+  Lock,
+  Ticket,
+  Watch
 } from 'lucide-react';
 
 const menuItems = [
@@ -38,6 +39,8 @@ const menuItems = [
   { title: 'Impressões', url: '/impressoes', icon: Printer },
   { title: 'Terminais', url: '/terminais', icon: Monitor },
   { title: 'Controle de Acesso', url: '/acesso', icon: Lock },
+  { title: 'Vouchers', url: '/vouchers', icon: Ticket },
+  { title: 'Recarga Pulseiras', url: '/recarga-pulseiras', icon: Watch },
   { title: 'Scanner & Configurações', url: '/configuracoes', icon: ScanBarcode },
 ];
 

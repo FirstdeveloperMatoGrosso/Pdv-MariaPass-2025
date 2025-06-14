@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -10,7 +9,13 @@ import Index from "./pages/Index";
 import Produtos from "./pages/Produtos";
 import Relatorios from "./pages/Relatorios";
 import Pagamentos from "./pages/Pagamentos";
-import Configuracoes from "./pages/Configuracoes";
+import Cancelamentos from "./pages/Cancelamentos";
+import Estoque from "./pages/Estoque";
+import Impressoes from "./pages/Impressoes";
+import Terminais from "./pages/Terminais";
+import ControleAcesso from "./pages/ControleAcesso";
+import Vouchers from "./pages/Vouchers";
+import RecargaPulseiras from "./pages/RecargaPulseiras";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -37,6 +42,13 @@ const App = () => (
                   <Route path="/produtos" element={<Produtos />} />
                   <Route path="/relatorios" element={<Relatorios />} />
                   <Route path="/pagamentos" element={<Pagamentos />} />
+                  <Route path="/cancelamentos" element={<Cancelamentos />} />
+                  <Route path="/estoque" element={<Estoque />} />
+                  <Route path="/impressoes" element={<Impressoes />} />
+                  <Route path="/terminais" element={<Terminais />} />
+                  <Route path="/acesso" element={<ControleAcesso />} />
+                  <Route path="/vouchers" element={<Vouchers />} />
+                  <Route path="/recarga-pulseiras" element={<RecargaPulseiras />} />
                   <Route path="/configuracoes" element={<Configuracoes />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
