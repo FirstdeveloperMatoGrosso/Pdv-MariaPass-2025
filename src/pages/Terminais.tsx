@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,7 +10,7 @@ import {
   Power,
   PowerOff,
   Settings,
-  Refresh,
+  RefreshCw,
   AlertTriangle,
   CheckCircle,
   Search
@@ -134,7 +133,7 @@ const Terminais: React.FC = () => {
           <h1 className="text-2xl font-bold text-gray-800">Controle de Terminais</h1>
         </div>
         <Button className="flex items-center space-x-2">
-          <Refresh className="w-4 h-4" />
+          <RefreshCw className="w-4 h-4" />
           <span>Atualizar Status</span>
         </Button>
       </div>
@@ -278,7 +277,7 @@ const Terminais: React.FC = () => {
                           variant="outline"
                           onClick={() => restartTerminal(terminal.id)}
                         >
-                          <Refresh className="w-3 h-3" />
+                          <RefreshCw className="w-3 h-3" />
                         </Button>
                       )}
                       <Button
