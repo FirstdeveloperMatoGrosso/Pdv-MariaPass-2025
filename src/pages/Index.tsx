@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { ShoppingCart, Plus, Minus, QrCode, Printer, Coffee, Cookie, Sandwich } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -7,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import QRCodeGenerator from '@/components/QRCodeGenerator';
 import PrintSimulator from '@/components/PrintSimulator';
+import BarcodeScanner from '@/components/BarcodeScanner';
 
 interface Product {
   id: string;
@@ -31,6 +31,8 @@ const Index = () => {
     { id: '2', name: 'Pão de Queijo', price: 5.00, icon: <Cookie className="w-8 h-8" />, category: 'Lanches' },
     { id: '3', name: 'Sanduíche Natural', price: 15.00, icon: <Sandwich className="w-8 h-8" />, category: 'Lanches' },
     { id: '4', name: 'Água Mineral', price: 3.00, icon: <Coffee className="w-8 h-8" />, category: 'Bebidas' },
+    { id: '5', name: 'Café Expresso', price: 8.00, icon: <Coffee className="w-8 h-8" />, category: 'Bebidas' },
+    { id: '6', name: 'Croissant', price: 12.00, icon: <Cookie className="w-8 h-8" />, category: 'Lanches' },
   ];
 
   const addToCart = (product: Product) => {
@@ -64,6 +66,18 @@ const Index = () => {
 
   const getTotalItems = () => cart.reduce((sum, item) => sum + item.quantity, 0);
   const getTotalPrice = () => cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+  const handleProductScanned = (scannedProduct: any) => {
+    // Converte produto escaneado para o formato esperado
+    const product: Product = {
+      id: scannedProduct.id,
+      name: scannedProduct.name,
+      price: scannedProduct.price,
+      icon: <Coffee className="w-8 h-8" />,
+      category: 'Escaneado'
+    };
+    addToCart(product);
+  };
 
   const handleGenerateQR = () => {
     if (cart.length === 0) {
@@ -110,57 +124,67 @@ const Index = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
           {/* Products Section */}
-          <div className="lg:col-span-2">
-            <h2 className="text-2xl font-bold text-gray-800 mb-6">Produtos Disponíveis</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {products.map(product => (
-                <Card key={product.id} className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
-                  <CardHeader className="pb-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <div className="p-2 bg-gradient-to-br from-blue-100 to-purple-100 rounded-lg text-blue-600">
-                          {product.icon}
+          <div className="lg:col-span-2 space-y-8">
+            
+            {/* Barcode Scanner */}
+            <div>
+              <h2 className="text-2xl font-bold text-gray-800 mb-6">Scanner de Produtos</h2>
+              <BarcodeScanner onProductScanned={handleProductScanned} />
+            </div>
+
+            {/* Manual Product Selection */}
+            <div>
+              <h2 className="text-2xl font-bold text-gray-800 mb-6">Seleção Manual de Produtos</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {products.map(product => (
+                  <Card key={product.id} className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+                    <CardHeader className="pb-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <div className="p-2 bg-gradient-to-br from-blue-100 to-purple-100 rounded-lg text-blue-600">
+                            {product.icon}
+                          </div>
+                          <div>
+                            <CardTitle className="text-lg">{product.name}</CardTitle>
+                            <p className="text-sm text-gray-500">{product.category}</p>
+                          </div>
                         </div>
-                        <div>
-                          <CardTitle className="text-lg">{product.name}</CardTitle>
-                          <p className="text-sm text-gray-500">{product.category}</p>
+                        <span className="text-xl font-bold text-green-600">
+                          R$ {product.price.toFixed(2)}
+                        </span>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          {cart.find(item => item.id === product.id) && (
+                            <>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => removeFromCart(product.id)}
+                                className="w-8 h-8 p-0"
+                              >
+                                <Minus className="w-4 h-4" />
+                              </Button>
+                              <span className="mx-2 font-semibold">
+                                {cart.find(item => item.id === product.id)?.quantity || 0}
+                              </span>
+                            </>
+                          )}
+                          <Button
+                            onClick={() => addToCart(product)}
+                            className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
+                          >
+                            <Plus className="w-4 h-4 mr-1" />
+                            Adicionar
+                          </Button>
                         </div>
                       </div>
-                      <span className="text-xl font-bold text-green-600">
-                        R$ {product.price.toFixed(2)}
-                      </span>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        {cart.find(item => item.id === product.id) && (
-                          <>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => removeFromCart(product.id)}
-                              className="w-8 h-8 p-0"
-                            >
-                              <Minus className="w-4 h-4" />
-                            </Button>
-                            <span className="mx-2 font-semibold">
-                              {cart.find(item => item.id === product.id)?.quantity || 0}
-                            </span>
-                          </>
-                        )}
-                        <Button
-                          onClick={() => addToCart(product)}
-                          className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
-                        >
-                          <Plus className="w-4 h-4 mr-1" />
-                          Adicionar
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
             </div>
           </div>
 
