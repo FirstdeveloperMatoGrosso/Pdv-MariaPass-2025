@@ -13,7 +13,8 @@ import {
   Filter,
   RefreshCw,
   Plus,
-  Minus
+  Minus,
+  Edit
 } from 'lucide-react';
 import {
   Table,
@@ -40,7 +41,8 @@ interface EstoqueItem {
 const Estoque: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [alertFilter, setAlertFilter] = useState('all'); // all, baixo, zerado
+  const [alertFilter, setAlertFilter] = useState('all');
+  const [editingEstoque, setEditingEstoque] = useState<{[key: string]: number}>({});
   const queryClient = useQueryClient();
 
   const categories = ['Bebidas', 'Salgados', 'Sanduíches', 'Doces', 'Outros'];
@@ -76,6 +78,7 @@ const Estoque: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['estoque'] });
       toast.success('Estoque atualizado com sucesso!');
+      setEditingEstoque({});
     },
     onError: (error) => {
       console.error('Erro ao atualizar estoque:', error);
@@ -83,7 +86,7 @@ const Estoque: React.FC = () => {
     },
   });
 
-  const filteredItems = estoqueItems.filter(item => {
+  const filteredItems = estoqueItems.filter((item: EstoqueItem) => {
     const matchesSearch = item.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          item.codigo_barras?.includes(searchTerm);
     const matchesCategory = selectedCategory === 'all' || item.categoria === selectedCategory;
@@ -99,13 +102,24 @@ const Estoque: React.FC = () => {
   });
 
   const totalItens = estoqueItems.length;
-  const itensZerados = estoqueItems.filter(item => item.estoque === 0).length;
-  const itensBaixos = estoqueItems.filter(item => item.estoque > 0 && item.estoque <= 10).length;
-  const valorTotalEstoque = estoqueItems.reduce((total, item) => total + (item.estoque * item.preco), 0);
+  const itensZerados = estoqueItems.filter((item: EstoqueItem) => item.estoque === 0).length;
+  const itensBaixos = estoqueItems.filter((item: EstoqueItem) => item.estoque > 0 && item.estoque <= 10).length;
+  const valorTotalEstoque = estoqueItems.reduce((total: number, item: EstoqueItem) => total + (item.estoque * item.preco), 0);
 
   const adjustEstoque = (id: string, currentEstoque: number, adjustment: number) => {
     const novoEstoque = Math.max(0, currentEstoque + adjustment);
     updateEstoqueMutation.mutate({ id, novoEstoque });
+  };
+
+  const setEstoqueValue = (id: string, value: number) => {
+    setEditingEstoque(prev => ({ ...prev, [id]: value }));
+  };
+
+  const updateEstoqueFromInput = (id: string) => {
+    const novoEstoque = editingEstoque[id];
+    if (novoEstoque !== undefined && novoEstoque >= 0) {
+      updateEstoqueMutation.mutate({ id, novoEstoque });
+    }
   };
 
   const getEstoqueStatus = (estoque: number) => {
@@ -116,7 +130,7 @@ const Estoque: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="p-6 flex items-center justify-center">
+      <div className="p-3 sm:p-6 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-green-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">Carregando estoque...</p>
@@ -126,17 +140,17 @@ const Estoque: React.FC = () => {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center space-x-2">
           <Archive className="w-6 h-6 text-green-600" />
-          <h1 className="text-2xl font-bold text-gray-800">Controle de Estoque</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-800">Controle de Estoque</h1>
         </div>
         <Button 
           onClick={() => refetch()}
           variant="outline"
-          className="flex items-center space-x-2"
+          className="flex items-center space-x-2 w-full sm:w-auto"
         >
           <RefreshCw className="w-4 h-4" />
           <span>Atualizar</span>
@@ -144,50 +158,50 @@ const Estoque: React.FC = () => {
       </div>
 
       {/* Cards de Resumo */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-3 sm:p-4">
             <div className="flex items-center space-x-2">
-              <Archive className="w-8 h-8 text-blue-600" />
-              <div>
-                <p className="text-sm text-gray-600">Total de Itens</p>
-                <p className="text-2xl font-bold">{totalItens}</p>
+              <Archive className="w-6 sm:w-8 h-6 sm:h-8 text-blue-600" />
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm text-gray-600 truncate">Total de Itens</p>
+                <p className="text-lg sm:text-2xl font-bold">{totalItens}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-3 sm:p-4">
             <div className="flex items-center space-x-2">
-              <AlertTriangle className="w-8 h-8 text-red-600" />
-              <div>
-                <p className="text-sm text-gray-600">Estoque Zerado</p>
-                <p className="text-2xl font-bold text-red-600">{itensZerados}</p>
+              <AlertTriangle className="w-6 sm:w-8 h-6 sm:h-8 text-red-600" />
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm text-gray-600 truncate">Estoque Zerado</p>
+                <p className="text-lg sm:text-2xl font-bold text-red-600">{itensZerados}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-3 sm:p-4">
             <div className="flex items-center space-x-2">
-              <TrendingDown className="w-8 h-8 text-yellow-600" />
-              <div>
-                <p className="text-sm text-gray-600">Estoque Baixo</p>
-                <p className="text-2xl font-bold text-yellow-600">{itensBaixos}</p>
+              <TrendingDown className="w-6 sm:w-8 h-6 sm:h-8 text-yellow-600" />
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm text-gray-600 truncate">Estoque Baixo</p>
+                <p className="text-lg sm:text-2xl font-bold text-yellow-600">{itensBaixos}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-3 sm:p-4">
             <div className="flex items-center space-x-2">
-              <TrendingUp className="w-8 h-8 text-green-600" />
-              <div>
-                <p className="text-sm text-gray-600">Valor Total</p>
-                <p className="text-2xl font-bold text-green-600">R$ {valorTotalEstoque.toFixed(2)}</p>
+              <TrendingUp className="w-6 sm:w-8 h-6 sm:h-8 text-green-600" />
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm text-gray-600 truncate">Valor Total</p>
+                <p className="text-lg sm:text-2xl font-bold text-green-600">R$ {valorTotalEstoque.toFixed(2)}</p>
               </div>
             </div>
           </CardContent>
@@ -196,43 +210,43 @@ const Estoque: React.FC = () => {
 
       {/* Filtros */}
       <Card>
-        <CardContent className="p-4">
-          <div className="flex flex-col lg:flex-row gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <Input
-                  placeholder="Buscar por nome ou código de barras..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
+        <CardContent className="p-3 sm:p-4">
+          <div className="flex flex-col gap-3 sm:gap-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Input
+                placeholder="Buscar por nome ou código de barras..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+              <div className="flex items-center space-x-2 flex-1">
+                <Filter className="w-4 h-4 text-gray-500" />
+                <select 
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  className="border rounded-md px-3 py-2 w-full"
+                >
+                  <option value="all">Todas as categorias</option>
+                  {categories.map(cat => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
               </div>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Filter className="w-4 h-4 text-gray-500" />
-              <select 
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                className="border rounded-md px-3 py-2"
-              >
-                <option value="all">Todas as categorias</option>
-                {categories.map(cat => (
-                  <option key={cat} value={cat}>{cat}</option>
-                ))}
-              </select>
-            </div>
-            <div className="flex items-center space-x-2">
-              <AlertTriangle className="w-4 h-4 text-gray-500" />
-              <select 
-                value={alertFilter}
-                onChange={(e) => setAlertFilter(e.target.value)}
-                className="border rounded-md px-3 py-2"
-              >
-                <option value="all">Todos os status</option>
-                <option value="zerado">Estoque zerado</option>
-                <option value="baixo">Estoque baixo</option>
-              </select>
+              <div className="flex items-center space-x-2 flex-1">
+                <AlertTriangle className="w-4 h-4 text-gray-500" />
+                <select 
+                  value={alertFilter}
+                  onChange={(e) => setAlertFilter(e.target.value)}
+                  className="border rounded-md px-3 py-2 w-full"
+                >
+                  <option value="all">Todos os status</option>
+                  <option value="zerado">Estoque zerado</option>
+                  <option value="baixo">Estoque baixo</option>
+                </select>
+              </div>
             </div>
           </div>
         </CardContent>
@@ -240,72 +254,115 @@ const Estoque: React.FC = () => {
 
       {/* Tabela de Estoque */}
       <Card>
-        <CardHeader>
-          <CardTitle>Controle de Estoque ({filteredItems.length} itens)</CardTitle>
+        <CardHeader className="p-3 sm:p-6">
+          <CardTitle className="text-lg sm:text-xl">Controle de Estoque ({filteredItems.length} itens)</CardTitle>
         </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Produto</TableHead>
-                <TableHead>Categoria</TableHead>
-                <TableHead>Código</TableHead>
-                <TableHead>Estoque Atual</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Valor Unitário</TableHead>
-                <TableHead>Valor Total</TableHead>
-                <TableHead>Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredItems.map((item) => {
-                const status = getEstoqueStatus(item.estoque);
-                return (
-                  <TableRow key={item.id}>
-                    <TableCell className="font-medium">{item.nome}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{item.categoria}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <code className="bg-gray-100 px-2 py-1 rounded text-xs">
-                        {item.codigo_barras}
-                      </code>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-lg font-semibold">{item.estoque} un.</span>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={status.variant}>
-                        {status.text}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>R$ {item.preco.toFixed(2)}</TableCell>
-                    <TableCell>R$ {(item.estoque * item.preco).toFixed(2)}</TableCell>
-                    <TableCell>
-                      <div className="flex space-x-1">
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          onClick={() => adjustEstoque(item.id, item.estoque, -1)}
-                          disabled={item.estoque === 0 || updateEstoqueMutation.isPending}
-                        >
-                          <Minus className="w-3 h-3" />
-                        </Button>
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          onClick={() => adjustEstoque(item.id, item.estoque, 1)}
-                          disabled={updateEstoqueMutation.isPending}
-                        >
-                          <Plus className="w-3 h-3" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="min-w-[120px]">Produto</TableHead>
+                  <TableHead className="hidden sm:table-cell">Categoria</TableHead>
+                  <TableHead className="hidden md:table-cell">Código</TableHead>
+                  <TableHead className="min-w-[100px]">Estoque</TableHead>
+                  <TableHead className="hidden sm:table-cell">Status</TableHead>
+                  <TableHead className="hidden lg:table-cell">Valor Unit.</TableHead>
+                  <TableHead className="hidden lg:table-cell">Valor Total</TableHead>
+                  <TableHead className="min-w-[140px]">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredItems.map((item: EstoqueItem) => {
+                  const status = getEstoqueStatus(item.estoque);
+                  const isEditing = editingEstoque[item.id] !== undefined;
+                  return (
+                    <TableRow key={item.id}>
+                      <TableCell className="font-medium">
+                        <div>
+                          <div className="font-semibold">{item.nome}</div>
+                          <div className="text-xs text-gray-500 sm:hidden">
+                            {item.categoria}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="hidden sm:table-cell">
+                        <Badge variant="outline">{item.categoria}</Badge>
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell">
+                        <code className="bg-gray-100 px-2 py-1 rounded text-xs">
+                          {item.codigo_barras}
+                        </code>
+                      </TableCell>
+                      <TableCell>
+                        {isEditing ? (
+                          <div className="flex items-center space-x-1">
+                            <Input
+                              type="number"
+                              min="0"
+                              value={editingEstoque[item.id]}
+                              onChange={(e) => setEstoqueValue(item.id, parseInt(e.target.value) || 0)}
+                              className="w-16 h-8 text-sm"
+                            />
+                            <Button
+                              size="sm"
+                              onClick={() => updateEstoqueFromInput(item.id)}
+                              className="h-8 px-2"
+                            >
+                              ✓
+                            </Button>
+                          </div>
+                        ) : (
+                          <span className="text-lg font-semibold">{item.estoque} un.</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="hidden sm:table-cell">
+                        <Badge variant={status.variant}>
+                          {status.text}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="hidden lg:table-cell">R$ {item.preco.toFixed(2)}</TableCell>
+                      <TableCell className="hidden lg:table-cell">R$ {(item.estoque * item.preco).toFixed(2)}</TableCell>
+                      <TableCell>
+                        <div className="flex flex-wrap gap-1">
+                          {!isEditing && (
+                            <>
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => adjustEstoque(item.id, item.estoque, -1)}
+                                disabled={item.estoque === 0 || updateEstoqueMutation.isPending}
+                                className="h-8 w-8 p-0"
+                              >
+                                <Minus className="w-3 h-3" />
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => adjustEstoque(item.id, item.estoque, 1)}
+                                disabled={updateEstoqueMutation.isPending}
+                                className="h-8 w-8 p-0"
+                              >
+                                <Plus className="w-3 h-3" />
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => setEstoqueValue(item.id, item.estoque)}
+                                className="h-8 w-8 p-0"
+                              >
+                                <Edit className="w-3 h-3" />
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
     </div>

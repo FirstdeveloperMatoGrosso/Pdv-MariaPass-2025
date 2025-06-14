@@ -5,16 +5,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { 
-  Lock, 
-  Unlock,
-  UserCheck,
-  UserX,
-  Shield,
-  Key,
-  Clock,
-  Users,
+  Shield, 
   Search,
-  Plus
+  Filter,
+  CheckCircle,
+  XCircle,
+  Eye,
+  Users,
+  Activity,
+  AlertTriangle
 } from 'lucide-react';
 import {
   Table,
@@ -24,409 +23,263 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { toast } from 'sonner';
-
-interface AccessControl {
-  id: string;
-  username: string;
-  email: string;
-  role: 'admin' | 'operator' | 'manager' | 'viewer';
-  status: 'active' | 'blocked' | 'suspended';
-  lastLogin: string;
-  loginAttempts: number;
-  permissions: string[];
-  createdAt: string;
-}
+import { supabase } from '@/integrations/supabase/client';
+import { useQuery } from '@tanstack/react-query';
 
 interface AccessLog {
   id: string;
-  username: string;
-  action: string;
-  timestamp: string;
-  ip: string;
-  success: boolean;
+  usuario: string;
+  acao: string;
+  recurso: string;
+  ip_address: string;
+  user_agent: string;
+  sucesso: boolean;
+  detalhes: any;
+  created_at: string;
 }
 
 const ControleAcesso: React.FC = () => {
-  const [users, setUsers] = useState<AccessControl[]>([
-    {
-      id: '1',
-      username: 'admin',
-      email: 'admin@mariapass.com',
-      role: 'admin',
-      status: 'active',
-      lastLogin: '2024-06-14 10:30:00',
-      loginAttempts: 0,
-      permissions: ['all'],
-      createdAt: '2024-01-15 08:00:00'
-    },
-    {
-      id: '2',
-      username: 'operador01',
-      email: 'operador01@mariapass.com',
-      role: 'operator',
-      status: 'active',
-      lastLogin: '2024-06-14 09:15:30',
-      loginAttempts: 1,
-      permissions: ['products', 'sales'],
-      createdAt: '2024-02-10 14:30:00'
-    },
-    {
-      id: '3',
-      username: 'supervisor',
-      email: 'supervisor@mariapass.com',
-      role: 'manager',
-      status: 'blocked',
-      lastLogin: '2024-06-13 17:45:15',
-      loginAttempts: 5,
-      permissions: ['products', 'sales', 'reports'],
-      createdAt: '2024-03-05 11:20:00'
-    }
-  ]);
-
-  const [accessLogs] = useState<AccessLog[]>([
-    {
-      id: '1',
-      username: 'admin',
-      action: 'Login realizado',
-      timestamp: '2024-06-14 10:30:00',
-      ip: '192.168.1.50',
-      success: true
-    },
-    {
-      id: '2',
-      username: 'operador01',
-      action: 'Tentativa de login',
-      timestamp: '2024-06-14 09:15:30',
-      ip: '192.168.1.51',
-      success: false
-    },
-    {
-      id: '3',
-      username: 'supervisor',
-      action: 'Conta bloqueada',
-      timestamp: '2024-06-13 17:45:15',
-      ip: '192.168.1.52',
-      success: false
-    }
-  ]);
-
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedRole, setSelectedRole] = useState('all');
-  const [newUser, setNewUser] = useState({
-    username: '',
-    email: '',
-    role: 'operator' as const,
-    permissions: [] as string[]
-  });
+  const [selectedAction, setSelectedAction] = useState('all');
+  const [selectedStatus, setSelectedStatus] = useState('all');
 
-  const roles = ['admin', 'operator', 'manager', 'viewer'];
-  const availablePermissions = ['products', 'sales', 'reports', 'users', 'settings', 'terminals'];
-
-  const filteredUsers = users.filter(user => {
-    const matchesSearch = user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesRole = selectedRole === 'all' || user.role === selectedRole;
-    return matchesSearch && matchesRole;
-  });
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'active':
-        return <Badge className="bg-green-600"><UserCheck className="w-3 h-3 mr-1" />Ativo</Badge>;
-      case 'blocked':
-        return <Badge variant="destructive"><UserX className="w-3 h-3 mr-1" />Bloqueado</Badge>;
-      case 'suspended':
-        return <Badge className="bg-yellow-600"><Clock className="w-3 h-3 mr-1" />Suspenso</Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
-    }
-  };
-
-  const getRoleBadge = (role: string) => {
-    switch (role) {
-      case 'admin':
-        return <Badge className="bg-purple-600"><Shield className="w-3 h-3 mr-1" />Admin</Badge>;
-      case 'manager':
-        return <Badge className="bg-blue-600"><Key className="w-3 h-3 mr-1" />Gerente</Badge>;
-      case 'operator':
-        return <Badge className="bg-green-600"><Users className="w-3 h-3 mr-1" />Operador</Badge>;
-      case 'viewer':
-        return <Badge variant="outline"><Users className="w-3 h-3 mr-1" />Visualizador</Badge>;
-      default:
-        return <Badge variant="outline">{role}</Badge>;
-    }
-  };
-
-  const toggleUserStatus = (userId: string) => {
-    setUsers(prev => prev.map(user => {
-      if (user.id === userId) {
-        const newStatus = user.status === 'active' ? 'blocked' : 'active';
-        return { ...user, status: newStatus, loginAttempts: 0 };
+  // Buscar logs de acesso do Supabase
+  const { data: accessLogs = [], isLoading, refetch } = useQuery({
+    queryKey: ['controle_acesso'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('controle_acesso')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        console.error('Erro ao buscar logs de acesso:', error);
+        throw error;
       }
-      return user;
-    }));
-    toast.success('Status do usuário atualizado!');
+      
+      return data || [];
+    },
+  });
+
+  const actions = ['login', 'logout', 'visualizar', 'editar', 'criar', 'deletar'];
+
+  const filteredLogs = accessLogs.filter((log: AccessLog) => {
+    const matchesSearch = log.usuario.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         log.recurso.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         log.ip_address?.includes(searchTerm);
+    const matchesAction = selectedAction === 'all' || log.acao === selectedAction;
+    const matchesStatus = selectedStatus === 'all' || 
+                         (selectedStatus === 'sucesso' && log.sucesso) ||
+                         (selectedStatus === 'falha' && !log.sucesso);
+    return matchesSearch && matchesAction && matchesStatus;
+  });
+
+  const getStatusBadge = (sucesso: boolean) => {
+    return sucesso ? (
+      <Badge className="bg-green-600">
+        <CheckCircle className="w-3 h-3 mr-1" />
+        Sucesso
+      </Badge>
+    ) : (
+      <Badge variant="destructive">
+        <XCircle className="w-3 h-3 mr-1" />
+        Falha
+      </Badge>
+    );
   };
 
-  const resetLoginAttempts = (userId: string) => {
-    setUsers(prev => prev.map(user =>
-      user.id === userId ? { ...user, loginAttempts: 0 } : user
-    ));
-    toast.success('Tentativas de login resetadas!');
-  };
-
-  const createUser = () => {
-    if (!newUser.username || !newUser.email) {
-      toast.error('Preencha todos os campos obrigatórios!');
-      return;
-    }
-
-    const user: AccessControl = {
-      id: Date.now().toString(),
-      username: newUser.username,
-      email: newUser.email,
-      role: newUser.role,
-      status: 'active',
-      lastLogin: 'Nunca',
-      loginAttempts: 0,
-      permissions: newUser.permissions,
-      createdAt: new Date().toLocaleString('pt-BR')
+  const getActionLabel = (acao: string) => {
+    const actionLabels: { [key: string]: string } = {
+      'login': 'Login',
+      'logout': 'Logout',
+      'visualizar': 'Visualizar',
+      'editar': 'Editar',
+      'criar': 'Criar',
+      'deletar': 'Deletar'
     };
-
-    setUsers(prev => [...prev, user]);
-    setNewUser({ username: '', email: '', role: 'operator', permissions: [] });
-    toast.success('Usuário criado com sucesso!');
+    return actionLabels[acao] || acao;
   };
 
-  const activeUsers = users.filter(u => u.status === 'active').length;
-  const blockedUsers = users.filter(u => u.status === 'blocked').length;
-  const totalUsers = users.length;
-  const failedLogins = accessLogs.filter(log => !log.success).length;
+  const totalLogs = accessLogs.length;
+  const successfulLogs = accessLogs.filter((log: AccessLog) => log.sucesso).length;
+  const failedLogs = accessLogs.filter((log: AccessLog) => !log.sucesso).length;
+  const uniqueUsers = new Set(accessLogs.map((log: AccessLog) => log.usuario)).size;
+
+  if (isLoading) {
+    return (
+      <div className="p-3 sm:p-6 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-green-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Carregando logs de acesso...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center space-x-2">
-          <Lock className="w-6 h-6 text-purple-600" />
-          <h1 className="text-2xl font-bold text-gray-800">Controle de Acesso</h1>
+          <Shield className="w-6 h-6 text-green-600" />
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-800">Controle de Acesso</h1>
         </div>
+        <Button 
+          onClick={() => refetch()}
+          variant="outline"
+          className="flex items-center space-x-2 w-full sm:w-auto"
+        >
+          <Activity className="w-4 h-4" />
+          <span>Atualizar</span>
+        </Button>
       </div>
 
       {/* Estatísticas */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-3 sm:p-4">
             <div className="flex items-center space-x-2">
-              <Users className="w-5 h-5 text-blue-600" />
-              <div>
-                <p className="text-sm text-gray-600">Total de Usuários</p>
-                <p className="text-2xl font-bold">{totalUsers}</p>
+              <Activity className="w-5 h-5 text-blue-600" />
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm text-gray-600 truncate">Total de Logs</p>
+                <p className="text-lg sm:text-2xl font-bold">{totalLogs}</p>
               </div>
             </div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-3 sm:p-4">
             <div className="flex items-center space-x-2">
-              <UserCheck className="w-5 h-5 text-green-600" />
-              <div>
-                <p className="text-sm text-gray-600">Usuários Ativos</p>
-                <p className="text-2xl font-bold text-green-600">{activeUsers}</p>
+              <CheckCircle className="w-5 h-5 text-green-600" />
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm text-gray-600 truncate">Sucessos</p>
+                <p className="text-lg sm:text-2xl font-bold text-green-600">{successfulLogs}</p>
               </div>
             </div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-3 sm:p-4">
             <div className="flex items-center space-x-2">
-              <UserX className="w-5 h-5 text-red-600" />
-              <div>
-                <p className="text-sm text-gray-600">Usuários Bloqueados</p>
-                <p className="text-2xl font-bold text-red-600">{blockedUsers}</p>
+              <XCircle className="w-5 h-5 text-red-600" />
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm text-gray-600 truncate">Falhas</p>
+                <p className="text-lg sm:text-2xl font-bold text-red-600">{failedLogs}</p>
               </div>
             </div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-3 sm:p-4">
             <div className="flex items-center space-x-2">
-              <Shield className="w-5 h-5 text-orange-600" />
-              <div>
-                <p className="text-sm text-gray-600">Logins Falharam</p>
-                <p className="text-2xl font-bold text-orange-600">{failedLogins}</p>
+              <Users className="w-5 h-5 text-purple-600" />
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm text-gray-600 truncate">Usuários Únicos</p>
+                <p className="text-lg sm:text-2xl font-bold text-purple-600">{uniqueUsers}</p>
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Criar Novo Usuário */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <Plus className="w-5 h-5 mr-2" />
-            Criar Novo Usuário
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Input
-              placeholder="Nome de usuário"
-              value={newUser.username}
-              onChange={(e) => setNewUser(prev => ({ ...prev, username: e.target.value }))}
-            />
-            <Input
-              placeholder="Email"
-              type="email"
-              value={newUser.email}
-              onChange={(e) => setNewUser(prev => ({ ...prev, email: e.target.value }))}
-            />
-            <select 
-              value={newUser.role}
-              onChange={(e) => setNewUser(prev => ({ ...prev, role: e.target.value as any }))}
-              className="border rounded-md px-3 py-2"
-            >
-              {roles.map(role => (
-                <option key={role} value={role}>
-                  {role.charAt(0).toUpperCase() + role.slice(1)}
-                </option>
-              ))}
-            </select>
-            <Button onClick={createUser}>
-              Criar Usuário
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Filtros */}
       <Card>
-        <CardContent className="p-4">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <Input
-                  placeholder="Buscar por usuário ou email..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
+        <CardContent className="p-3 sm:p-4">
+          <div className="flex flex-col gap-3 sm:gap-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Input
+                placeholder="Buscar por usuário, recurso ou IP..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+              <div className="flex items-center space-x-2 flex-1">
+                <Filter className="w-4 h-4 text-gray-500" />
+                <select 
+                  value={selectedAction}
+                  onChange={(e) => setSelectedAction(e.target.value)}
+                  className="border rounded-md px-3 py-2 w-full"
+                >
+                  <option value="all">Todas as ações</option>
+                  {actions.map(action => (
+                    <option key={action} value={action}>{getActionLabel(action)}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex items-center space-x-2 flex-1">
+                <AlertTriangle className="w-4 h-4 text-gray-500" />
+                <select 
+                  value={selectedStatus}
+                  onChange={(e) => setSelectedStatus(e.target.value)}
+                  className="border rounded-md px-3 py-2 w-full"
+                >
+                  <option value="all">Todos os status</option>
+                  <option value="sucesso">Sucesso</option>
+                  <option value="falha">Falha</option>
+                </select>
               </div>
             </div>
-            <select 
-              value={selectedRole}
-              onChange={(e) => setSelectedRole(e.target.value)}
-              className="border rounded-md px-3 py-2"
-            >
-              <option value="all">Todas as funções</option>
-              {roles.map(role => (
-                <option key={role} value={role}>
-                  {role.charAt(0).toUpperCase() + role.slice(1)}
-                </option>
-              ))}
-            </select>
           </div>
         </CardContent>
       </Card>
 
-      {/* Tabela de Usuários */}
+      {/* Tabela de Logs */}
       <Card>
-        <CardHeader>
-          <CardTitle>Usuários do Sistema ({filteredUsers.length})</CardTitle>
+        <CardHeader className="p-3 sm:p-6">
+          <CardTitle className="text-lg sm:text-xl">Logs de Acesso ({filteredLogs.length})</CardTitle>
         </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Usuário</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Função</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Último Login</TableHead>
-                <TableHead>Tentativas</TableHead>
-                <TableHead>Criado em</TableHead>
-                <TableHead>Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredUsers.map((user) => (
-                <TableRow key={user.id}>
-                  <TableCell className="font-medium">{user.username}</TableCell>
-                  <TableCell>{user.email}</TableCell>
-                  <TableCell>{getRoleBadge(user.role)}</TableCell>
-                  <TableCell>{getStatusBadge(user.status)}</TableCell>
-                  <TableCell className="text-sm">{user.lastLogin}</TableCell>
-                  <TableCell>
-                    <Badge variant={user.loginAttempts > 3 ? "destructive" : "secondary"}>
-                      {user.loginAttempts}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-sm">{user.createdAt}</TableCell>
-                  <TableCell>
-                    <div className="flex space-x-2">
-                      <Button
-                        size="sm"
-                        variant={user.status === 'active' ? "destructive" : "default"}
-                        onClick={() => toggleUserStatus(user.id)}
-                      >
-                        {user.status === 'active' ? <Lock className="w-3 h-3" /> : <Unlock className="w-3 h-3" />}
-                      </Button>
-                      {user.loginAttempts > 0 && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => resetLoginAttempts(user.id)}
-                        >
-                          Reset
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="min-w-[100px]">Usuário</TableHead>
+                  <TableHead className="hidden sm:table-cell">Ação</TableHead>
+                  <TableHead className="hidden md:table-cell">Recurso</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="hidden lg:table-cell">IP</TableHead>
+                  <TableHead className="hidden lg:table-cell">Data/Hora</TableHead>
+                  <TableHead className="hidden md:table-cell">Detalhes</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredLogs.map((log: AccessLog) => (
+                  <TableRow key={log.id}>
+                    <TableCell className="font-medium">
+                      <div>
+                        <div className="font-semibold">{log.usuario}</div>
+                        <div className="text-xs text-gray-500 sm:hidden">
+                          {getActionLabel(log.acao)} - {log.recurso}
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="hidden sm:table-cell">
+                      <Badge variant="outline">{getActionLabel(log.acao)}</Badge>
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell">{log.recurso}</TableCell>
+                    <TableCell>{getStatusBadge(log.sucesso)}</TableCell>
+                    <TableCell className="hidden lg:table-cell">
+                      <code className="bg-gray-100 px-2 py-1 rounded text-xs">
+                        {log.ip_address}
+                      </code>
+                    </TableCell>
+                    <TableCell className="hidden lg:table-cell text-sm">
+                      {new Date(log.created_at).toLocaleString('pt-BR')}
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell">
+                      {log.detalhes && (
+                        <Button size="sm" variant="outline" className="h-8 w-8 p-0">
+                          <Eye className="w-3 h-3" />
                         </Button>
                       )}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-
-      {/* Log de Acessos */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Log de Acessos Recentes</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Usuário</TableHead>
-                <TableHead>Ação</TableHead>
-                <TableHead>Data/Hora</TableHead>
-                <TableHead>IP</TableHead>
-                <TableHead>Resultado</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {accessLogs.map((log) => (
-                <TableRow key={log.id}>
-                  <TableCell className="font-medium">{log.username}</TableCell>
-                  <TableCell>{log.action}</TableCell>
-                  <TableCell className="text-sm">{log.timestamp}</TableCell>
-                  <TableCell>
-                    <code className="bg-gray-100 px-2 py-1 rounded text-xs">
-                      {log.ip}
-                    </code>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={log.success ? "default" : "destructive"}>
-                      {log.success ? 'Sucesso' : 'Falhou'}
-                    </Badge>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
     </div>

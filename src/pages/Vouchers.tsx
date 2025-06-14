@@ -6,16 +6,14 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { 
   Ticket, 
-  Plus,
-  Gift,
-  Calendar,
-  DollarSign,
-  Users,
   Search,
-  QrCode,
-  CheckCircle,
-  XCircle,
-  Clock
+  Filter,
+  Plus,
+  Calendar,
+  CreditCard,
+  Gift,
+  Percent,
+  Users
 } from 'lucide-react';
 import {
   Table,
@@ -25,386 +23,284 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { useQuery } from '@tanstack/react-query';
 
 interface Voucher {
   id: string;
-  code: string;
-  type: 'discount' | 'freeItem' | 'cashback';
-  value: number;
-  description: string;
-  status: 'active' | 'used' | 'expired';
-  validUntil: string;
-  usageCount: number;
-  maxUsage: number;
-  createdAt: string;
-  usedBy?: string;
-  usedAt?: string;
+  codigo: string;
+  tipo: 'desconto' | 'produto_gratis' | 'credito';
+  valor: number;
+  porcentagem: number;
+  produto_id: string;
+  data_validade: string;
+  limite_uso: number;
+  usos_realizados: number;
+  status: 'ativo' | 'usado' | 'expirado' | 'cancelado';
+  cliente_nome: string;
+  cliente_email: string;
+  observacoes: string;
+  created_at: string;
 }
 
 const Vouchers: React.FC = () => {
-  const [vouchers, setVouchers] = useState<Voucher[]>([
-    {
-      id: '1',
-      code: 'DESCONTO10',
-      type: 'discount',
-      value: 10,
-      description: '10% de desconto em qualquer pedido',
-      status: 'active',
-      validUntil: '2024-12-31',
-      usageCount: 5,
-      maxUsage: 100,
-      createdAt: '2024-06-01 10:00:00'
-    },
-    {
-      id: '2',
-      code: 'CAFEGRATIS',
-      type: 'freeItem',
-      value: 8.00,
-      description: 'Café expresso grátis',
-      status: 'used',
-      validUntil: '2024-06-30',
-      usageCount: 1,
-      maxUsage: 1,
-      createdAt: '2024-06-10 14:30:00',
-      usedBy: 'João Silva',
-      usedAt: '2024-06-14 09:15:00'
-    },
-    {
-      id: '3',
-      code: 'CASHBACK5',
-      type: 'cashback',
-      value: 5.00,
-      description: 'R$ 5,00 de cashback',
-      status: 'expired',
-      validUntil: '2024-06-13',
-      usageCount: 0,
-      maxUsage: 50,
-      createdAt: '2024-05-15 16:20:00'
-    }
-  ]);
-
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedType, setSelectedType] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('all');
-  const [newVoucher, setNewVoucher] = useState({
-    code: '',
-    type: 'discount' as const,
-    value: 0,
-    description: '',
-    validUntil: '',
-    maxUsage: 1
+
+  // Buscar vouchers do Supabase
+  const { data: vouchers = [], isLoading, refetch } = useQuery({
+    queryKey: ['vouchers'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('vouchers')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        console.error('Erro ao buscar vouchers:', error);
+        throw error;
+      }
+      
+      return data || [];
+    },
   });
 
-  const voucherTypes = ['discount', 'freeItem', 'cashback'];
-
-  const filteredVouchers = vouchers.filter(voucher => {
-    const matchesSearch = voucher.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         voucher.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesType = selectedType === 'all' || voucher.type === selectedType;
+  const filteredVouchers = vouchers.filter((voucher: Voucher) => {
+    const matchesSearch = voucher.codigo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         voucher.cliente_nome?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         voucher.cliente_email?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesType = selectedType === 'all' || voucher.tipo === selectedType;
     const matchesStatus = selectedStatus === 'all' || voucher.status === selectedStatus;
     return matchesSearch && matchesType && matchesStatus;
   });
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'active':
-        return <Badge className="bg-green-600"><CheckCircle className="w-3 h-3 mr-1" />Ativo</Badge>;
-      case 'used':
-        return <Badge className="bg-blue-600"><CheckCircle className="w-3 h-3 mr-1" />Usado</Badge>;
-      case 'expired':
-        return <Badge variant="destructive"><XCircle className="w-3 h-3 mr-1" />Expirado</Badge>;
+      case 'ativo':
+        return <Badge className="bg-green-600">Ativo</Badge>;
+      case 'usado':
+        return <Badge className="bg-blue-600">Usado</Badge>;
+      case 'expirado':
+        return <Badge variant="secondary">Expirado</Badge>;
+      case 'cancelado':
+        return <Badge variant="destructive">Cancelado</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
   };
 
-  const getTypeBadge = (type: string) => {
-    switch (type) {
-      case 'discount':
-        return <Badge className="bg-purple-600"><DollarSign className="w-3 h-3 mr-1" />Desconto</Badge>;
-      case 'freeItem':
-        return <Badge className="bg-green-600"><Gift className="w-3 h-3 mr-1" />Item Grátis</Badge>;
-      case 'cashback':
-        return <Badge className="bg-blue-600"><DollarSign className="w-3 h-3 mr-1" />Cashback</Badge>;
+  const getTypeIcon = (tipo: string) => {
+    switch (tipo) {
+      case 'desconto':
+        return <Percent className="w-3 h-3 mr-1" />;
+      case 'produto_gratis':
+        return <Gift className="w-3 h-3 mr-1" />;
+      case 'credito':
+        return <CreditCard className="w-3 h-3 mr-1" />;
       default:
-        return <Badge variant="outline">{type}</Badge>;
+        return <Ticket className="w-3 h-3 mr-1" />;
     }
   };
 
-  const generateVoucherCode = () => {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    let result = '';
-    for (let i = 0; i < 8; i++) {
-      result += chars.charAt(Math.floor(Math.random() * chars.length));
+  const getTypeLabel = (tipo: string) => {
+    switch (tipo) {
+      case 'desconto': return 'Desconto';
+      case 'produto_gratis': return 'Produto Grátis';
+      case 'credito': return 'Crédito';
+      default: return tipo;
     }
-    return result;
   };
 
-  const createVoucher = () => {
-    if (!newVoucher.code || !newVoucher.description || !newVoucher.validUntil) {
-      toast.error('Preencha todos os campos obrigatórios!');
-      return;
+  const formatValue = (voucher: Voucher) => {
+    if (voucher.porcentagem) {
+      return `${voucher.porcentagem}%`;
+    } else if (voucher.valor) {
+      return `R$ ${voucher.valor.toFixed(2)}`;
+    } else {
+      return 'Produto Grátis';
     }
-
-    const voucher: Voucher = {
-      id: Date.now().toString(),
-      code: newVoucher.code,
-      type: newVoucher.type,
-      value: newVoucher.value,
-      description: newVoucher.description,
-      status: 'active',
-      validUntil: newVoucher.validUntil,
-      usageCount: 0,
-      maxUsage: newVoucher.maxUsage,
-      createdAt: new Date().toLocaleString('pt-BR')
-    };
-
-    setVouchers(prev => [...prev, voucher]);
-    setNewVoucher({
-      code: '',
-      type: 'discount',
-      value: 0,
-      description: '',
-      validUntil: '',
-      maxUsage: 1
-    });
-    toast.success('Voucher criado com sucesso!');
   };
 
-  const deactivateVoucher = (id: string) => {
-    setVouchers(prev => prev.map(voucher =>
-      voucher.id === id ? { ...voucher, status: 'expired' as const } : voucher
-    ));
-    toast.success('Voucher desativado!');
-  };
+  const totalVouchers = vouchers.length;
+  const activeVouchers = vouchers.filter((v: Voucher) => v.status === 'ativo').length;
+  const usedVouchers = vouchers.filter((v: Voucher) => v.status === 'usado').length;
+  const expiredVouchers = vouchers.filter((v: Voucher) => v.status === 'expirado').length;
 
-  const activeVouchers = vouchers.filter(v => v.status === 'active').length;
-  const usedVouchers = vouchers.filter(v => v.status === 'used').length;
-  const expiredVouchers = vouchers.filter(v => v.status === 'expired').length;
-  const totalUsage = vouchers.reduce((acc, v) => acc + v.usageCount, 0);
+  if (isLoading) {
+    return (
+      <div className="p-3 sm:p-6 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-purple-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Carregando vouchers...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center space-x-2">
           <Ticket className="w-6 h-6 text-purple-600" />
-          <h1 className="text-2xl font-bold text-gray-800">Gestão de Vouchers</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-800">Gestão de Vouchers</h1>
         </div>
+        <Button className="flex items-center space-x-2 w-full sm:w-auto">
+          <Plus className="w-4 h-4" />
+          <span>Novo Voucher</span>
+        </Button>
       </div>
 
       {/* Estatísticas */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-3 sm:p-4">
             <div className="flex items-center space-x-2">
-              <CheckCircle className="w-5 h-5 text-green-600" />
-              <div>
-                <p className="text-sm text-gray-600">Vouchers Ativos</p>
-                <p className="text-2xl font-bold text-green-600">{activeVouchers}</p>
+              <Ticket className="w-5 h-5 text-purple-600" />
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm text-gray-600 truncate">Total de Vouchers</p>
+                <p className="text-lg sm:text-2xl font-bold">{totalVouchers}</p>
               </div>
             </div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-3 sm:p-4">
             <div className="flex items-center space-x-2">
-              <Users className="w-5 h-5 text-blue-600" />
-              <div>
-                <p className="text-sm text-gray-600">Utilizados</p>
-                <p className="text-2xl font-bold text-blue-600">{usedVouchers}</p>
+              <Gift className="w-5 h-5 text-green-600" />
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm text-gray-600 truncate">Ativos</p>
+                <p className="text-lg sm:text-2xl font-bold text-green-600">{activeVouchers}</p>
               </div>
             </div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-3 sm:p-4">
             <div className="flex items-center space-x-2">
-              <XCircle className="w-5 h-5 text-red-600" />
-              <div>
-                <p className="text-sm text-gray-600">Expirados</p>
-                <p className="text-2xl font-bold text-red-600">{expiredVouchers}</p>
+              <CreditCard className="w-5 h-5 text-blue-600" />
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm text-gray-600 truncate">Usados</p>
+                <p className="text-lg sm:text-2xl font-bold text-blue-600">{usedVouchers}</p>
               </div>
             </div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-3 sm:p-4">
             <div className="flex items-center space-x-2">
-              <Clock className="w-5 h-5 text-orange-600" />
-              <div>
-                <p className="text-sm text-gray-600">Total de Usos</p>
-                <p className="text-2xl font-bold">{totalUsage}</p>
+              <Calendar className="w-5 h-5 text-red-600" />
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm text-gray-600 truncate">Expirados</p>
+                <p className="text-lg sm:text-2xl font-bold text-red-600">{expiredVouchers}</p>
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Criar Novo Voucher */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <Plus className="w-5 h-5 mr-2" />
-            Criar Novo Voucher
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div className="flex space-x-2">
-              <Input
-                placeholder="Código do voucher"
-                value={newVoucher.code}
-                onChange={(e) => setNewVoucher(prev => ({ ...prev, code: e.target.value.toUpperCase() }))}
-              />
-              <Button
-                variant="outline"
-                onClick={() => setNewVoucher(prev => ({ ...prev, code: generateVoucherCode() }))}
-              >
-                <QrCode className="w-4 h-4" />
-              </Button>
-            </div>
-            <select 
-              value={newVoucher.type}
-              onChange={(e) => setNewVoucher(prev => ({ ...prev, type: e.target.value as any }))}
-              className="border rounded-md px-3 py-2"
-            >
-              <option value="discount">Desconto (%)</option>
-              <option value="freeItem">Item Grátis</option>
-              <option value="cashback">Cashback (R$)</option>
-            </select>
-            <Input
-              placeholder={newVoucher.type === 'discount' ? "Valor (%)" : "Valor (R$)"}
-              type="number"
-              value={newVoucher.value}
-              onChange={(e) => setNewVoucher(prev => ({ ...prev, value: parseFloat(e.target.value) || 0 }))}
-            />
-            <Input
-              placeholder="Descrição"
-              value={newVoucher.description}
-              onChange={(e) => setNewVoucher(prev => ({ ...prev, description: e.target.value }))}
-            />
-            <Input
-              placeholder="Válido até"
-              type="date"
-              value={newVoucher.validUntil}
-              onChange={(e) => setNewVoucher(prev => ({ ...prev, validUntil: e.target.value }))}
-            />
-            <Input
-              placeholder="Máximo de usos"
-              type="number"
-              value={newVoucher.maxUsage}
-              onChange={(e) => setNewVoucher(prev => ({ ...prev, maxUsage: parseInt(e.target.value) || 1 }))}
-            />
-          </div>
-          <div className="mt-4">
-            <Button onClick={createVoucher}>
-              Criar Voucher
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Filtros */}
       <Card>
-        <CardContent className="p-4">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <Input
-                  placeholder="Buscar por código ou descrição..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
+        <CardContent className="p-3 sm:p-4">
+          <div className="flex flex-col gap-3 sm:gap-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Input
+                placeholder="Buscar por código, cliente ou email..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+              <div className="flex items-center space-x-2 flex-1">
+                <Filter className="w-4 h-4 text-gray-500" />
+                <select 
+                  value={selectedType}
+                  onChange={(e) => setSelectedType(e.target.value)}
+                  className="border rounded-md px-3 py-2 w-full"
+                >
+                  <option value="all">Todos os tipos</option>
+                  <option value="desconto">Desconto</option>
+                  <option value="produto_gratis">Produto Grátis</option>
+                  <option value="credito">Crédito</option>
+                </select>
+              </div>
+              <div className="flex items-center space-x-2 flex-1">
+                <Users className="w-4 h-4 text-gray-500" />
+                <select 
+                  value={selectedStatus}
+                  onChange={(e) => setSelectedStatus(e.target.value)}
+                  className="border rounded-md px-3 py-2 w-full"
+                >
+                  <option value="all">Todos os status</option>
+                  <option value="ativo">Ativo</option>
+                  <option value="usado">Usado</option>
+                  <option value="expirado">Expirado</option>
+                  <option value="cancelado">Cancelado</option>
+                </select>
               </div>
             </div>
-            <select 
-              value={selectedType}
-              onChange={(e) => setSelectedType(e.target.value)}
-              className="border rounded-md px-3 py-2"
-            >
-              <option value="all">Todos os tipos</option>
-              <option value="discount">Desconto</option>
-              <option value="freeItem">Item Grátis</option>
-              <option value="cashback">Cashback</option>
-            </select>
-            <select 
-              value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value)}
-              className="border rounded-md px-3 py-2"
-            >
-              <option value="all">Todos os status</option>
-              <option value="active">Ativo</option>
-              <option value="used">Usado</option>
-              <option value="expired">Expirado</option>
-            </select>
           </div>
         </CardContent>
       </Card>
 
       {/* Tabela de Vouchers */}
       <Card>
-        <CardHeader>
-          <CardTitle>Vouchers Cadastrados ({filteredVouchers.length})</CardTitle>
+        <CardHeader className="p-3 sm:p-6">
+          <CardTitle className="text-lg sm:text-xl">Vouchers Cadastrados ({filteredVouchers.length})</CardTitle>
         </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Código</TableHead>
-                <TableHead>Tipo</TableHead>
-                <TableHead>Valor</TableHead>
-                <TableHead>Descrição</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Válido até</TableHead>
-                <TableHead>Usos</TableHead>
-                <TableHead>Criado em</TableHead>
-                <TableHead>Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredVouchers.map((voucher) => (
-                <TableRow key={voucher.id}>
-                  <TableCell className="font-medium">
-                    <code className="bg-gray-100 px-2 py-1 rounded">
-                      {voucher.code}
-                    </code>
-                  </TableCell>
-                  <TableCell>{getTypeBadge(voucher.type)}</TableCell>
-                  <TableCell>
-                    {voucher.type === 'discount' ? `${voucher.value}%` : `R$ ${voucher.value.toFixed(2)}`}
-                  </TableCell>
-                  <TableCell>{voucher.description}</TableCell>
-                  <TableCell>{getStatusBadge(voucher.status)}</TableCell>
-                  <TableCell>{voucher.validUntil}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline">
-                      {voucher.usageCount} / {voucher.maxUsage}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-sm">{voucher.createdAt}</TableCell>
-                  <TableCell>
-                    {voucher.status === 'active' && (
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => deactivateVoucher(voucher.id)}
-                      >
-                        Desativar
-                      </Button>
-                    )}
-                    {voucher.usedBy && (
-                      <div className="text-xs text-gray-500 mt-1">
-                        Usado por: {voucher.usedBy}
-                      </div>
-                    )}
-                  </TableCell>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="min-w-[100px]">Código</TableHead>
+                  <TableHead className="hidden sm:table-cell">Tipo</TableHead>
+                  <TableHead className="hidden md:table-cell">Valor</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="hidden lg:table-cell">Validade</TableHead>
+                  <TableHead className="hidden md:table-cell">Uso</TableHead>
+                  <TableHead className="hidden lg:table-cell">Cliente</TableHead>
+                  <TableHead className="hidden sm:table-cell">Email</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {filteredVouchers.map((voucher: Voucher) => (
+                  <TableRow key={voucher.id}>
+                    <TableCell className="font-medium">
+                      <div>
+                        <div className="font-semibold">{voucher.codigo}</div>
+                        <div className="text-xs text-gray-500 sm:hidden">
+                          {getTypeLabel(voucher.tipo)} - {formatValue(voucher)}
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="hidden sm:table-cell">
+                      <Badge variant="outline" className="flex items-center w-fit">
+                        {getTypeIcon(voucher.tipo)}
+                        {getTypeLabel(voucher.tipo)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell font-semibold">
+                      {formatValue(voucher)}
+                    </TableCell>
+                    <TableCell>{getStatusBadge(voucher.status)}</TableCell>
+                    <TableCell className="hidden lg:table-cell text-sm">
+                      {new Date(voucher.data_validade).toLocaleDateString('pt-BR')}
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell">
+                      <span className="text-sm">
+                        {voucher.usos_realizados} / {voucher.limite_uso}
+                      </span>
+                    </TableCell>
+                    <TableCell className="hidden lg:table-cell">{voucher.cliente_nome}</TableCell>
+                    <TableCell className="hidden sm:table-cell text-sm">{voucher.cliente_email}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
     </div>
