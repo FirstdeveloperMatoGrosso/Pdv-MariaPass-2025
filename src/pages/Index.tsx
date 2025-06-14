@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -51,8 +52,6 @@ const Index: React.FC = () => {
         return [...prevCart, { ...product, quantity: 1 }];
       }
     });
-    
-    toast.success(`${product.name} adicionado ao carrinho!`);
   };
 
   const removeFromCart = (productId: string) => {
@@ -99,8 +98,6 @@ const Index: React.FC = () => {
 
   const handleBarcodeProductScanned = (product: Product) => {
     addToCart(product);
-    // Opcional: você pode mostrar um toast aqui se quiser
-    // toast.success(`${product.name} adicionado ao carrinho via código de barras!`);
   };
 
   return (

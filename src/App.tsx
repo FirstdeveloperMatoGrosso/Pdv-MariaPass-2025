@@ -7,6 +7,9 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "./components/AppSidebar";
 import Index from "./pages/Index";
+import Produtos from "./pages/Produtos";
+import Relatorios from "./pages/Relatorios";
+import Pagamentos from "./pages/Pagamentos";
 import Configuracoes from "./pages/Configuracoes";
 import NotFound from "./pages/NotFound";
 
@@ -31,6 +34,9 @@ const App = () => (
               <main className="flex-1">
                 <Routes>
                   <Route path="/" element={<Index />} />
+                  <Route path="/produtos" element={<Produtos />} />
+                  <Route path="/relatorios" element={<Relatorios />} />
+                  <Route path="/pagamentos" element={<Pagamentos />} />
                   <Route path="/configuracoes" element={<Configuracoes />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>

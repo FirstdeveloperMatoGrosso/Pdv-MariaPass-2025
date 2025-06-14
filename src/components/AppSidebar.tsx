@@ -14,10 +14,30 @@ import {
   useSidebar 
 } from '@/components/ui/sidebar';
 import { NavLink, useLocation } from 'react-router-dom';
-import { Home, Settings, ScanBarcode } from 'lucide-react';
+import { 
+  Home, 
+  Settings, 
+  ScanBarcode, 
+  Package,
+  BarChart3,
+  CreditCard,
+  XCircle,
+  Archive,
+  Printer,
+  Monitor,
+  Lock
+} from 'lucide-react';
 
 const menuItems = [
   { title: 'Início', url: '/', icon: Home },
+  { title: 'Produtos', url: '/produtos', icon: Package },
+  { title: 'Relatórios', url: '/relatorios', icon: BarChart3 },
+  { title: 'Pagamentos', url: '/pagamentos', icon: CreditCard },
+  { title: 'Cancelamentos', url: '/cancelamentos', icon: XCircle },
+  { title: 'Estoque', url: '/estoque', icon: Archive },
+  { title: 'Impressões', url: '/impressoes', icon: Printer },
+  { title: 'Terminais', url: '/terminais', icon: Monitor },
+  { title: 'Controle de Acesso', url: '/acesso', icon: Lock },
   { title: 'Scanner & Configurações', url: '/configuracoes', icon: ScanBarcode },
 ];
 
