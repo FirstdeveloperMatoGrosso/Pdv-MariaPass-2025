@@ -29,9 +29,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 interface PrintJob {
   id: string;
   pedido_id: string;
-  tipo: 'comprovante' | 'voucher' | 'relatorio' | 'ticket';
+  tipo: string;
   impressora: string;
-  status: 'pendente' | 'imprimindo' | 'concluido' | 'falhou';
+  status: string;
   data_impressao: string;
   paginas: number;
   copias: number;
