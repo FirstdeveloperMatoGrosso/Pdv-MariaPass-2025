@@ -29,14 +29,14 @@ import { useQuery } from '@tanstack/react-query';
 interface Voucher {
   id: string;
   codigo: string;
-  tipo: 'desconto' | 'produto_gratis' | 'credito';
+  tipo: string;
   valor: number;
   porcentagem: number;
   produto_id: string;
   data_validade: string;
   limite_uso: number;
   usos_realizados: number;
-  status: 'ativo' | 'usado' | 'expirado' | 'cancelado';
+  status: string;
   cliente_nome: string;
   cliente_email: string;
   observacoes: string;
