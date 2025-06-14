@@ -1,0 +1,118 @@
+
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Printer, Check, X } from 'lucide-react';
+
+interface CartItem {
+  id: string;
+  name: string;
+  price: number;
+  quantity: number;
+}
+
+interface PrintSimulatorProps {
+  orderId: string;
+  cart: CartItem[];
+  total: number;
+  onClose: () => void;
+}
+
+const PrintSimulator: React.FC<PrintSimulatorProps> = ({ orderId, cart, total, onClose }) => {
+  const [isPrinting, setIsPrinting] = useState(true);
+  const [printComplete, setPrintComplete] = useState(false);
+
+  useEffect(() => {
+    // Simula tempo de impressão
+    const timer = setTimeout(() => {
+      setIsPrinting(false);
+      setPrintComplete(true);
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  const currentDate = new Date().toLocaleString('pt-BR');
+
+  return (
+    <Card className="bg-white shadow-xl border-2 border-green-200">
+      <CardHeader className="bg-gradient-to-r from-green-50 to-blue-50">
+        <div className="flex justify-between items-center">
+          <CardTitle className="flex items-center space-x-2">
+            <Printer className="w-5 h-5 text-green-600" />
+            <span>Impressão da Ficha</span>
+          </CardTitle>
+          <Button variant="ghost" size="sm" onClick={onClose}>
+            <X className="w-4 h-4" />
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent className="p-6">
+        {isPrinting ? (
+          <div className="text-center space-y-4">
+            <div className="flex items-center justify-center space-x-2">
+              <Printer className="w-8 h-8 animate-pulse text-green-600" />
+              <span className="text-lg">Imprimindo ficha...</span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div className="bg-green-600 h-2 rounded-full animate-pulse w-2/3"></div>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {printComplete && (
+              <div className="flex items-center justify-center space-x-2 text-green-600 mb-4">
+                <Check className="w-6 h-6" />
+                <span className="font-semibold">Impressão concluída!</span>
+              </div>
+            )}
+            
+            {/* Simulação da ficha impressa */}
+            <div className="bg-gray-50 border-2 border-dashed border-gray-300 p-4 rounded-lg font-mono text-sm">
+              <div className="text-center space-y-2 border-b border-gray-300 pb-4 mb-4">
+                <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg mx-auto flex items-center justify-center text-white font-bold text-xl">
+                  MP
+                </div>
+                <h3 className="font-bold text-lg">MARIAPASS</h3>
+                <p className="text-xs text-gray-600">Sistema de Pedidos</p>
+              </div>
+              
+              <div className="space-y-1">
+                <p><strong>Ficha:</strong> #{orderId}</p>
+                <p><strong>Data:</strong> {currentDate}</p>
+                <hr className="my-2 border-gray-400" />
+                
+                {cart.map(item => (
+                  <div key={item.id} className="flex justify-between">
+                    <span>{item.quantity}x {item.name}</span>
+                    <span>R$ {(item.price * item.quantity).toFixed(2)}</span>
+                  </div>
+                ))}
+                
+                <hr className="my-2 border-gray-400" />
+                <div className="flex justify-between font-bold">
+                  <span>TOTAL:</span>
+                  <span>R$ {total.toFixed(2)}</span>
+                </div>
+                
+                <div className="text-center mt-4 pt-2 border-t border-gray-300">
+                  <p className="text-xs">Obrigado pela preferência!</p>
+                  <p className="text-xs">Retire seu pedido no balcão</p>
+                </div>
+              </div>
+            </div>
+
+            <Button 
+              onClick={onClose} 
+              className="w-full bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600"
+            >
+              Novo Pedido
+            </Button>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
+
+export default PrintSimulator;
