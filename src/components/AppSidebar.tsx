@@ -18,7 +18,7 @@ import { Home, Settings, ScanBarcode } from 'lucide-react';
 
 const menuItems = [
   { title: 'Início', url: '/', icon: Home },
-  { title: 'Configurações', url: '/configuracoes', icon: Settings },
+  { title: 'Scanner & Configurações', url: '/configuracoes', icon: ScanBarcode },
 ];
 
 export function AppSidebar() {

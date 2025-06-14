@@ -1,10 +1,10 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ShoppingCart, Plus, Minus } from 'lucide-react';
+import { ShoppingCart, Plus, Minus, ScanBarcode } from 'lucide-react';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 import QRCodeGenerator from '../components/QRCodeGenerator';
 import PrintSimulator from '../components/PrintSimulator';
 
@@ -20,6 +20,7 @@ interface CartItem extends Product {
 }
 
 const Index: React.FC = () => {
+  const navigate = useNavigate();
   const [cart, setCart] = useState<CartItem[]>([]);
   const [showQRCode, setShowQRCode] = useState(false);
   const [showPrintSimulator, setShowPrintSimulator] = useState(false);
@@ -99,6 +100,19 @@ const Index: React.FC = () => {
       <div className="text-center mb-8">
         <h1 className="text-3xl font-bold text-green-600 mb-2">MariaPass Totem</h1>
         <p className="text-gray-600">Selecione seus produtos e faça o pagamento via QR Code</p>
+        
+        {/* Botão Scanner */}
+        <div className="mt-4">
+          <Button
+            onClick={() => navigate('/configuracoes')}
+            variant="outline"
+            size="lg"
+            className="flex items-center space-x-2 bg-blue-50 hover:bg-blue-100 border-blue-200"
+          >
+            <ScanBarcode className="w-5 h-5 text-blue-600" />
+            <span className="text-blue-600 font-medium">Adicionar por Código de Barras</span>
+          </Button>
+        </div>
       </div>
 
       {/* Grid de Produtos */}
