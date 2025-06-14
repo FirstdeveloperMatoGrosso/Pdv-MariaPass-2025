@@ -33,7 +33,7 @@ interface Terminal {
   nome: string;
   localizacao: string;
   endereco_ip: string;
-  status: 'online' | 'offline' | 'manutencao';
+  status: string;
   ultima_conexao: string;
   versao: string;
   tempo_atividade: string;
@@ -65,7 +65,7 @@ const Terminais: React.FC = () => {
 
   // Mutation para atualizar status do terminal
   const updateStatusMutation = useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: 'online' | 'offline' | 'manutencao' }) => {
+    mutationFn: async ({ id, status }: { id: string; status: string }) => {
       const { error } = await supabase
         .from('terminais')
         .update({ 
@@ -87,7 +87,7 @@ const Terminais: React.FC = () => {
     },
   });
 
-  const filteredTerminals = terminals.filter((terminal: Terminal) =>
+  const filteredTerminals = terminals.filter((terminal: any) =>
     terminal.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
     terminal.localizacao.toLowerCase().includes(searchTerm.toLowerCase()) ||
     terminal.endereco_ip.includes(searchTerm)
@@ -106,12 +106,12 @@ const Terminais: React.FC = () => {
     }
   };
 
-  const updateTerminalStatus = (id: string, newStatus: 'online' | 'offline' | 'manutencao') => {
+  const updateTerminalStatus = (id: string, newStatus: string) => {
     updateStatusMutation.mutate({ id, status: newStatus });
   };
 
   const restartTerminal = (id: string) => {
-    const terminal = terminals.find((t: Terminal) => t.id === id);
+    const terminal = terminals.find((t: any) => t.id === id);
     if (terminal) {
       toast.success(`Reiniciando ${terminal.nome}...`);
       setTimeout(() => {
@@ -120,10 +120,10 @@ const Terminais: React.FC = () => {
     }
   };
 
-  const onlineTerminals = terminals.filter((t: Terminal) => t.status === 'online').length;
-  const offlineTerminals = terminals.filter((t: Terminal) => t.status === 'offline').length;
-  const maintenanceTerminals = terminals.filter((t: Terminal) => t.status === 'manutencao').length;
-  const totalSalesToday = terminals.reduce((acc: number, t: Terminal) => acc + (t.vendas_hoje || 0), 0);
+  const onlineTerminals = terminals.filter((t: any) => t.status === 'online').length;
+  const offlineTerminals = terminals.filter((t: any) => t.status === 'offline').length;
+  const maintenanceTerminals = terminals.filter((t: any) => t.status === 'manutencao').length;
+  const totalSalesToday = terminals.reduce((acc: number, t: any) => acc + (t.vendas_hoje || 0), 0);
 
   if (isLoading) {
     return (
@@ -211,7 +211,7 @@ const Terminais: React.FC = () => {
           </CardHeader>
           <CardContent className="p-3 sm:p-6 pt-0">
             <div className="space-y-2">
-              {terminals.filter((t: Terminal) => t.status === 'offline').map((terminal: Terminal) => (
+              {terminals.filter((t: any) => t.status === 'offline').map((terminal: any) => (
                 <div key={terminal.id} className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-2 bg-white rounded border gap-2">
                   <span className="font-medium">{terminal.nome} - {terminal.localizacao}</span>
                   <Badge variant="destructive">
@@ -261,7 +261,7 @@ const Terminais: React.FC = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredTerminals.map((terminal: Terminal) => (
+                {filteredTerminals.map((terminal: any) => (
                   <TableRow key={terminal.id}>
                     <TableCell className="font-medium">
                       <div>

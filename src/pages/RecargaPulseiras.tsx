@@ -50,7 +50,7 @@ interface Pulseira {
   id: string;
   codigo: string;
   saldo: number;
-  status: 'ativa' | 'inativa' | 'bloqueada';
+  status: string;
   tipo: string;
   cliente_nome: string;
   cliente_documento: string;
@@ -288,7 +288,7 @@ const RecargaPulseiras: React.FC = () => {
               className="border rounded-md px-3 py-2 flex-1"
             >
               <option value="">Selecione uma pulseira</option>
-              {pulseiras.map((pulseira: Pulseira) => (
+              {pulseiras.map((pulseira: any) => (
                 <option key={pulseira.id} value={pulseira.id}>
                   {pulseira.codigo} - {pulseira.cliente_nome} (Saldo: R$ {pulseira.saldo.toFixed(2)})
                 </option>

@@ -31,7 +31,7 @@ interface Product {
   codigo_barras: string;
   categoria: string;
   estoque: number;
-  status: 'ativo' | 'inativo';
+  status: string;
 }
 
 const Produtos: React.FC = () => {
@@ -81,7 +81,7 @@ const Produtos: React.FC = () => {
 
   // Mutation para atualizar status do produto
   const updateStatusMutation = useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: 'ativo' | 'inativo' }) => {
+    mutationFn: async ({ id, status }: { id: string; status: string }) => {
       const { error } = await supabase
         .from('produtos')
         .update({ status, updated_at: new Date().toISOString() })
@@ -99,7 +99,7 @@ const Produtos: React.FC = () => {
     },
   });
 
-  const filteredProducts = products.filter(product => {
+  const filteredProducts = products.filter((product: any) => {
     const matchesSearch = product.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          product.codigo_barras?.includes(searchTerm);
     const matchesCategory = selectedCategory === 'all' || product.categoria === selectedCategory;
@@ -110,8 +110,8 @@ const Produtos: React.FC = () => {
     deleteProductMutation.mutate(id);
   };
 
-  const toggleProductStatus = (id: string, currentStatus: 'ativo' | 'inativo') => {
-    const newStatus: 'ativo' | 'inativo' = currentStatus === 'ativo' ? 'inativo' : 'ativo';
+  const toggleProductStatus = (id: string, currentStatus: string) => {
+    const newStatus = currentStatus === 'ativo' ? 'inativo' : 'ativo';
     updateStatusMutation.mutate({ id, status: newStatus });
   };
 
@@ -192,7 +192,7 @@ const Produtos: React.FC = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredProducts.map((product) => (
+              {filteredProducts.map((product: any) => (
                 <TableRow key={product.id}>
                   <TableCell className="font-medium">{product.nome}</TableCell>
                   <TableCell>
