@@ -32,6 +32,8 @@ interface Product {
   categoria: string;
   estoque: number;
   status: string;
+  created_at: string;
+  updated_at: string;
 }
 
 const Produtos: React.FC = () => {
@@ -42,9 +44,10 @@ const Produtos: React.FC = () => {
   const categories = ['Bebidas', 'Salgados', 'Sanduíches', 'Doces', 'Outros'];
 
   // Buscar produtos do Supabase
-  const { data: products = [], isLoading } = useQuery({
+  const { data: products = [], isLoading, error } = useQuery({
     queryKey: ['produtos'],
     queryFn: async () => {
+      console.log('Buscando produtos do Supabase...');
       const { data, error } = await supabase
         .from('produtos')
         .select('*')
@@ -52,68 +55,97 @@ const Produtos: React.FC = () => {
       
       if (error) {
         console.error('Erro ao buscar produtos:', error);
+        toast.error('Erro ao carregar produtos: ' + error.message);
         throw error;
       }
       
-      return data || [];
+      console.log('Produtos carregados:', data);
+      return data as Product[];
     },
   });
 
   // Mutation para deletar produto
   const deleteProductMutation = useMutation({
     mutationFn: async (id: string) => {
+      console.log('Deletando produto:', id);
       const { error } = await supabase
         .from('produtos')
         .delete()
         .eq('id', id);
       
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao deletar produto:', error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['produtos'] });
       toast.success('Produto removido com sucesso!');
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('Erro ao deletar produto:', error);
-      toast.error('Erro ao remover produto');
+      toast.error('Erro ao remover produto: ' + error.message);
     },
   });
 
   // Mutation para atualizar status do produto
   const updateStatusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      console.log('Atualizando status do produto:', id, status);
       const { error } = await supabase
         .from('produtos')
         .update({ status, updated_at: new Date().toISOString() })
         .eq('id', id);
       
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao atualizar status:', error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['produtos'] });
       toast.success('Status do produto atualizado!');
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('Erro ao atualizar status:', error);
-      toast.error('Erro ao atualizar status');
+      toast.error('Erro ao atualizar status: ' + error.message);
     },
   });
 
-  const filteredProducts = products.filter((product: any) => {
+  const filteredProducts = products.filter((product: Product) => {
     const matchesSearch = product.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         product.codigo_barras?.includes(searchTerm);
+                         (product.codigo_barras && product.codigo_barras.includes(searchTerm));
     const matchesCategory = selectedCategory === 'all' || product.categoria === selectedCategory;
     return matchesSearch && matchesCategory;
   });
 
   const handleDeleteProduct = (id: string) => {
-    deleteProductMutation.mutate(id);
+    if (window.confirm('Tem certeza que deseja excluir este produto?')) {
+      deleteProductMutation.mutate(id);
+    }
   };
 
   const toggleProductStatus = (id: string, currentStatus: string) => {
     const newStatus = currentStatus === 'ativo' ? 'inativo' : 'ativo';
     updateStatusMutation.mutate({ id, status: newStatus });
   };
+
+  // Mostrar erro se houver
+  if (error) {
+    return (
+      <div className="p-6 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-600">Erro ao carregar produtos: {error.message}</p>
+          <Button 
+            onClick={() => queryClient.invalidateQueries({ queryKey: ['produtos'] })}
+            className="mt-4"
+          >
+            Tentar Novamente
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -173,72 +205,88 @@ const Produtos: React.FC = () => {
         </CardContent>
       </Card>
 
+      {/* Debug info */}
+      <div className="text-sm text-gray-500">
+        Total de produtos carregados: {products.length} | Filtrados: {filteredProducts.length}
+      </div>
+
       {/* Tabela de Produtos */}
       <Card>
         <CardHeader>
           <CardTitle>Produtos Cadastrados ({filteredProducts.length})</CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nome</TableHead>
-                <TableHead>Categoria</TableHead>
-                <TableHead>Código</TableHead>
-                <TableHead>Preço</TableHead>
-                <TableHead>Estoque</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredProducts.map((product: any) => (
-                <TableRow key={product.id}>
-                  <TableCell className="font-medium">{product.nome}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline">{product.categoria}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <code className="bg-gray-100 px-2 py-1 rounded text-xs">
-                      {product.codigo_barras}
-                    </code>
-                  </TableCell>
-                  <TableCell>R$ {product.preco.toFixed(2)}</TableCell>
-                  <TableCell>
-                    <Badge 
-                      variant={product.estoque < 10 ? "destructive" : "secondary"}
-                    >
-                      {product.estoque} un.
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge 
-                      variant={product.status === 'ativo' ? "default" : "secondary"}
-                      className="cursor-pointer"
-                      onClick={() => toggleProductStatus(product.id, product.status)}
-                    >
-                      {product.status === 'ativo' ? 'Ativo' : 'Inativo'}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex space-x-2">
-                      <Button size="sm" variant="outline">
-                        <Edit className="w-3 h-3" />
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="destructive"
-                        onClick={() => handleDeleteProduct(product.id)}
-                        disabled={deleteProductMutation.isPending}
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </Button>
-                    </div>
-                  </TableCell>
+          {filteredProducts.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-gray-500">
+                {products.length === 0 
+                  ? 'Nenhum produto encontrado no banco de dados.'
+                  : 'Nenhum produto encontrado com os filtros aplicados.'
+                }
+              </p>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nome</TableHead>
+                  <TableHead>Categoria</TableHead>
+                  <TableHead>Código</TableHead>
+                  <TableHead>Preço</TableHead>
+                  <TableHead>Estoque</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Ações</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {filteredProducts.map((product: Product) => (
+                  <TableRow key={product.id}>
+                    <TableCell className="font-medium">{product.nome}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{product.categoria}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <code className="bg-gray-100 px-2 py-1 rounded text-xs">
+                        {product.codigo_barras || 'N/A'}
+                      </code>
+                    </TableCell>
+                    <TableCell>R$ {product.preco.toFixed(2)}</TableCell>
+                    <TableCell>
+                      <Badge 
+                        variant={product.estoque < 10 ? "destructive" : "secondary"}
+                      >
+                        {product.estoque} un.
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge 
+                        variant={product.status === 'ativo' ? "default" : "secondary"}
+                        className="cursor-pointer"
+                        onClick={() => toggleProductStatus(product.id, product.status)}
+                      >
+                        {product.status === 'ativo' ? 'Ativo' : 'Inativo'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex space-x-2">
+                        <Button size="sm" variant="outline">
+                          <Edit className="w-3 h-3" />
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="destructive"
+                          onClick={() => handleDeleteProduct(product.id)}
+                          disabled={deleteProductMutation.isPending}
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
     </div>
