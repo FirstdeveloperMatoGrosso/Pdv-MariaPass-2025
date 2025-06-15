@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,7 +7,7 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import { ShoppingCart, Plus, Minus, ScanBarcode, Package } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import QRCodeGenerator from '../components/QRCodeGenerator';
 import PrintSimulator from '../components/PrintSimulator';
@@ -30,6 +31,7 @@ interface TotemCartItem extends TotemProduct {
 
 const Index: React.FC = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [cart, setCart] = useState<TotemCartItem[]>([]);
   const [showQRCode, setShowQRCode] = useState(false);
   const [showPrintSimulator, setShowPrintSimulator] = useState(false);
@@ -77,6 +79,42 @@ const Index: React.FC = () => {
       
       return data?.map(cat => cat.nome) || [];
     },
+  });
+
+  // Mutation para atualizar estoque dos produtos
+  const updateProductStockMutation = useMutation({
+    mutationFn: async (cartItems: TotemCartItem[]) => {
+      console.log('Atualizando estoque dos produtos:', cartItems);
+      
+      // Atualizar estoque de cada produto no carrinho
+      for (const item of cartItems) {
+        const newStock = item.estoque - item.quantity;
+        console.log(`Atualizando produto ${item.nome}: estoque ${item.estoque} -> ${newStock}`);
+        
+        const { error } = await supabase
+          .from('produtos')
+          .update({ 
+            estoque: newStock,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', item.id);
+        
+        if (error) {
+          console.error(`Erro ao atualizar estoque do produto ${item.nome}:`, error);
+          throw error;
+        }
+      }
+    },
+    onSuccess: () => {
+      console.log('Estoque atualizado com sucesso');
+      // Invalidar cache para atualizar a lista de produtos
+      queryClient.invalidateQueries({ queryKey: ['produtos-totem'] });
+      toast.success('Estoque atualizado com sucesso!');
+    },
+    onError: (error) => {
+      console.error('Erro ao atualizar estoque:', error);
+      toast.error('Erro ao atualizar estoque dos produtos');
+    }
   });
 
   // Filtrar produtos por categoria
@@ -145,9 +183,14 @@ const Index: React.FC = () => {
 
   const handlePrintClose = () => {
     setShowPrintSimulator(false);
+    
+    // Atualizar estoque dos produtos vendidos
+    updateProductStockMutation.mutate(cart);
+    
+    // Limpar carrinho e order ID
     setCart([]);
     setCurrentOrderId('');
-    toast.success('Novo pedido iniciado!');
+    toast.success('Venda finalizada e estoque atualizado!');
   };
 
   const handleBarcodeProductScanned = (product: any) => {
