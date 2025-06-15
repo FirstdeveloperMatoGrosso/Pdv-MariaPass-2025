@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { 
   Sidebar, 
@@ -29,9 +28,13 @@ import {
   Ticket,
   Watch,
   FileSpreadsheet,
-  ShoppingCart
+  ShoppingCart,
+  FileText,
+  FileCheck2,
+  Banknote
 } from 'lucide-react';
 
+// Adicionando as integrações requisitadas
 const menuItems = [
   { title: 'Início', url: '/', icon: Home },
   { title: 'Vendas', url: '/vendas', icon: ShoppingCart },
@@ -47,6 +50,12 @@ const menuItems = [
   { title: 'Vouchers', url: '/vouchers', icon: Ticket },
   { title: 'Recarga Pulseiras', url: '/recarga-pulseiras', icon: Watch },
   { title: 'Scanner & Configurações', url: '/configuracoes', icon: ScanBarcode },
+  // Integração Nota Fiscal (utilizando um ícone representativo)
+  { title: 'Integração Nota Fiscal', url: '/integracao-nota-fiscal', icon: FileText },
+  // Integração Boleto
+  { title: 'Integração Boleto', url: '/integracao-boleto', icon: Banknote },
+  // Integração NFC-e
+  { title: 'Integração NFC-e', url: '/integracao-nfce', icon: FileCheck2 },
 ];
 
 export function AppSidebar() {
