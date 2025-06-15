@@ -123,12 +123,17 @@ export const generateReportPDF = (companyData: CompanyData, reportData: ReportDa
   
   // ==================== TABELA PRINCIPAL - RESUMO ====================
   
+  // Garantir que salesData existe e tem as propriedades corretas
+  const salesTotal = reportData.salesData?.total || 0;
+  const salesOrders = reportData.salesData?.orders || 0;
+  const salesAvgTicket = reportData.salesData?.avgTicket || 0;
+  
   const summaryTableData = [
-    ['Faturamento Total', '', `R$ ${reportData.salesData.total.toFixed(2)}`],
-    ['Total de Pedidos', '', reportData.salesData.orders.toString()],
-    ['Ticket Médio', '', `R$ ${reportData.salesData.avgTicket.toFixed(2)}`],
+    ['Faturamento Total', '', `R$ ${salesTotal.toFixed(2)}`],
+    ['Total de Pedidos', '', salesOrders.toString()],
+    ['Ticket Médio', '', `R$ ${salesAvgTicket.toFixed(2)}`],
     ['', '', ''], // Linha vazia
-    ['', 'TOTAL GERAL', `R$ ${reportData.salesData.total.toFixed(2)}`]
+    ['', 'TOTAL GERAL', `R$ ${salesTotal.toFixed(2)}`]
   ];
   
   autoTable(doc, {
@@ -186,7 +191,7 @@ export const generateReportPDF = (companyData: CompanyData, reportData: ReportDa
   
   yPos += 10;
   
-  const productTableData = reportData.topProducts.map((product, index) => [
+  const productTableData = (reportData.topProducts || []).map((product, index) => [
     product.name,
     product.quantity.toString(),
     `R$ ${(product.revenue / product.quantity).toFixed(2)}`,
