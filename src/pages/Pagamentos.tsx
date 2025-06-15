@@ -121,24 +121,32 @@ const Pagamentos: React.FC = () => {
     if (providerId === 'pagseguro') {
       // Salvar configurações específicas do PagSeguro
       try {
-        if (formData.email) {
-          await updateConfig('email', formData.email, 'pagseguro');
+        console.log('💾 Salvando configurações PagSeguro:', formData);
+        
+        const savePromises = [];
+        
+        if (formData.email !== undefined && formData.email !== '') {
+          console.log('📧 Salvando email:', formData.email);
+          savePromises.push(updateConfig('email', formData.email, 'pagseguro'));
         }
-        if (formData.token) {
-          await updateConfig('token', formData.token, 'pagseguro');
+        if (formData.token !== undefined && formData.token !== '') {
+          console.log('🔑 Salvando token:', formData.token?.substring(0, 10) + '...');
+          savePromises.push(updateConfig('token', formData.token, 'pagseguro'));
         }
-        if (formData.webhookUrl) {
-          await updateConfig('webhook_url', formData.webhookUrl, 'pagseguro');
+        if (formData.webhookUrl !== undefined) {
+          savePromises.push(updateConfig('webhook_url', formData.webhookUrl, 'pagseguro'));
         }
-        if (formData.taxaDebit) {
-          await updateConfig('taxa_debito', formData.taxaDebit, 'pagseguro');
+        if (formData.taxaDebit !== undefined) {
+          savePromises.push(updateConfig('taxa_debito', formData.taxaDebit.toString(), 'pagseguro'));
         }
-        if (formData.taxaCredit) {
-          await updateConfig('taxa_credito', formData.taxaCredit, 'pagseguro');
+        if (formData.taxaCredit !== undefined) {
+          savePromises.push(updateConfig('taxa_credito', formData.taxaCredit.toString(), 'pagseguro'));
         }
-        if (formData.taxaPix) {
-          await updateConfig('taxa_pix', formData.taxaPix, 'pagseguro');
+        if (formData.taxaPix !== undefined) {
+          savePromises.push(updateConfig('taxa_pix', formData.taxaPix.toString(), 'pagseguro'));
         }
+        
+        await Promise.all(savePromises);
         
         // Atualizar o estado local
         setProviders(prev => prev.map(p => 
@@ -151,8 +159,10 @@ const Pagamentos: React.FC = () => {
           } : p
         ));
         
+        console.log('✅ Todas as configurações do PagSeguro salvas!');
         toast.success('Configurações do PagSeguro salvas com sucesso!');
       } catch (error) {
+        console.error('❌ Erro ao salvar configurações do PagSeguro:', error);
         toast.error('Erro ao salvar configurações do PagSeguro');
       }
     } else {

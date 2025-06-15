@@ -37,19 +37,33 @@ export const useSystemConfig = (categoria?: string) => {
 
   const updateConfig = async (chave: string, valor: any, categoria: string) => {
     try {
+      console.log(`🔧 Salvando config: ${categoria}.${chave} = ${valor}`);
+      
+      // Usar upsert para inserir ou atualizar
       const { error } = await supabase
         .from('configuracoes_sistema')
-        .update({ valor, updated_at: new Date().toISOString() })
-        .eq('chave', chave)
-        .eq('categoria', categoria);
+        .upsert({ 
+          categoria, 
+          chave, 
+          valor, 
+          descricao: `Configuração ${chave} do ${categoria}`,
+          updated_at: new Date().toISOString() 
+        }, { 
+          onConflict: 'categoria,chave' 
+        });
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Erro ao salvar:', error);
+        throw error;
+      }
       
+      console.log('✅ Configuração salva com sucesso!');
       await fetchConfigs();
       toast.success('Configuração atualizada com sucesso!');
     } catch (error) {
       console.error('Erro ao atualizar configuração:', error);
       toast.error('Erro ao atualizar configuração');
+      throw error;
     }
   };
 
