@@ -86,7 +86,7 @@ export const useRelatorioDados = (periodo: 'today' | 'week' | 'month') => {
       console.log('Data início:', inicio);
       console.log('Data fim:', fim);
 
-      // Tentar salvar produtos vendidos usando a função SQL corrigida
+      // Salvar produtos vendidos usando a função SQL
       try {
         const { error: errorSalvar } = await supabase.rpc('salvar_produtos_vendidos', {
           data_inicio: inicio,
@@ -95,16 +95,15 @@ export const useRelatorioDados = (periodo: 'today' | 'week' | 'month') => {
         });
 
         if (errorSalvar) {
-          console.warn('Aviso ao salvar produtos vendidos:', errorSalvar);
-          // Não falhar aqui, continuar com busca direta
+          console.warn('Erro ao salvar produtos vendidos:', errorSalvar);
         } else {
           console.log('Produtos vendidos salvos com sucesso!');
         }
       } catch (salvarError) {
-        console.warn('Erro ao tentar salvar produtos, continuando com busca direta:', salvarError);
+        console.warn('Erro ao tentar salvar produtos:', salvarError);
       }
 
-      // Buscar dados do relatório usando a função SQL
+      // Buscar dados do relatório
       const { data: dadosRelatorio, error: errorRelatorio } = await supabase.rpc('calcular_relatorio_vendas', {
         data_inicio: inicio,
         data_fim: fim
@@ -117,7 +116,7 @@ export const useRelatorioDados = (periodo: 'today' | 'week' | 'month') => {
 
       console.log('Dados do relatório:', dadosRelatorio);
 
-      // Buscar produtos mais vendidos salvos na tabela
+      // Buscar produtos mais vendidos da tabela
       const { data: produtosSalvos, error: errorProdutos } = await supabase
         .from('produtos_mais_vendidos')
         .select(`
@@ -130,9 +129,8 @@ export const useRelatorioDados = (periodo: 'today' | 'week' | 'month') => {
         .order('posicao_ranking', { ascending: true });
 
       if (errorProdutos) {
-        console.warn('Erro ao buscar produtos salvos, buscando diretamente:', errorProdutos);
-        
-        // Fallback: buscar diretamente das vendas se tabela salva falhar
+        console.warn('Erro ao buscar produtos salvos:', errorProdutos);
+        // Buscar diretamente das vendas como fallback
         const { data: produtosDiretos, error: errorDiretos } = await supabase
           .from('vendas_pulseiras')
           .select(`
@@ -150,6 +148,7 @@ export const useRelatorioDados = (periodo: 'today' | 'week' | 'month') => {
 
         if (errorDiretos) {
           console.error('Erro ao buscar produtos diretamente:', errorDiretos);
+          setProdutosMaisVendidos([]);
         } else {
           console.log('Produtos encontrados diretamente:', produtosDiretos);
           // Processar dados diretos
@@ -174,7 +173,7 @@ export const useRelatorioDados = (periodo: 'today' | 'week' | 'month') => {
           setProdutosMaisVendidos(produtosArray.sort((a: any, b: any) => b.quantidade - a.quantidade));
         }
       } else {
-        console.log('Produtos mais vendidos salvos:', produtosSalvos);
+        console.log('Produtos mais vendidos salvos encontrados:', produtosSalvos?.length || 0);
         const produtosProcessados = produtosSalvos?.map(produto => ({
           id: produto.id,
           nome: produto.nome_produto,
@@ -184,7 +183,7 @@ export const useRelatorioDados = (periodo: 'today' | 'week' | 'month') => {
         setProdutosMaisVendidos(produtosProcessados);
       }
 
-      // Buscar vendas recentes para pedidos
+      // Buscar vendas recentes
       const { data: vendasRecentes, error: errorVendas } = await supabase
         .from('vendas_pulseiras')
         .select(`
@@ -202,6 +201,7 @@ export const useRelatorioDados = (periodo: 'today' | 'week' | 'month') => {
 
       if (errorVendas) {
         console.error('Erro ao buscar vendas recentes:', errorVendas);
+        setPedidosRecentes([]);
       } else {
         console.log('Vendas recentes encontradas:', vendasRecentes?.length || 0);
         const pedidosProcessados = vendasRecentes?.map(venda => ({
@@ -230,6 +230,8 @@ export const useRelatorioDados = (periodo: 'today' | 'week' | 'month') => {
       });
 
       console.log('=== DADOS FINAIS ATUALIZADOS ===');
+      console.log('Produtos vendidos:', produtosMaisVendidos.length);
+      console.log('Pedidos recentes:', pedidosRecentes.length);
 
     } catch (err) {
       console.error('Erro ao carregar dados do relatório:', err);
