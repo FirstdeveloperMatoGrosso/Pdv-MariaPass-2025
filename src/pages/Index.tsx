@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -94,11 +93,25 @@ const Index: React.FC = () => {
       
       // Atualizar estoque de cada produto no carrinho
       for (const item of cartItems) {
-        const newStock = item.estoque - item.quantity;
-        console.log(`Atualizando produto ${item.nome}: estoque atual ${item.estoque} - vendido ${item.quantity} = novo estoque ${newStock}`);
+        // Buscar o estoque atual do produto no banco de dados
+        const { data: currentProduct, error: fetchError } = await supabase
+          .from('produtos')
+          .select('estoque')
+          .eq('id', item.id)
+          .single();
+        
+        if (fetchError) {
+          console.error(`Erro ao buscar produto ${item.nome}:`, fetchError);
+          throw new Error(`Erro ao buscar produto ${item.nome}: ${fetchError.message}`);
+        }
+        
+        const currentStock = currentProduct.estoque;
+        const newStock = currentStock - item.quantity;
+        
+        console.log(`Atualizando produto ${item.nome}: estoque atual ${currentStock} - vendido ${item.quantity} = novo estoque ${newStock}`);
         
         if (newStock < 0) {
-          throw new Error(`Estoque insuficiente para o produto ${item.nome}`);
+          throw new Error(`Estoque insuficiente para o produto ${item.nome}. Disponível: ${currentStock}, solicitado: ${item.quantity}`);
         }
         
         const { data, error } = await supabase
@@ -116,7 +129,7 @@ const Index: React.FC = () => {
         }
         
         console.log(`Produto ${item.nome} atualizado com sucesso:`, data);
-        updates.push({ nome: item.nome, novoEstoque: newStock });
+        updates.push({ nome: item.nome, novoEstoque: newStock, vendido: item.quantity });
         
         // Verificar se o estoque está baixo (5 unidades ou menos)
         if (newStock <= 5 && newStock > 0) {
@@ -146,9 +159,14 @@ const Index: React.FC = () => {
       // Invalidar cache para atualizar a lista de produtos
       queryClient.invalidateQueries({ queryKey: ['produtos-totem'] });
       queryClient.invalidateQueries({ queryKey: ['categorias-produtos-ativos'] });
+      queryClient.invalidateQueries({ queryKey: ['estoque'] }); // Invalidar também a query do estoque
       
       const totalProdutos = updates.length;
-      toast.success(`✅ Estoque atualizado com sucesso para ${totalProdutos} produto(s)!`);
+      const resumo = updates.map(u => `${u.nome}: ${u.vendido} vendido(s), restam ${u.novoEstoque}`).join('\n');
+      
+      toast.success(`✅ Estoque atualizado com sucesso!\n\n${resumo}`, {
+        duration: 6000
+      });
     },
     onError: (error: Error) => {
       console.error('Erro ao atualizar estoque:', error);
