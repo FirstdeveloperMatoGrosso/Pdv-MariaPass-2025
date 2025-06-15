@@ -34,15 +34,25 @@ const CategoryForm: React.FC<CategoryFormProps> = ({ onSuccess }) => {
     mutationFn: async (categoryData: CategoryFormData) => {
       console.log('Criando categoria:', categoryData);
       
+      // Garantir que os dados estão no formato correto
+      const dataToInsert = {
+        nome: categoryData.nome.trim(),
+        descricao: categoryData.descricao?.trim() || null
+      };
+
+      console.log('Dados para inserir:', dataToInsert);
+      
       const { data, error } = await supabase
         .from('categorias')
-        .insert([categoryData]);
+        .insert([dataToInsert])
+        .select(); // Adicionar select para retornar os dados inseridos
       
       if (error) {
         console.error('Erro ao criar categoria:', error);
         throw error;
       }
       
+      console.log('Categoria criada com sucesso:', data);
       return data;
     },
     onSuccess: () => {
@@ -60,6 +70,12 @@ const CategoryForm: React.FC<CategoryFormProps> = ({ onSuccess }) => {
   });
 
   const onSubmit = (data: CategoryFormData) => {
+    // Validar se o nome não está vazio
+    if (!data.nome.trim()) {
+      toast.error('Nome da categoria é obrigatório');
+      return;
+    }
+    
     createCategoryMutation.mutate(data);
   };
 
@@ -81,6 +97,10 @@ const CategoryForm: React.FC<CategoryFormProps> = ({ onSuccess }) => {
             <FormField
               control={form.control}
               name="nome"
+              rules={{ 
+                required: 'Nome da categoria é obrigatório',
+                minLength: { value: 2, message: 'Nome deve ter pelo menos 2 caracteres' }
+              }}
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Nome da Categoria *</FormLabel>
