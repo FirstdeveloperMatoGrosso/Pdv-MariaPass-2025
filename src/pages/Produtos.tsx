@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Plus, Search, Edit, Trash2, Package, AlertCircle, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -279,7 +278,7 @@ const Produtos = () => {
       </Card>
 
       <ProductForm
-        open={showForm}
+        isOpen={showForm}
         onClose={() => setShowForm(false)}
         onProductCreated={() => {
           setShowForm(false);

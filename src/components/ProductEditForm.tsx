@@ -8,7 +8,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import {
   Select,
@@ -18,7 +17,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
-import { Edit, Upload, Link } from 'lucide-react';
+import { Upload, Link } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
@@ -27,7 +26,7 @@ interface Product {
   id: string;
   nome: string;
   preco: number;
-  codigo_barras: string;
+  codigo_barras?: string;
   categoria: string;
   estoque: number;
   status: string;
@@ -35,8 +34,10 @@ interface Product {
 }
 
 interface ProductEditFormProps {
-  product: Product;
-  onSuccess?: () => void;
+  open: boolean;
+  onClose: () => void;
+  product: Product | null;
+  onProductUpdated?: () => void;
 }
 
 interface Category {
@@ -45,20 +46,40 @@ interface Category {
   descricao: string;
 }
 
-const ProductEditForm: React.FC<ProductEditFormProps> = ({ product, onSuccess }) => {
-  const [open, setOpen] = useState(false);
+const ProductEditForm: React.FC<ProductEditFormProps> = ({ 
+  open, 
+  onClose, 
+  product, 
+  onProductUpdated 
+}) => {
   const [imageType, setImageType] = useState<'url' | 'upload'>('url');
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string>(product.imagem_url || '');
+  const [previewUrl, setPreviewUrl] = useState<string>('');
   const [formData, setFormData] = useState({
-    nome: product.nome,
-    preco: product.preco,
-    codigo_barras: product.codigo_barras || '',
-    categoria: product.categoria,
-    estoque: product.estoque,
-    status: product.status,
-    imagem_url: product.imagem_url || '',
+    nome: '',
+    preco: 0,
+    codigo_barras: '',
+    categoria: '',
+    estoque: 0,
+    status: 'ativo',
+    imagem_url: '',
   });
+
+  // Initialize form data when product changes
+  React.useEffect(() => {
+    if (product) {
+      setFormData({
+        nome: product.nome,
+        preco: product.preco,
+        codigo_barras: product.codigo_barras || '',
+        categoria: product.categoria,
+        estoque: product.estoque,
+        status: product.status,
+        imagem_url: product.imagem_url || '',
+      });
+      setPreviewUrl(product.imagem_url || '');
+    }
+  }, [product]);
 
   const queryClient = useQueryClient();
 
@@ -86,6 +107,8 @@ const ProductEditForm: React.FC<ProductEditFormProps> = ({ product, onSuccess })
 
   const updateProductMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
+      if (!product) return;
+      
       console.log('Atualizando produto:', product.id, data);
       
       let finalImageUrl = data.imagem_url;
@@ -154,9 +177,9 @@ const ProductEditForm: React.FC<ProductEditFormProps> = ({ product, onSuccess })
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['produtos'] });
       toast.success('Produto atualizado com sucesso!');
-      setOpen(false);
+      onClose();
       setUploadedFile(null);
-      onSuccess?.();
+      onProductUpdated?.();
     },
     onError: (error: any) => {
       console.error('Erro ao atualizar produto:', error);
@@ -166,6 +189,11 @@ const ProductEditForm: React.FC<ProductEditFormProps> = ({ product, onSuccess })
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!product) {
+      toast.error('Produto não encontrado');
+      return;
+    }
     
     if (!formData.nome || !formData.categoria || formData.preco <= 0) {
       toast.error('Preencha todos os campos obrigatórios');
@@ -210,13 +238,13 @@ const ProductEditForm: React.FC<ProductEditFormProps> = ({ product, onSuccess })
     setUploadedFile(null);
   };
 
+  // Don't render if no product
+  if (!product) {
+    return null;
+  }
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button size="sm" variant="outline" className="h-6 w-6 p-0">
-          <Edit className="w-3 h-3" />
-        </Button>
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-sm">Editar Produto</DialogTitle>
@@ -379,7 +407,7 @@ const ProductEditForm: React.FC<ProductEditFormProps> = ({ product, onSuccess })
             <Button 
               type="button" 
               variant="outline" 
-              onClick={() => setOpen(false)}
+              onClick={onClose}
               className="h-7 text-xs"
             >
               Cancelar
