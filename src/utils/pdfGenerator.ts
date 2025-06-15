@@ -42,8 +42,8 @@ export const generateReportPDF = (companyData: CompanyData, reportData: ReportDa
   const currentDate = new Date().toLocaleDateString('pt-BR');
   
   // Cores
-  const primaryColor = [34, 197, 94]; // Verde
-  const secondaryColor = [75, 85, 99]; // Cinza
+  const primaryColor: [number, number, number] = [34, 197, 94]; // Verde
+  const secondaryColor: [number, number, number] = [75, 85, 99]; // Cinza
   
   // Header com logo e dados da empresa
   doc.setFillColor(...primaryColor);
