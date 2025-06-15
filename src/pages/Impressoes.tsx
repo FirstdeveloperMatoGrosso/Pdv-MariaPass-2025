@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -69,7 +68,7 @@ const Impressoes: React.FC = () => {
   const { data: printJobs = [], isLoading, error, refetch } = useQuery({
     queryKey: ['impressoes'],
     queryFn: async () => {
-      console.log('Buscando impressões realizadas...');
+      console.log('🔍 Buscando impressões realizadas...');
       
       const { data, error } = await supabase
         .from('impressoes')
@@ -77,12 +76,12 @@ const Impressoes: React.FC = () => {
         .order('created_at', { ascending: false });
       
       if (error) {
-        console.error('Erro ao buscar impressões:', error);
+        console.error('❌ Erro ao buscar impressões:', error);
         throw error;
       }
       
-      console.log('Impressões encontradas:', data?.length || 0);
-      console.log('Dados das impressões:', data);
+      console.log('✅ Impressões encontradas:', data?.length || 0);
+      console.log('📋 Dados das impressões:', data);
       return data || [];
     },
   });
@@ -90,7 +89,7 @@ const Impressoes: React.FC = () => {
   // Mutation para reenviar impressão
   const retryPrintMutation = useMutation({
     mutationFn: async (id: string) => {
-      console.log('Reenviando impressão:', id);
+      console.log('🔄 Reenviando impressão:', id);
       
       const { error } = await supabase
         .from('impressoes')
@@ -106,10 +105,10 @@ const Impressoes: React.FC = () => {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['impressoes'] });
       toast.success('Reimpressão solicitada com sucesso!');
-      console.log('Reimpressão solicitada para ID:', data.id);
+      console.log('✅ Reimpressão solicitada para ID:', data.id);
     },
     onError: (error) => {
-      console.error('Erro ao reenviar impressão:', error);
+      console.error('❌ Erro ao reenviar impressão:', error);
       toast.error('Erro ao solicitar reimpressão');
     },
   });
@@ -117,39 +116,44 @@ const Impressoes: React.FC = () => {
   // Mutation para teste de impressão
   const testPrintMutation = useMutation({
     mutationFn: async () => {
-      const testId = 'TEST-' + Date.now();
-      console.log('Enviando teste de impressão:', testId);
+      const testId = `TESTE-${Date.now()}`;
+      console.log('🖨️ Enviando teste de impressão com ID:', testId);
+      
+      const impressaoData = {
+        pedido_id: testId,
+        tipo: 'teste',
+        impressora: 'Impressora Principal',
+        status: 'concluido',
+        paginas: 1,
+        copias: 1,
+        usuario: 'Sistema Teste',
+        data_impressao: new Date().toISOString()
+      };
+      
+      console.log('📋 Dados do teste de impressão:', impressaoData);
       
       const { data, error } = await supabase
         .from('impressoes')
-        .insert({
-          pedido_id: testId,
-          tipo: 'comprovante',
-          impressora: 'Impressora Principal',
-          status: 'pendente',
-          paginas: 1,
-          copias: 1,
-          usuario: 'Sistema'
-        })
+        .insert(impressaoData)
         .select()
         .single();
       
       if (error) {
-        console.error('Erro ao inserir teste:', error);
+        console.error('❌ Erro ao inserir teste:', error);
         throw error;
       }
       
-      console.log('Teste de impressão inserido:', data);
+      console.log('✅ Teste de impressão inserido com sucesso:', data);
       return data;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['impressoes'] });
-      toast.success(`Teste de impressão enviado! ID: ${data.pedido_id}`);
-      console.log('Teste de impressão criado com sucesso:', data);
+      toast.success(`✅ Teste de impressão enviado! ID: ${data.pedido_id}`);
+      console.log('🎉 Teste de impressão criado com sucesso:', data);
     },
     onError: (error) => {
-      console.error('Erro ao enviar teste:', error);
-      toast.error('Erro ao enviar teste de impressão: ' + error.message);
+      console.error('💥 Erro ao enviar teste:', error);
+      toast.error('❌ Erro ao enviar teste de impressão: ' + error.message);
     },
   });
 
@@ -182,6 +186,7 @@ const Impressoes: React.FC = () => {
       case 'voucher': return 'Voucher';
       case 'relatorio': return 'Relatório';
       case 'ticket': return 'Ticket';
+      case 'teste': return 'Teste';
       default: return type;
     }
   };
@@ -191,7 +196,8 @@ const Impressoes: React.FC = () => {
       comprovante: 'bg-blue-50 text-blue-700 border-blue-200',
       voucher: 'bg-purple-50 text-purple-700 border-purple-200',
       relatorio: 'bg-orange-50 text-orange-700 border-orange-200',
-      ticket: 'bg-green-50 text-green-700 border-green-200'
+      ticket: 'bg-green-50 text-green-700 border-green-200',
+      teste: 'bg-gray-50 text-gray-700 border-gray-200'
     };
     
     return (
@@ -202,12 +208,12 @@ const Impressoes: React.FC = () => {
   };
 
   const retryPrint = (jobId: string) => {
-    console.log('Solicitando reimpressão para:', jobId);
+    console.log('🔄 Solicitando reimpressão para:', jobId);
     retryPrintMutation.mutate(jobId);
   };
 
   const testPrint = () => {
-    console.log('Iniciando teste de impressão...');
+    console.log('🖨️ Iniciando teste de impressão...');
     testPrintMutation.mutate();
   };
 
