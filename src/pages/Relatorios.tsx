@@ -1,64 +1,48 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { 
-  BarChart3, 
-  TrendingUp, 
-  DollarSign, 
-  Package,
-  Calendar,
-  Download,
-  RefreshCw,
-  AlertCircle
-} from 'lucide-react';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { BarChart3, TrendingUp, DollarSign, Package, Calendar, Download, RefreshCw, AlertCircle } from 'lucide-react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import ExportModal from '@/components/ExportModal';
 import GraficoVendas from '@/components/GraficoVendas';
 import { useRelatorioDados } from '@/hooks/useRelatorioDados';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-
 const Relatorios: React.FC = () => {
   const [selectedPeriod, setSelectedPeriod] = useState<'today' | 'week' | 'month'>('today');
   const [exportModalOpen, setExportModalOpen] = useState(false);
-
-  const { 
-    dados, 
-    produtosMaisVendidos, 
-    pedidosRecentes, 
-    loading, 
-    error, 
-    refetch 
+  const {
+    dados,
+    produtosMaisVendidos,
+    pedidosRecentes,
+    loading,
+    error,
+    refetch
   } = useRelatorioDados(selectedPeriod);
-
   const getPeriodLabel = (period: string) => {
     switch (period) {
-      case 'today': return 'Hoje';
-      case 'week': return 'Esta Semana';
-      case 'month': return 'Este Mês';
-      default: return period;
+      case 'today':
+        return 'Hoje';
+      case 'week':
+        return 'Esta Semana';
+      case 'month':
+        return 'Este Mês';
+      default:
+        return period;
     }
   };
-
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency: 'BRL'
     }).format(value);
   };
-
   const formatTime = (dateString: string) => {
     try {
-      return format(new Date(dateString), 'HH:mm', { locale: ptBR });
+      return format(new Date(dateString), 'HH:mm', {
+        locale: ptBR
+      });
     } catch {
       return '--:--';
     }
@@ -70,10 +54,8 @@ const Relatorios: React.FC = () => {
     valor: produto.receita,
     periodo: selectedPeriod
   }));
-
   if (error) {
-    return (
-      <div className="min-h-screen p-1">
+    return <div className="min-h-screen p-1">
         <div className="flex items-center justify-center min-h-[400px]">
           <Card className="w-full max-w-md">
             <CardContent className="p-3 text-center">
@@ -87,12 +69,9 @@ const Relatorios: React.FC = () => {
             </CardContent>
           </Card>
         </div>
-      </div>
-    );
+      </div>;
   }
-
-  return (
-    <div className="min-h-screen p-1 space-y-1">
+  return <div className="min-h-screen p-1 space-y-1">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1">
         <div className="flex items-center space-x-1">
@@ -101,30 +80,16 @@ const Relatorios: React.FC = () => {
         </div>
         <div className="flex items-center space-x-1">
           <Calendar className="w-3 h-3 text-gray-500" />
-          <select 
-            value={selectedPeriod}
-            onChange={(e) => setSelectedPeriod(e.target.value as 'today' | 'week' | 'month')}
-            className="border rounded-md px-1 py-0.5 text-xs h-6"
-            disabled={loading}
-          >
+          <select value={selectedPeriod} onChange={e => setSelectedPeriod(e.target.value as 'today' | 'week' | 'month')} className="border rounded-md px-1 py-0.5 text-xs h-6" disabled={loading}>
             <option value="today">Hoje</option>
             <option value="week">Esta Semana</option>
             <option value="month">Este Mês</option>
           </select>
-          <Button 
-            variant="outline" 
-            className="flex items-center space-x-1 h-6 text-xs px-1"
-            onClick={refetch}
-            disabled={loading}
-          >
+          <Button variant="outline" className="flex items-center space-x-1 h-6 text-xs px-1" onClick={refetch} disabled={loading}>
             <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
             <span>Atualizar</span>
           </Button>
-          <Button 
-            className="flex items-center space-x-1 bg-blue-600 hover:bg-blue-700 h-6 text-xs px-2"
-            onClick={() => setExportModalOpen(true)}
-            disabled={loading}
-          >
+          <Button className="flex items-center space-x-1 bg-blue-600 hover:bg-blue-700 h-6 text-xs px-2" onClick={() => setExportModalOpen(true)} disabled={loading}>
             <Download className="w-3 h-3" />
             <span>Exportar</span>
           </Button>
@@ -202,18 +167,13 @@ const Relatorios: React.FC = () => {
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          {loading ? (
-            <div className="p-2 text-center">
+          {loading ? <div className="p-2 text-center">
               <RefreshCw className="w-4 h-4 animate-spin mx-auto mb-1" />
               <p className="text-xs text-gray-500">Carregando vendas...</p>
-            </div>
-          ) : pedidosRecentes.length === 0 ? (
-            <div className="p-2 text-center">
+            </div> : pedidosRecentes.length === 0 ? <div className="p-2 text-center">
               <Package className="w-6 h-6 text-gray-400 mx-auto mb-1" />
               <p className="text-xs text-gray-500">Nenhuma venda no período</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
+            </div> : <div className="overflow-x-auto">
               <Table>
                 <TableHeader className="bg-gray-50">
                   <TableRow>
@@ -226,20 +186,12 @@ const Relatorios: React.FC = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {pedidosRecentes.map((pedido) => (
-                    <TableRow key={pedido.id} className="h-8">
+                  {pedidosRecentes.map(pedido => <TableRow key={pedido.id} className="h-8">
                       <TableCell className="p-1">
                         <div className="flex items-center space-x-2">
-                          {pedido.produtoImagem && (
-                            <img 
-                              src={pedido.produtoImagem} 
-                              alt={pedido.produtoNome}
-                              className="w-6 h-6 object-cover rounded"
-                              onError={(e) => {
-                                e.currentTarget.style.display = 'none';
-                              }}
-                            />
-                          )}
+                          {pedido.produtoImagem && <img src={pedido.produtoImagem} alt={pedido.produtoNome} className="w-6 h-6 object-cover rounded" onError={e => {
+                      e.currentTarget.style.display = 'none';
+                    }} />}
                           <span className="text-xs truncate max-w-[100px]">
                             {pedido.produtoNome || 'Produto não identificado'}
                           </span>
@@ -258,138 +210,43 @@ const Relatorios: React.FC = () => {
                         {formatCurrency(pedido.valorTotal)}
                       </TableCell>
                       <TableCell className="p-1">
-                        <Badge 
-                          variant="outline"
-                          className="text-xs px-1 py-0"
-                        >
+                        <Badge variant="outline" className="text-xs px-1 py-0">
                           {pedido.formaPagamento}
                         </Badge>
                       </TableCell>
-                    </TableRow>
-                  ))}
+                    </TableRow>)}
                 </TableBody>
               </Table>
-            </div>
-          )}
+            </div>}
         </CardContent>
       </Card>
 
       {/* Gráfico de Vendas por Produto */}
-      {!loading && dadosGraficoVendas.length > 0 && (
-        <div className="mb-1">
-          <GraficoVendas
-            dados={dadosGraficoVendas}
-            tipo="bar"
-            titulo="Receita por Produto"
-            corPrimaria="#10b981"
-          />
-        </div>
-      )}
+      {!loading && dadosGraficoVendas.length > 0 && <div className="mb-1">
+          <GraficoVendas dados={dadosGraficoVendas} tipo="bar" titulo="Receita por Produto" corPrimaria="#10b981" />
+        </div>}
 
       {/* Lista Completa de Produtos Vendidos */}
       <Card>
-        <CardHeader className="p-1.5">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-xs font-semibold text-gray-800">Produtos Vendidos</CardTitle>
-            <Badge variant="outline" className="text-xs px-1 py-0">
-              {produtosMaisVendidos.length} produtos
-            </Badge>
-          </div>
-        </CardHeader>
+        
         <CardContent className="p-0">
-          {loading ? (
-            <div className="p-2 text-center">
+          {loading ? <div className="p-2 text-center">
               <RefreshCw className="w-4 h-4 animate-spin mx-auto mb-1" />
               <p className="text-xs text-gray-500">Carregando produtos...</p>
-            </div>
-          ) : produtosMaisVendidos.length === 0 ? (
-            <div className="p-2 text-center">
+            </div> : produtosMaisVendidos.length === 0 ? <div className="p-2 text-center">
               <Package className="w-6 h-6 text-gray-400 mx-auto mb-1" />
               <p className="text-xs text-gray-500">Nenhum produto vendido no período</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto mb-1">
-              <Table>
-                <TableHeader className="bg-gray-50">
-                  <TableRow>
-                    <TableHead className="h-6 text-xs px-2">Produto</TableHead>
-                    <TableHead className="h-6 text-xs px-2">Quantidade</TableHead>
-                    <TableHead className="h-6 text-xs px-2">Preço Médio</TableHead>
-                    <TableHead className="h-6 text-xs px-2">Receita Total</TableHead>
-                    <TableHead className="h-6 text-xs px-2">Participação</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {produtosMaisVendidos.map((produto, index) => {
-                    const precoMedio = produto.quantidade > 0 ? produto.receita / produto.quantidade : 0;
-                    const receitaTotal = dados?.faturamentoTotal || 0;
-                    const participacao = receitaTotal > 0 ? (produto.receita / receitaTotal) * 100 : 0;
-                    
-                    return (
-                      <TableRow key={produto.id} className="h-8">
-                        <TableCell className="font-medium p-1 text-xs">
-                          <div className="flex items-center space-x-2">
-                            <Badge 
-                              variant="outline" 
-                              className="text-xs px-1 py-0"
-                            >
-                              #{index + 1}
-                            </Badge>
-                            {produto.imagem_url && (
-                              <img 
-                                src={produto.imagem_url} 
-                                alt={produto.nome}
-                                className="w-6 h-6 object-cover rounded"
-                                onError={(e) => {
-                                  e.currentTarget.style.display = 'none';
-                                }}
-                              />
-                            )}
-                            <span className="truncate max-w-[120px]">{produto.nome}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="p-1 text-xs">
-                          <Badge variant="secondary" className="text-xs px-1 py-0">
-                            {produto.quantidade}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="p-1 text-xs text-blue-600">
-                          {formatCurrency(precoMedio)}
-                        </TableCell>
-                        <TableCell className="text-green-600 font-bold p-1 text-xs">
-                          {formatCurrency(produto.receita)}
-                        </TableCell>
-                        <TableCell className="p-1 text-xs">
-                          <div className="flex items-center space-x-1">
-                            <div className="w-8 bg-gray-200 rounded-full h-1.5">
-                              <div 
-                                className="bg-green-600 h-1.5 rounded-full"
-                                style={{ width: `${Math.min(participacao, 100)}%` }}
-                              ></div>
-                            </div>
-                            <span className="text-xs text-gray-600">
-                              {participacao.toFixed(1)}%
-                            </span>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </div>
-          )}
+            </div> : <div className="overflow-x-auto mb-1">
+              
+            </div>}
         </CardContent>
       </Card>
 
-      <ExportModal
-        open={exportModalOpen}
-        onClose={() => setExportModalOpen(false)}
-        reportData={dados || { total: 0, orders: 0, avgTicket: 0 }}
-        period={getPeriodLabel(selectedPeriod)}
-      />
-    </div>
-  );
+      <ExportModal open={exportModalOpen} onClose={() => setExportModalOpen(false)} reportData={dados || {
+      total: 0,
+      orders: 0,
+      avgTicket: 0
+    }} period={getPeriodLabel(selectedPeriod)} />
+    </div>;
 };
-
 export default Relatorios;
