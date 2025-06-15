@@ -87,14 +87,15 @@ const Index: React.FC = () => {
     },
   });
 
-  // Mutation para atualizar estoque dos produtos
-  const updateProductStockMutation = useMutation({
+  // Mutation para registrar vendas e atualizar estoque
+  const processOrderMutation = useMutation({
     mutationFn: async (cartItems: TotemCartItem[]) => {
-      console.log('Iniciando atualização de estoque dos produtos:', cartItems);
+      console.log('Iniciando processamento do pedido:', cartItems);
       
-      const updates = [];
+      const salesRecords = [];
+      const stockUpdates = [];
       
-      // Atualizar estoque de cada produto no carrinho
+      // Processar cada item do carrinho
       for (const item of cartItems) {
         // Buscar o estoque atual do produto no banco de dados
         const { data: currentProduct, error: fetchError } = await supabase
@@ -111,35 +112,66 @@ const Index: React.FC = () => {
         const currentStock = currentProduct.estoque;
         const newStock = currentStock - item.quantity;
         
-        console.log(`Atualizando produto ${item.nome}: estoque atual ${currentStock} - vendido ${item.quantity} = novo estoque ${newStock}`);
+        console.log(`Processando produto ${item.nome}: estoque atual ${currentStock} - vendido ${item.quantity} = novo estoque ${newStock}`);
         
         if (newStock < 0) {
           throw new Error(`Estoque insuficiente para o produto ${item.nome}. Disponível: ${currentStock}, solicitado: ${item.quantity}`);
         }
         
-        const { data, error } = await supabase
+        // Preparar registro de venda
+        const saleRecord = {
+          produto_id: item.id,
+          quantidade: item.quantity,
+          valor_unitario: item.preco,
+          valor_total: item.preco * item.quantity,
+          forma_pagamento: 'Pulseira',
+          numero_autorizacao: `VEN-${Date.now()}-${item.id.slice(0, 6)}`,
+          data_venda: new Date().toISOString()
+        };
+        
+        salesRecords.push(saleRecord);
+        stockUpdates.push({ 
+          id: item.id, 
+          nome: item.nome, 
+          novoEstoque: newStock, 
+          vendido: item.quantity 
+        });
+      }
+
+      // Registrar todas as vendas na tabela vendas_pulseiras
+      console.log('Registrando vendas:', salesRecords);
+      const { error: salesError } = await supabase
+        .from('vendas_pulseiras')
+        .insert(salesRecords);
+
+      if (salesError) {
+        console.error('Erro ao registrar vendas:', salesError);
+        throw new Error(`Erro ao registrar vendas: ${salesError.message}`);
+      }
+
+      // Atualizar estoque de todos os produtos
+      for (const update of stockUpdates) {
+        const { error: stockError } = await supabase
           .from('produtos')
           .update({ 
-            estoque: newStock,
+            estoque: update.novoEstoque,
             updated_at: new Date().toISOString()
           })
-          .eq('id', item.id)
-          .select('nome, estoque');
+          .eq('id', update.id);
         
-        if (error) {
-          console.error(`Erro ao atualizar estoque do produto ${item.nome}:`, error);
-          throw new Error(`Erro ao atualizar estoque do produto ${item.nome}: ${error.message}`);
+        if (stockError) {
+          console.error(`Erro ao atualizar estoque do produto ${update.nome}:`, stockError);
+          throw new Error(`Erro ao atualizar estoque do produto ${update.nome}: ${stockError.message}`);
         }
-        
-        console.log(`Produto ${item.nome} atualizado com sucesso:`, data);
-        updates.push({ nome: item.nome, novoEstoque: newStock, vendido: item.quantity });
+
+        console.log(`Produto ${update.nome} - estoque atualizado para ${update.novoEstoque}`);
         
         // Verificar se o estoque está baixo (5 unidades ou menos)
-        if (newStock <= 5 && newStock > 0) {
+        if (update.novoEstoque <= 5 && update.novoEstoque > 0) {
           showAlert({
             type: 'warning',
             title: '⚠️ ALERTA DE ESTOQUE BAIXO',
-            message: `Produto "${item.nome}" está com estoque baixo (${newStock} unidades restantes)!`,
+            message: `Produto "${update.nome}" está com estoque baixo (${update.novoEstoque} unidades restantes)!`,
             duration: 8000,
             actions: [{
               label: 'Reabastecer',
@@ -147,11 +179,11 @@ const Index: React.FC = () => {
               variant: 'default'
             }]
           });
-        } else if (newStock === 0) {
+        } else if (update.novoEstoque === 0) {
           showAlert({
             type: 'error',
             title: '🚨 PRODUTO ESGOTADO',
-            message: `"${item.nome}" não possui mais estoque disponível!`,
+            message: `"${update.nome}" não possui mais estoque disponível!`,
             duration: 10000,
             actions: [{
               label: 'Gerenciar Estoque',
@@ -162,31 +194,33 @@ const Index: React.FC = () => {
         }
       }
       
-      console.log('Todos os produtos foram atualizados:', updates);
-      return updates;
+      console.log('Pedido processado com sucesso. Vendas registradas e estoque atualizado.');
+      return { salesRecords, stockUpdates };
     },
-    onSuccess: (updates) => {
-      console.log('Estoque atualizado com sucesso para todos os produtos:', updates);
+    onSuccess: ({ salesRecords, stockUpdates }) => {
+      console.log('Pedido processado com sucesso:', { salesRecords, stockUpdates });
+      
       // Invalidar cache para atualizar a lista de produtos
       queryClient.invalidateQueries({ queryKey: ['produtos-totem'] });
       queryClient.invalidateQueries({ queryKey: ['categorias-produtos-ativos'] });
-      queryClient.invalidateQueries({ queryKey: ['estoque'] }); // Invalidar também a query do estoque
+      queryClient.invalidateQueries({ queryKey: ['estoque'] });
       
-      const totalProdutos = updates.length;
-      const resumo = updates.map(u => `${u.nome}: ${u.vendido} vendido(s), restam ${u.novoEstoque}`).join('\n');
+      const totalProdutos = stockUpdates.length;
+      const totalVendas = salesRecords.length;
+      const resumo = stockUpdates.map(u => `${u.nome}: ${u.vendido} vendido(s), restam ${u.novoEstoque}`).join('\n');
       
       showAlert({
         type: 'success',
-        title: '✅ Estoque Atualizado',
-        message: `Estoque atualizado com sucesso!\n\n${resumo}`,
+        title: '✅ Venda Finalizada',
+        message: `${totalVendas} item(ns) vendido(s) com sucesso!\n\n${resumo}`,
         duration: 6000
       });
     },
     onError: (error: Error) => {
-      console.error('Erro ao atualizar estoque:', error);
+      console.error('Erro ao processar pedido:', error);
       showAlert({
         type: 'error',
-        title: '❌ Erro ao Atualizar Estoque',
+        title: '❌ Erro ao Processar Venda',
         message: error.message,
         duration: 8000
       });
@@ -298,22 +332,16 @@ const Index: React.FC = () => {
   const handlePrintClose = () => {
     setShowPrintSimulator(false);
     
-    console.log('Iniciando finalização da venda e atualização do estoque...');
+    console.log('Iniciando finalização da venda e registro no sistema...');
     
-    // Atualizar estoque dos produtos vendidos
+    // Processar pedido: registrar vendas e atualizar estoque
     if (cart.length > 0) {
-      updateProductStockMutation.mutate(cart);
+      processOrderMutation.mutate(cart);
     }
     
     // Limpar carrinho e order ID
     setCart([]);
     setCurrentOrderId('');
-    showAlert({
-      type: 'success',
-      title: '🎉 Venda Finalizada',
-      message: 'Venda finalizada com sucesso!',
-      duration: 3000
-    });
   };
 
   const handleBarcodeProductScanned = (product: any) => {
