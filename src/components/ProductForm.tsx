@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -182,28 +183,28 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSuccess }) => {
   return (
     <Dialog open={open} onOpenChange={handleDialogChange}>
       <DialogTrigger asChild>
-        <Button className="flex items-center space-x-2">
-          <Plus className="w-4 h-4" />
+        <Button className="flex items-center space-x-1 text-xs h-7 px-2">
+          <Plus className="w-3 h-3" />
           <span>Novo Produto</span>
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Adicionar Novo Produto</DialogTitle>
+      <DialogContent className="max-w-xs sm:max-w-sm md:max-w-md max-h-[95vh] overflow-y-auto p-3">
+        <DialogHeader className="pb-2">
+          <DialogTitle className="text-sm font-semibold">Adicionar Novo Produto</DialogTitle>
         </DialogHeader>
         
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-2">
             <FormField
               control={form.control}
               name="nome"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Nome do Produto *</FormLabel>
+                  <FormLabel className="text-xs">Nome do Produto *</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="Digite o nome do produto" required />
+                    <Input {...field} placeholder="Digite o nome do produto" required className="h-7 text-xs" />
                   </FormControl>
-                  <FormMessage />
+                  <FormMessage className="text-xs" />
                 </FormItem>
               )}
             />
@@ -213,11 +214,11 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSuccess }) => {
               name="descricao"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Descrição</FormLabel>
+                  <FormLabel className="text-xs">Descrição</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="Digite a descrição do produto" />
+                    <Input {...field} placeholder="Digite a descrição do produto" className="h-7 text-xs" />
                   </FormControl>
-                  <FormMessage />
+                  <FormMessage className="text-xs" />
                 </FormItem>
               )}
             />
@@ -227,7 +228,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSuccess }) => {
               name="categoria"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Categoria *</FormLabel>
+                  <FormLabel className="text-xs">Categoria *</FormLabel>
                   <FormControl>
                     <Select 
                       value={field.value} 
@@ -237,7 +238,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSuccess }) => {
                       }}
                       disabled={categoriesLoading}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="h-7 text-xs">
                         <SelectValue placeholder={categoriesLoading ? "Carregando..." : "Selecione uma categoria"} />
                       </SelectTrigger>
                       <SelectContent>
@@ -247,7 +248,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSuccess }) => {
                           </SelectItem>
                         ) : (
                           categories.map((category) => (
-                            <SelectItem key={category.id} value={category.nome}>
+                            <SelectItem key={category.id} value={category.nome} className="text-xs">
                               {category.nome}
                             </SelectItem>
                           ))
@@ -255,9 +256,9 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSuccess }) => {
                       </SelectContent>
                     </Select>
                   </FormControl>
-                  <FormMessage />
+                  <FormMessage className="text-xs" />
                   {categories.length === 0 && !categoriesLoading && (
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-gray-500 mt-0.5">
                       Crie uma categoria primeiro usando o botão "Nova Categoria"
                     </p>
                   )}
@@ -270,24 +271,24 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSuccess }) => {
               name="tipo_venda"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Tipo de Venda *</FormLabel>
+                  <FormLabel className="text-xs">Tipo de Venda *</FormLabel>
                   <FormControl>
                     <RadioGroup
                       value={field.value}
                       onValueChange={field.onChange}
-                      className="flex gap-4"
+                      className="flex gap-3"
                     >
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="unidade" id="unidade" />
-                        <Label htmlFor="unidade">Unidade</Label>
+                      <div className="flex items-center space-x-1">
+                        <RadioGroupItem value="unidade" id="unidade" className="w-3 h-3" />
+                        <Label htmlFor="unidade" className="text-xs">Unidade</Label>
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="caixa" id="caixa" />
-                        <Label htmlFor="caixa">Caixa</Label>
+                      <div className="flex items-center space-x-1">
+                        <RadioGroupItem value="caixa" id="caixa" className="w-3 h-3" />
+                        <Label htmlFor="caixa" className="text-xs">Caixa</Label>
                       </div>
                     </RadioGroup>
                   </FormControl>
-                  <FormMessage />
+                  <FormMessage className="text-xs" />
                 </FormItem>
               )}
             />
@@ -298,7 +299,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSuccess }) => {
                 name="unidades_por_caixa"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Unidades por Caixa *</FormLabel>
+                    <FormLabel className="text-xs">Unidades por Caixa *</FormLabel>
                     <FormControl>
                       <Input 
                         {...field} 
@@ -307,76 +308,96 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSuccess }) => {
                         placeholder="Ex: 12"
                         onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
                         required={tipoVenda === 'caixa'}
+                        className="h-7 text-xs"
                       />
                     </FormControl>
-                    <FormMessage />
+                    <FormMessage className="text-xs" />
                   </FormItem>
                 )}
               />
             )}
 
-            <FormField
-              control={form.control}
-              name="preco"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>
-                    Preço (R$) *
-                    {tipoVenda === 'caixa' && ' - Por Caixa'}
-                    {tipoVenda === 'unidade' && ' - Por Unidade'}
-                  </FormLabel>
-                  <FormControl>
-                    <Input 
-                      {...field} 
-                      type="number" 
-                      step="0.01"
-                      min="0"
-                      placeholder="0.00"
-                      onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                      required
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="grid grid-cols-2 gap-2">
+              <FormField
+                control={form.control}
+                name="preco"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-xs">
+                      Preço (R$) *
+                      {tipoVenda === 'caixa' && ' - Por Caixa'}
+                      {tipoVenda === 'unidade' && ' - Por Unidade'}
+                    </FormLabel>
+                    <FormControl>
+                      <Input 
+                        {...field} 
+                        type="number" 
+                        step="0.01"
+                        min="0"
+                        placeholder="0.00"
+                        onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                        required
+                        className="h-7 text-xs"
+                      />
+                    </FormControl>
+                    <FormMessage className="text-xs" />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="estoque"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-xs">
+                      Qtd Estoque *
+                      {tipoVenda === 'caixa' && ' - Caixas'}
+                      {tipoVenda === 'unidade' && ' - Unidades'}
+                    </FormLabel>
+                    <FormControl>
+                      <Input 
+                        {...field} 
+                        type="number"
+                        min="0"
+                        placeholder="0"
+                        onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                        required
+                        className="h-7 text-xs"
+                      />
+                    </FormControl>
+                    <FormMessage className="text-xs" />
+                  </FormItem>
+                )}
+              />
+            </div>
 
             <FormField
               control={form.control}
-              name="estoque"
+              name="codigo_barras"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>
-                    Quantidade em Estoque *
-                    {tipoVenda === 'caixa' && ' - Caixas'}
-                    {tipoVenda === 'unidade' && ' - Unidades'}
-                  </FormLabel>
+                  <FormLabel className="text-xs">Código de Barras</FormLabel>
                   <FormControl>
-                    <Input 
-                      {...field} 
-                      type="number"
-                      min="0"
-                      placeholder="0"
-                      onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
-                      required
-                    />
+                    <Input {...field} placeholder="Digite o código de barras" className="h-7 text-xs" />
                   </FormControl>
-                  <FormMessage />
+                  <FormMessage className="text-xs" />
                 </FormItem>
               )}
             />
 
             {/* Seção de Imagem */}
-            <div className="space-y-2">
-              <Label>Imagem do Produto</Label>
-              <div className="flex gap-2">
+            <div className="space-y-1">
+              <Label className="text-xs">Imagem do Produto</Label>
+              <div className="flex gap-1">
                 <Button
                   type="button"
                   variant={imageType === 'url' ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setImageType('url')}
+                  className="h-6 px-2 text-xs"
                 >
-                  <Link className="w-4 h-4 mr-1" />
+                  <Link className="w-3 h-3 mr-1" />
                   URL
                 </Button>
                 <Button
@@ -384,8 +405,9 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSuccess }) => {
                   variant={imageType === 'upload' ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setImageType('upload')}
+                  className="h-6 px-2 text-xs"
                 >
-                  <Upload className="w-4 h-4 mr-1" />
+                  <Upload className="w-3 h-3 mr-1" />
                   Upload
                 </Button>
               </div>
@@ -395,31 +417,33 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSuccess }) => {
                   placeholder="Cole a URL da imagem aqui"
                   value={form.watch('imagem_url') || ''}
                   onChange={(e) => handleUrlChange(e.target.value)}
+                  className="h-7 text-xs"
                 />
               ) : (
                 <Input
                   type="file"
                   accept="image/*"
                   onChange={handleFileChange}
+                  className="h-7 text-xs"
                 />
               )}
 
               {previewUrl && (
-                <div className="mt-2">
+                <div className="mt-1">
                   <img 
                     src={previewUrl} 
                     alt="Preview" 
-                    className="w-full h-32 object-cover rounded-md border"
+                    className="w-full h-20 object-cover rounded border"
                   />
                 </div>
               )}
             </div>
 
-            <div className="flex gap-2">
-              <Button type="submit" disabled={createProductMutation.isPending} className="flex-1">
+            <div className="flex gap-1 pt-2">
+              <Button type="submit" disabled={createProductMutation.isPending} className="flex-1 h-7 text-xs">
                 {createProductMutation.isPending ? 'Criando...' : 'Criar Produto'}
               </Button>
-              <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+              <Button type="button" variant="outline" onClick={() => setOpen(false)} className="h-7 text-xs px-2">
                 Cancelar
               </Button>
             </div>
