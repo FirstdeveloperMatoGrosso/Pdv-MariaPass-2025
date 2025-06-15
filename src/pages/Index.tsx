@@ -275,9 +275,9 @@ const Index: React.FC = () => {
                             size="sm" 
                             variant="outline"
                             onClick={() => removeFromCart(product.id)}
-                            className="h-6 w-6 p-0 border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700 hover:border-red-400"
+                            className="w-8 h-8 sm:w-9 sm:h-9 p-0 border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700 hover:border-red-400 flex items-center justify-center flex-shrink-0"
                           >
-                            <Minus className="w-3 h-3" />
+                            <Minus className="w-4 h-4" />
                           </Button>
                           <Badge variant="secondary" className="text-[10px] sm:text-xs">{quantity}</Badge>
                         </div>
