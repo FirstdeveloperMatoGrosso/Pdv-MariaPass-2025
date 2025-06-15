@@ -12,34 +12,46 @@ export type Database = {
       cancelamentos: {
         Row: {
           aprovado: boolean | null
+          cliente_nome: string | null
           created_at: string
           data_cancelamento: string
           id: string
           motivo: string
+          numero_pedido: string | null
           observacoes: string | null
+          operador: string | null
           pedido_id: string | null
+          produto_nome: string | null
           responsavel: string
           valor_cancelado: number
         }
         Insert: {
           aprovado?: boolean | null
+          cliente_nome?: string | null
           created_at?: string
           data_cancelamento?: string
           id?: string
           motivo: string
+          numero_pedido?: string | null
           observacoes?: string | null
+          operador?: string | null
           pedido_id?: string | null
+          produto_nome?: string | null
           responsavel: string
           valor_cancelado: number
         }
         Update: {
           aprovado?: boolean | null
+          cliente_nome?: string | null
           created_at?: string
           data_cancelamento?: string
           id?: string
           motivo?: string
+          numero_pedido?: string | null
           observacoes?: string | null
+          operador?: string | null
           pedido_id?: string | null
+          produto_nome?: string | null
           responsavel?: string
           valor_cancelado?: number
         }

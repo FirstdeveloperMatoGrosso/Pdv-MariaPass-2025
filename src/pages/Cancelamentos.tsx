@@ -7,11 +7,11 @@ import { Badge } from '@/components/ui/badge';
 import { 
   XCircle, 
   Search,
-  Calendar,
   DollarSign,
-  User,
   AlertTriangle,
-  CheckCircle
+  CheckCircle,
+  RefreshCw,
+  Loader2
 } from 'lucide-react';
 import {
   Table,
@@ -21,105 +21,100 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { toast } from 'sonner';
-
-interface Cancellation {
-  id: string;
-  orderId: string;
-  customerName: string;
-  amount: number;
-  reason: string;
-  date: string;
-  status: 'pending' | 'approved' | 'rejected';
-  operator: string;
-}
+import { useCancelamentos } from '@/hooks/useCancelamentos';
 
 const Cancelamentos: React.FC = () => {
-  const [cancellations, setCancellations] = useState<Cancellation[]>([
-    {
-      id: '1',
-      orderId: 'ORD-001',
-      customerName: 'João Silva',
-      amount: 25.50,
-      reason: 'Produto com defeito',
-      date: '2024-06-14 10:30',
-      status: 'pending',
-      operator: 'Admin'
-    },
-    {
-      id: '2',
-      orderId: 'ORD-002',
-      customerName: 'Maria Santos',
-      amount: 15.00,
-      reason: 'Cancelamento por engano',
-      date: '2024-06-14 09:15',
-      status: 'approved',
-      operator: 'Admin'
-    },
-    {
-      id: '3',
-      orderId: 'ORD-003',
-      customerName: 'Pedro Costa',
-      amount: 32.75,
-      reason: 'Demora na entrega',
-      date: '2024-06-13 16:45',
-      status: 'rejected',
-      operator: 'Supervisor'
-    }
-  ]);
-
+  const { 
+    cancelamentos, 
+    loading, 
+    error, 
+    criarCancelamento, 
+    atualizarStatusCancelamento,
+    refetch 
+  } = useCancelamentos();
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [newCancellation, setNewCancellation] = useState({
-    orderId: '',
-    reason: ''
+    numero_pedido: '',
+    motivo: '',
+    valor_cancelado: '',
+    observacoes: ''
   });
+  const [processando, setProcessando] = useState<string | null>(null);
 
-  const filteredCancellations = cancellations.filter(cancel =>
-    cancel.orderId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    cancel.customerName.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredCancellations = cancelamentos.filter(cancel =>
+    (cancel.numero_pedido || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (cancel.cliente_nome || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleStatusChange = (id: string, newStatus: 'approved' | 'rejected') => {
-    setCancellations(prev => prev.map(cancel =>
-      cancel.id === id ? { ...cancel, status: newStatus } : cancel
-    ));
-    toast.success(`Cancelamento ${newStatus === 'approved' ? 'aprovado' : 'rejeitado'} com sucesso!`);
+  const handleStatusChange = async (id: string, newStatus: boolean) => {
+    try {
+      setProcessando(id);
+      await atualizarStatusCancelamento(id, newStatus);
+    } catch (error) {
+      console.error('Erro ao alterar status:', error);
+    } finally {
+      setProcessando(null);
+    }
   };
 
-  const handleNewCancellation = () => {
-    if (!newCancellation.orderId || !newCancellation.reason) {
-      toast.error('Preencha todos os campos obrigatórios!');
+  const handleNewCancellation = async () => {
+    if (!newCancellation.numero_pedido || !newCancellation.motivo) {
       return;
     }
 
-    const newCancel: Cancellation = {
-      id: Date.now().toString(),
-      orderId: newCancellation.orderId,
-      customerName: 'Cliente Totem',
-      amount: 0,
-      reason: newCancellation.reason,
-      date: new Date().toLocaleString('pt-BR'),
-      status: 'pending',
-      operator: 'Sistema'
-    };
-
-    setCancellations(prev => [newCancel, ...prev]);
-    setNewCancellation({ orderId: '', reason: '' });
-    toast.success('Solicitação de cancelamento criada!');
-  };
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'pending':
-        return <Badge variant="secondary" className="text-xs"><AlertTriangle className="w-3 h-3 mr-1" />Pendente</Badge>;
-      case 'approved':
-        return <Badge className="bg-green-600 text-xs"><CheckCircle className="w-3 h-3 mr-1" />Aprovado</Badge>;
-      case 'rejected':
-        return <Badge variant="destructive" className="text-xs"><XCircle className="w-3 h-3 mr-1" />Rejeitado</Badge>;
-      default:
-        return <Badge variant="outline" className="text-xs">{status}</Badge>;
+    try {
+      await criarCancelamento({
+        numero_pedido: newCancellation.numero_pedido,
+        motivo: newCancellation.motivo,
+        valor_cancelado: newCancellation.valor_cancelado ? Number(newCancellation.valor_cancelado) : 0,
+        observacoes: newCancellation.observacoes || undefined
+      });
+      
+      setNewCancellation({ 
+        numero_pedido: '', 
+        motivo: '', 
+        valor_cancelado: '', 
+        observacoes: '' 
+      });
+    } catch (error) {
+      console.error('Erro ao criar cancelamento:', error);
     }
   };
+
+  const getStatusBadge = (aprovado: boolean | null) => {
+    if (aprovado === null || aprovado === false) {
+      return <Badge variant="secondary" className="text-xs"><AlertTriangle className="w-3 h-3 mr-1" />Pendente</Badge>;
+    } else {
+      return <Badge className="bg-green-600 text-xs"><CheckCircle className="w-3 h-3 mr-1" />Aprovado</Badge>;
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="p-2 sm:p-3 flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto text-green-600" />
+          <p className="mt-2 text-sm text-gray-600">Carregando cancelamentos...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-2 sm:p-3 flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <XCircle className="h-8 w-8 text-red-600 mx-auto" />
+          <p className="mt-2 text-red-600 text-sm">Erro: {error}</p>
+          <Button className="mt-2" onClick={refetch}>
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Tentar Novamente
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-2 sm:p-3 space-y-2 sm:space-y-3">
@@ -128,6 +123,10 @@ const Cancelamentos: React.FC = () => {
           <XCircle className="w-5 h-5 text-red-600" />
           <h1 className="text-lg sm:text-xl font-bold text-gray-800">Cancelamentos</h1>
         </div>
+        <Button onClick={refetch} variant="outline" size="sm">
+          <RefreshCw className="w-4 h-4 mr-1" />
+          Atualizar
+        </Button>
       </div>
 
       {/* Estatísticas */}
@@ -138,7 +137,9 @@ const Cancelamentos: React.FC = () => {
               <AlertTriangle className="w-4 h-4 text-yellow-600" />
               <div>
                 <p className="text-xs sm:text-sm text-gray-600">Pendentes</p>
-                <p className="text-lg sm:text-xl font-bold">{cancellations.filter(c => c.status === 'pending').length}</p>
+                <p className="text-lg sm:text-xl font-bold">
+                  {cancelamentos.filter(c => !c.aprovado).length}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -149,7 +150,9 @@ const Cancelamentos: React.FC = () => {
               <CheckCircle className="w-4 h-4 text-green-600" />
               <div>
                 <p className="text-xs sm:text-sm text-gray-600">Aprovados</p>
-                <p className="text-lg sm:text-xl font-bold">{cancellations.filter(c => c.status === 'approved').length}</p>
+                <p className="text-lg sm:text-xl font-bold">
+                  {cancelamentos.filter(c => c.aprovado).length}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -159,8 +162,8 @@ const Cancelamentos: React.FC = () => {
             <div className="flex items-center space-x-1">
               <XCircle className="w-4 h-4 text-red-600" />
               <div>
-                <p className="text-xs sm:text-sm text-gray-600">Rejeitados</p>
-                <p className="text-lg sm:text-xl font-bold">{cancellations.filter(c => c.status === 'rejected').length}</p>
+                <p className="text-xs sm:text-sm text-gray-600">Total</p>
+                <p className="text-lg sm:text-xl font-bold">{cancelamentos.length}</p>
               </div>
             </div>
           </CardContent>
@@ -171,7 +174,12 @@ const Cancelamentos: React.FC = () => {
               <DollarSign className="w-4 h-4 text-blue-600" />
               <div>
                 <p className="text-xs sm:text-sm text-gray-600">Total Reembolsado</p>
-                <p className="text-lg sm:text-xl font-bold">R$ {cancellations.filter(c => c.status === 'approved').reduce((acc, c) => acc + c.amount, 0).toFixed(2)}</p>
+                <p className="text-lg sm:text-xl font-bold">
+                  R$ {cancelamentos
+                    .filter(c => c.aprovado)
+                    .reduce((acc, c) => acc + Number(c.valor_cancelado), 0)
+                    .toFixed(2)}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -184,17 +192,31 @@ const Cancelamentos: React.FC = () => {
           <CardTitle className="text-sm sm:text-base">Solicitar Cancelamento</CardTitle>
         </CardHeader>
         <CardContent className="p-2 sm:p-3 pt-0">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-2 sm:gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-2 sm:gap-3">
             <Input
               placeholder="ID do Pedido"
-              value={newCancellation.orderId}
-              onChange={(e) => setNewCancellation(prev => ({ ...prev, orderId: e.target.value }))}
+              value={newCancellation.numero_pedido}
+              onChange={(e) => setNewCancellation(prev => ({ ...prev, numero_pedido: e.target.value }))}
               className="h-8 text-sm"
             />
             <Input
               placeholder="Motivo do cancelamento"
-              value={newCancellation.reason}
-              onChange={(e) => setNewCancellation(prev => ({ ...prev, reason: e.target.value }))}
+              value={newCancellation.motivo}
+              onChange={(e) => setNewCancellation(prev => ({ ...prev, motivo: e.target.value }))}
+              className="h-8 text-sm"
+            />
+            <Input
+              placeholder="Valor (R$)"
+              type="number"
+              step="0.01"
+              value={newCancellation.valor_cancelado}
+              onChange={(e) => setNewCancellation(prev => ({ ...prev, valor_cancelado: e.target.value }))}
+              className="h-8 text-sm"
+            />
+            <Input
+              placeholder="Observações"
+              value={newCancellation.observacoes}
+              onChange={(e) => setNewCancellation(prev => ({ ...prev, observacoes: e.target.value }))}
               className="h-8 text-sm"
             />
             <Button onClick={handleNewCancellation} className="h-8 text-sm">
@@ -222,7 +244,9 @@ const Cancelamentos: React.FC = () => {
       {/* Lista de Cancelamentos */}
       <Card>
         <CardHeader className="p-2 sm:p-3">
-          <CardTitle className="text-sm sm:text-base">Histórico de Cancelamentos ({filteredCancellations.length})</CardTitle>
+          <CardTitle className="text-sm sm:text-base">
+            Histórico de Cancelamentos ({filteredCancellations.length})
+          </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
@@ -240,45 +264,57 @@ const Cancelamentos: React.FC = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredCancellations.map((cancellation) => (
-                  <TableRow key={cancellation.id}>
+                {filteredCancellations.map((cancelamento) => (
+                  <TableRow key={cancelamento.id}>
                     <TableCell className="font-medium p-2">
                       <div>
-                        <div className="text-xs font-semibold">{cancellation.orderId}</div>
+                        <div className="text-xs font-semibold">{cancelamento.numero_pedido}</div>
                         <div className="text-xs text-gray-500 sm:hidden">
-                          {cancellation.customerName}
+                          {cancelamento.cliente_nome}
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell className="hidden sm:table-cell p-2 text-xs">{cancellation.customerName}</TableCell>
-                    <TableCell className="hidden md:table-cell p-2 text-xs">R$ {cancellation.amount.toFixed(2)}</TableCell>
-                    <TableCell className="p-2 text-xs">{cancellation.reason}</TableCell>
-                    <TableCell className="hidden lg:table-cell p-2 text-xs">{cancellation.date}</TableCell>
-                    <TableCell className="p-2">{getStatusBadge(cancellation.status)}</TableCell>
-                    <TableCell className="hidden sm:table-cell p-2 text-xs">{cancellation.operator}</TableCell>
+                    <TableCell className="hidden sm:table-cell p-2 text-xs">
+                      {cancelamento.cliente_nome}
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell p-2 text-xs">
+                      R$ {Number(cancelamento.valor_cancelado).toFixed(2)}
+                    </TableCell>
+                    <TableCell className="p-2 text-xs">{cancelamento.motivo}</TableCell>
+                    <TableCell className="hidden lg:table-cell p-2 text-xs">
+                      {new Date(cancelamento.data_cancelamento).toLocaleString('pt-BR')}
+                    </TableCell>
+                    <TableCell className="p-2">{getStatusBadge(cancelamento.aprovado)}</TableCell>
+                    <TableCell className="hidden sm:table-cell p-2 text-xs">
+                      {cancelamento.operador}
+                    </TableCell>
                     <TableCell className="p-2">
-                      {cancellation.status === 'pending' && (
+                      {!cancelamento.aprovado && (
                         <div className="flex space-x-1">
                           <Button
                             size="sm"
                             className="bg-green-600 hover:bg-green-700 h-6 text-xs px-2"
-                            onClick={() => handleStatusChange(cancellation.id, 'approved')}
+                            onClick={() => handleStatusChange(cancelamento.id, true)}
+                            disabled={processando === cancelamento.id}
                           >
-                            Aprovar
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => handleStatusChange(cancellation.id, 'rejected')}
-                            className="h-6 text-xs px-2"
-                          >
-                            Rejeitar
+                            {processando === cancelamento.id ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : (
+                              'Aprovar'
+                            )}
                           </Button>
                         </div>
                       )}
                     </TableCell>
                   </TableRow>
                 ))}
+                {filteredCancellations.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center p-4 text-sm text-gray-500">
+                      Nenhum cancelamento encontrado
+                    </TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
           </div>
