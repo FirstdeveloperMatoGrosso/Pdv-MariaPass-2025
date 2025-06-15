@@ -21,6 +21,7 @@ type EstoqueItem = {
   created_at: string;
   updated_at: string;
 };
+
 const Estoque: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -121,6 +122,7 @@ const Estoque: React.FC = () => {
       toast.error('Erro ao atualizar estoque');
     }
   });
+
   const filteredItems = estoqueItems.filter((item: EstoqueItem) => {
     const matchesSearch = item.nome.toLowerCase().includes(searchTerm.toLowerCase()) || item.codigo_barras?.includes(searchTerm);
     const matchesCategory = selectedCategory === 'all' || item.categoria === selectedCategory;
@@ -132,10 +134,12 @@ const Estoque: React.FC = () => {
     }
     return matchesSearch && matchesCategory && matchesAlert;
   });
+
   const totalItens = estoqueItems.length;
   const itensZerados = estoqueItems.filter((item: EstoqueItem) => item.estoque === 0).length;
   const itensBaixos = estoqueItems.filter((item: EstoqueItem) => item.estoque > 0 && item.estoque <= 10).length;
   const valorTotalEstoque = estoqueItems.reduce((total: number, item: EstoqueItem) => total + item.estoque * item.preco, 0);
+
   const adjustEstoque = (id: string, currentEstoque: number, adjustment: number) => {
     const novoEstoque = Math.max(0, currentEstoque + adjustment);
     updateEstoqueMutation.mutate({
@@ -143,6 +147,7 @@ const Estoque: React.FC = () => {
       novoEstoque
     });
   };
+
   const startEditingEstoque = (id: string, currentEstoque: number) => {
     setEditingEstoque(prev => ({
       ...prev,
@@ -164,6 +169,7 @@ const Estoque: React.FC = () => {
       [id]: value
     }));
   };
+
   const updateEstoqueFromInput = (id: string) => {
     const novoEstoque = editingEstoque[id];
     if (novoEstoque !== undefined && novoEstoque >= 0) {
@@ -173,6 +179,7 @@ const Estoque: React.FC = () => {
       });
     }
   };
+
   const getEstoqueStatus = (estoque: number) => {
     if (estoque === 0) return {
       variant: 'destructive' as const,
@@ -187,6 +194,7 @@ const Estoque: React.FC = () => {
       text: 'Normal'
     };
   };
+
   const handleAddProduct = () => {
     if (!newProduct.nome.trim()) {
       toast.error('Nome do produto é obrigatório');
@@ -194,6 +202,7 @@ const Estoque: React.FC = () => {
     }
     createProductMutation.mutate(newProduct);
   };
+
   if (isLoading) {
     return <div className="p-2 sm:p-3 flex items-center justify-center">
         <div className="text-center">
@@ -202,6 +211,7 @@ const Estoque: React.FC = () => {
         </div>
       </div>;
   }
+
   return <div className="p-2 sm:p-3 space-y-2 sm:space-y-3">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
@@ -397,9 +407,9 @@ const Estoque: React.FC = () => {
                       </TableCell>
                       <TableCell className="p-2">
                         {isEditing ? (
-                          <div className="flex flex-col gap-1 min-w-[120px]">
-                            <div className="text-xs text-gray-600 mb-1">
-                              Estoque atual: <span className="font-semibold">{item.estoque}</span>
+                          <div className="space-y-2 min-w-[140px]">
+                            <div className="text-xs text-gray-600">
+                              Atual: <span className="font-semibold text-blue-600">{item.estoque} un.</span>
                             </div>
                             <div className="flex items-center gap-1">
                               <Input
@@ -407,32 +417,36 @@ const Estoque: React.FC = () => {
                                 min="0"
                                 value={editingEstoque[item.id]}
                                 onChange={(e) => setEstoqueValue(item.id, parseInt(e.target.value) || 0)}
-                                className="w-16 h-7 text-xs text-center"
+                                className="w-20 h-8 text-xs text-center border-blue-300 focus:border-blue-500"
                                 placeholder="0"
                               />
+                              <span className="text-xs text-gray-500">un.</span>
+                            </div>
+                            <div className="flex gap-1">
                               <Button
                                 size="sm"
                                 onClick={() => updateEstoqueFromInput(item.id)}
-                                className="h-7 w-7 p-0 bg-green-600 hover:bg-green-700"
+                                className="h-7 px-2 bg-green-600 hover:bg-green-700 text-xs"
                                 disabled={updateEstoqueMutation.isPending}
                               >
-                                <Check className="w-3 h-3" />
+                                <Check className="w-3 h-3 mr-1" />
+                                Salvar
                               </Button>
                               <Button
                                 size="sm"
                                 variant="outline"
                                 onClick={() => cancelEditingEstoque(item.id)}
-                                className="h-7 w-7 p-0"
+                                className="h-7 px-2 text-xs"
                               >
-                                <X className="w-3 h-3" />
+                                <X className="w-3 h-3 mr-1" />
+                                Cancelar
                               </Button>
-                            </div>
-                            <div className="text-xs text-blue-600">
-                              Novo valor: <span className="font-semibold">{editingEstoque[item.id] || 0}</span>
                             </div>
                           </div>
                         ) : (
-                          <span className="text-sm font-semibold">{item.estoque} un.</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-semibold min-w-[40px]">{item.estoque} un.</span>
+                          </div>
                         )}
                       </TableCell>
                       <TableCell className="hidden sm:table-cell p-2">
@@ -443,37 +457,40 @@ const Estoque: React.FC = () => {
                       <TableCell className="hidden lg:table-cell p-2 text-xs">R$ {item.preco.toFixed(2)}</TableCell>
                       <TableCell className="hidden lg:table-cell p-2 text-xs">R$ {(item.estoque * item.preco).toFixed(2)}</TableCell>
                       <TableCell className="p-2">
-                        <div className="flex flex-wrap gap-1">
+                        <div className="flex flex-col gap-1 min-w-[80px]">
                           {!isEditing && (
                             <>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => adjustEstoque(item.id, item.estoque, -1)}
-                                disabled={item.estoque === 0 || updateEstoqueMutation.isPending}
-                                className="h-6 w-6 p-0"
-                                title="Diminuir 1"
-                              >
-                                <Minus className="w-2 h-2" />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => adjustEstoque(item.id, item.estoque, 1)}
-                                disabled={updateEstoqueMutation.isPending}
-                                className="h-6 w-6 p-0"
-                                title="Aumentar 1"
-                              >
-                                <Plus className="w-2 h-2" />
-                              </Button>
+                              <div className="flex gap-1">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => adjustEstoque(item.id, item.estoque, -1)}
+                                  disabled={item.estoque === 0 || updateEstoqueMutation.isPending}
+                                  className="h-7 w-7 p-0 border-red-300 hover:bg-red-50"
+                                  title="Diminuir 1"
+                                >
+                                  <Minus className="w-3 h-3" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => adjustEstoque(item.id, item.estoque, 1)}
+                                  disabled={updateEstoqueMutation.isPending}
+                                  className="h-7 w-7 p-0 border-green-300 hover:bg-green-50"
+                                  title="Aumentar 1"
+                                >
+                                  <Plus className="w-3 h-3" />
+                                </Button>
+                              </div>
                               <Button
                                 size="sm"
                                 variant="outline"
                                 onClick={() => startEditingEstoque(item.id, item.estoque)}
-                                className="h-6 w-6 p-0"
+                                className="h-7 px-2 border-blue-300 hover:bg-blue-50 text-xs"
                                 title="Editar quantidade"
                               >
-                                <Edit className="w-2 h-2" />
+                                <Edit className="w-3 h-3 mr-1" />
+                                Editar
                               </Button>
                             </>
                           )}
@@ -488,4 +505,5 @@ const Estoque: React.FC = () => {
       </Card>
     </div>;
 };
+
 export default Estoque;
