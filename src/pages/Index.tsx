@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -62,22 +61,26 @@ const Index: React.FC = () => {
     },
   });
 
-  // Buscar categorias disponíveis
+  // Buscar categorias disponíveis dos produtos ativos
   const { data: categories = [] } = useQuery({
-    queryKey: ['categorias-totem'],
+    queryKey: ['categorias-produtos-ativos'],
     queryFn: async () => {
-      console.log('Buscando categorias...');
+      console.log('Buscando categorias dos produtos ativos...');
       const { data, error } = await supabase
-        .from('categorias')
-        .select('nome')
-        .order('nome');
+        .from('produtos')
+        .select('categoria')
+        .eq('status', 'ativo')
+        .gt('estoque', 0);
       
       if (error) {
         console.error('Erro ao buscar categorias:', error);
         return [];
       }
       
-      return data?.map(cat => cat.nome) || [];
+      // Extrair categorias únicas dos produtos
+      const uniqueCategories = [...new Set(data?.map(product => product.categoria) || [])];
+      console.log('Categorias encontradas:', uniqueCategories);
+      return uniqueCategories;
     },
   });
 
