@@ -20,6 +20,9 @@ import ControleAcesso from "./pages/ControleAcesso";
 import Vouchers from "./pages/Vouchers";
 import RecargaPulseiras from "./pages/RecargaPulseiras";
 import Configuracoes from "./pages/Configuracoes";
+import IntegracaoNotaFiscal from "./pages/IntegracaoNotaFiscal";
+import IntegracaoBoleto from "./pages/IntegracaoBoleto";
+import IntegracaoNFCe from "./pages/IntegracaoNFCe";
 import NotFound from "./pages/NotFound";
 
 // Create QueryClient outside of component to avoid recreation on each render
@@ -67,6 +70,9 @@ const App = () => {
                     <Route path="/vouchers" element={<Vouchers />} />
                     <Route path="/recarga-pulseiras" element={<RecargaPulseiras />} />
                     <Route path="/configuracoes" element={<Configuracoes />} />
+                    <Route path="/integracao-nota-fiscal" element={<IntegracaoNotaFiscal />} />
+                    <Route path="/integracao-boleto" element={<IntegracaoBoleto />} />
+                    <Route path="/integracao-nfce" element={<IntegracaoNFCe />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </main>
