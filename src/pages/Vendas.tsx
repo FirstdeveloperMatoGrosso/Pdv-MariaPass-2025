@@ -1,19 +1,16 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { 
   ShoppingCart, 
-  Plus, 
-  Minus, 
-  Trash2, 
-  CreditCard,
   Search,
-  Package,
-  DollarSign
+  Calendar,
+  Filter,
+  Download,
+  Eye
 } from 'lucide-react';
 import {
   Select,
@@ -24,199 +21,119 @@ import {
 } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useQuery } from '@tanstack/react-query';
 
-interface Produto {
+interface VendaRealizada {
   id: string;
-  nome: string;
-  preco: number;
-  estoque: number;
-  imagem_url?: string;
-  codigo_barras?: string;
-}
-
-interface ItemVenda {
-  produto: Produto;
+  data_venda: string;
+  numero_autorizacao: string;
   quantidade: number;
-  subtotal: number;
+  valor_unitario: number;
+  valor_total: number;
+  forma_pagamento: string;
+  produto_nome?: string;
+  produto_imagem?: string;
+  nsu?: string;
+  bandeira?: string;
 }
 
 const Vendas: React.FC = () => {
-  const [produtos, setProdutos] = useState<Produto[]>([]);
-  const [produtosFiltrados, setProdutosFiltrados] = useState<Produto[]>([]);
-  const [itensVenda, setItensVenda] = useState<ItemVenda[]>([]);
+  const [filtroData, setFiltroData] = useState('hoje');
+  const [filtroFormaPagamento, setFiltroFormaPagamento] = useState('todas');
   const [busca, setBusca] = useState('');
-  const [formaPagamento, setFormaPagamento] = useState('');
-  const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
-  const total = itensVenda.reduce((acc, item) => acc + item.subtotal, 0);
+  // Buscar vendas realizadas
+  const { data: vendas = [], isLoading, error, refetch } = useQuery({
+    queryKey: ['vendas-realizadas', filtroData, filtroFormaPagamento, busca],
+    queryFn: async () => {
+      console.log('Buscando vendas realizadas...');
+      
+      let dataInicio = new Date();
+      let dataFim = new Date();
+      
+      // Configurar filtros de data
+      switch (filtroData) {
+        case 'hoje':
+          dataInicio.setHours(0, 0, 0, 0);
+          dataFim.setHours(23, 59, 59, 999);
+          break;
+        case 'semana':
+          dataInicio.setDate(dataInicio.getDate() - 7);
+          dataInicio.setHours(0, 0, 0, 0);
+          dataFim.setHours(23, 59, 59, 999);
+          break;
+        case 'mes':
+          dataInicio.setDate(1);
+          dataInicio.setHours(0, 0, 0, 0);
+          dataFim.setHours(23, 59, 59, 999);
+          break;
+        case 'todos':
+          dataInicio = new Date('2020-01-01');
+          dataFim.setHours(23, 59, 59, 999);
+          break;
+      }
 
-  useEffect(() => {
-    carregarProdutos();
-  }, []);
-
-  useEffect(() => {
-    if (busca.trim()) {
-      const filtrados = produtos.filter(produto =>
-        produto.nome.toLowerCase().includes(busca.toLowerCase()) ||
-        produto.codigo_barras?.includes(busca)
-      );
-      setProdutosFiltrados(filtrados);
-    } else {
-      setProdutosFiltrados([]);
-    }
-  }, [busca, produtos]);
-
-  const carregarProdutos = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('produtos')
-        .select('*')
-        .eq('status', 'ativo')
-        .gt('estoque', 0);
-
-      if (error) throw error;
-      setProdutos(data || []);
-    } catch (error) {
-      console.error('Erro ao carregar produtos:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao carregar produtos",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const adicionarItem = (produto: Produto) => {
-    const itemExistente = itensVenda.find(item => item.produto.id === produto.id);
-    
-    if (itemExistente) {
-      if (itemExistente.quantidade < produto.estoque) {
-        setItensVenda(itens => 
-          itens.map(item => 
-            item.produto.id === produto.id
-              ? { ...item, quantidade: item.quantidade + 1, subtotal: (item.quantidade + 1) * produto.preco }
-              : item
+      let query = supabase
+        .from('vendas_pulseiras')
+        .select(`
+          id,
+          data_venda,
+          numero_autorizacao,
+          quantidade,
+          valor_unitario,
+          valor_total,
+          forma_pagamento,
+          nsu,
+          bandeira,
+          produtos:produto_id (
+            nome,
+            imagem_url
           )
-        );
-      } else {
-        toast({
-          title: "Estoque insuficiente",
-          description: "Não há estoque suficiente para este produto",
-          variant: "destructive",
-        });
-      }
-    } else {
-      setItensVenda(itens => [...itens, {
-        produto,
-        quantidade: 1,
-        subtotal: produto.preco
-      }]);
-    }
-    setBusca('');
-    setProdutosFiltrados([]);
-  };
+        `)
+        .gte('data_venda', dataInicio.toISOString())
+        .lte('data_venda', dataFim.toISOString())
+        .order('data_venda', { ascending: false });
 
-  const removerItem = (produtoId: string) => {
-    setItensVenda(itens => itens.filter(item => item.produto.id !== produtoId));
-  };
-
-  const alterarQuantidade = (produtoId: string, novaQuantidade: number) => {
-    if (novaQuantidade <= 0) {
-      removerItem(produtoId);
-      return;
-    }
-
-    const produto = produtos.find(p => p.id === produtoId);
-    if (!produto) return;
-
-    if (novaQuantidade > produto.estoque) {
-      toast({
-        title: "Estoque insuficiente",
-        description: "Quantidade maior que o estoque disponível",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setItensVenda(itens =>
-      itens.map(item =>
-        item.produto.id === produtoId
-          ? { ...item, quantidade: novaQuantidade, subtotal: novaQuantidade * item.produto.preco }
-          : item
-      )
-    );
-  };
-
-  const finalizarVenda = async () => {
-    if (itensVenda.length === 0) {
-      toast({
-        title: "Erro",
-        description: "Adicione pelo menos um item à venda",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!formaPagamento) {
-      toast({
-        title: "Erro",
-        description: "Selecione a forma de pagamento",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      // Inserir vendas individuais para cada item
-      for (const item of itensVenda) {
-        const { error } = await supabase
-          .from('vendas_pulseiras')
-          .insert({
-            produto_id: item.produto.id,
-            quantidade: item.quantidade,
-            valor_unitario: item.produto.preco,
-            valor_total: item.subtotal,
-            forma_pagamento: formaPagamento,
-            numero_autorizacao: `VEN-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-          });
-
-        if (error) throw error;
-
-        // Atualizar estoque
-        const { error: estoqueError } = await supabase
-          .from('produtos')
-          .update({ 
-            estoque: item.produto.estoque - item.quantidade 
-          })
-          .eq('id', item.produto.id);
-
-        if (estoqueError) throw estoqueError;
+      // Filtrar por forma de pagamento
+      if (filtroFormaPagamento !== 'todas') {
+        query = query.eq('forma_pagamento', filtroFormaPagamento);
       }
 
-      toast({
-        title: "Sucesso",
-        description: `Venda finalizada! Total: R$ ${total.toFixed(2)}`,
-      });
+      // Filtrar por busca (número de autorização ou nome do produto)
+      if (busca.trim()) {
+        query = query.or(`numero_autorizacao.ilike.%${busca}%,produtos.nome.ilike.%${busca}%`);
+      }
 
-      // Limpar venda
-      setItensVenda([]);
-      setFormaPagamento('');
-      carregarProdutos(); // Recarregar para atualizar estoque
+      const { data, error } = await query.limit(100);
 
-    } catch (error) {
-      console.error('Erro ao finalizar venda:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao finalizar venda",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+      if (error) {
+        console.error('Erro ao buscar vendas:', error);
+        throw error;
+      }
+
+      console.log('Vendas encontradas:', data?.length || 0);
+
+      return data?.map(venda => ({
+        id: venda.id,
+        data_venda: venda.data_venda,
+        numero_autorizacao: venda.numero_autorizacao || `VEN-${venda.id.slice(0, 8)}`,
+        quantidade: Number(venda.quantidade) || 1,
+        valor_unitario: Number(venda.valor_unitario) || 0,
+        valor_total: Number(venda.valor_total) || 0,
+        forma_pagamento: venda.forma_pagamento || 'Não informado',
+        produto_nome: venda.produtos?.nome || 'Produto não identificado',
+        produto_imagem: venda.produtos?.imagem_url,
+        nsu: venda.nsu,
+        bandeira: venda.bandeira
+      })) || [];
+    },
+  });
+
+  // Calcular totais
+  const totalVendas = vendas.length;
+  const faturamentoTotal = vendas.reduce((acc, venda) => acc + venda.valor_total, 0);
+  const ticketMedio = totalVendas > 0 ? faturamentoTotal / totalVendas : 0;
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -225,91 +142,113 @@ const Vendas: React.FC = () => {
     }).format(value);
   };
 
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleString('pt-BR');
+  };
+
+  const getFormaPagamentoBadge = (forma: string) => {
+    const cores = {
+      'dinheiro': 'bg-green-100 text-green-800',
+      'cartao_credito': 'bg-blue-100 text-blue-800',
+      'cartao_debito': 'bg-purple-100 text-purple-800',
+      'pix': 'bg-orange-100 text-orange-800',
+      'pulseira': 'bg-pink-100 text-pink-800'
+    };
+    
+    return cores[forma as keyof typeof cores] || 'bg-gray-100 text-gray-800';
+  };
+
+  if (error) {
+    return (
+      <div className="min-h-screen p-4 flex items-center justify-center">
+        <Card className="w-full max-w-md">
+          <CardContent className="p-6 text-center">
+            <p className="text-red-600 mb-4">Erro ao carregar vendas: {error.message}</p>
+            <Button onClick={() => refetch()}>Tentar Novamente</Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen p-4 space-y-4">
       {/* Header */}
-      <div className="flex items-center space-x-2">
-        <ShoppingCart className="w-6 h-6 text-green-600" />
-        <h1 className="text-2xl font-bold text-gray-800">Nova Venda</h1>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-2">
+          <ShoppingCart className="w-6 h-6 text-green-600" />
+          <h1 className="text-2xl font-bold text-gray-800">Vendas Realizadas</h1>
+        </div>
+        <Button variant="outline" size="sm">
+          <Download className="w-4 h-4 mr-2" />
+          Exportar
+        </Button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Busca de Produtos */}
+      {/* Resumo */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Search className="w-5 h-5" />
-              <span>Buscar Produtos</span>
-            </CardTitle>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-gray-600">Total de Vendas</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="relative">
-              <Input
-                placeholder="Digite o nome do produto ou código de barras..."
-                value={busca}
-                onChange={(e) => setBusca(e.target.value)}
-                className="w-full"
-              />
-              
-              {produtosFiltrados.length > 0 && (
-                <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-md shadow-lg z-10 max-h-64 overflow-y-auto">
-                  {produtosFiltrados.map((produto) => (
-                    <div
-                      key={produto.id}
-                      className="p-3 hover:bg-gray-50 cursor-pointer border-b"
-                      onClick={() => adicionarItem(produto)}
-                    >
-                      <div className="flex items-center space-x-3">
-                        {produto.imagem_url && (
-                          <img 
-                            src={produto.imagem_url} 
-                            alt={produto.nome}
-                            className="w-12 h-12 object-cover rounded"
-                          />
-                        )}
-                        <div className="flex-1">
-                          <h4 className="font-medium">{produto.nome}</h4>
-                          <p className="text-sm text-gray-600">
-                            {formatCurrency(produto.preco)} • Estoque: {produto.estoque}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+          <CardContent>
+            <div className="text-2xl font-bold">{totalVendas}</div>
           </CardContent>
         </Card>
 
-        {/* Resumo da Venda */}
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <DollarSign className="w-5 h-5" />
-                <span>Resumo da Venda</span>
-              </div>
-              <Badge variant="outline">
-                {itensVenda.length} {itensVenda.length === 1 ? 'item' : 'itens'}
-              </Badge>
-            </CardTitle>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-gray-600">Faturamento Total</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="text-center">
-              <p className="text-3xl font-bold text-green-600">
-                {formatCurrency(total)}
-              </p>
-              <p className="text-sm text-gray-600">Total da venda</p>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">{formatCurrency(faturamentoTotal)}</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-gray-600">Ticket Médio</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-blue-600">{formatCurrency(ticketMedio)}</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Filtros */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Filter className="w-5 h-5" />
+            <span>Filtros</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Período</label>
+              <Select value={filtroData} onValueChange={setFiltroData}>
+                <SelectTrigger>
+                  <Calendar className="w-4 h-4 mr-2" />
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="hoje">Hoje</SelectItem>
+                  <SelectItem value="semana">Última Semana</SelectItem>
+                  <SelectItem value="mes">Este Mês</SelectItem>
+                  <SelectItem value="todos">Todas</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="forma-pagamento">Forma de Pagamento</Label>
-              <Select value={formaPagamento} onValueChange={setFormaPagamento}>
+              <label className="text-sm font-medium">Forma de Pagamento</label>
+              <Select value={filtroFormaPagamento} onValueChange={setFiltroFormaPagamento}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione a forma de pagamento" />
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="todas">Todas</SelectItem>
                   <SelectItem value="dinheiro">Dinheiro</SelectItem>
                   <SelectItem value="cartao_credito">Cartão de Crédito</SelectItem>
                   <SelectItem value="cartao_debito">Cartão de Débito</SelectItem>
@@ -319,85 +258,100 @@ const Vendas: React.FC = () => {
               </Select>
             </div>
 
-            <Button 
-              onClick={finalizarVenda}
-              disabled={loading || itensVenda.length === 0}
-              className="w-full"
-            >
-              <CreditCard className="w-4 h-4 mr-2" />
-              {loading ? 'Finalizando...' : 'Finalizar Venda'}
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Buscar</label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Input
+                  placeholder="Número da venda ou produto..."
+                  value={busca}
+                  onChange={(e) => setBusca(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
-      {/* Itens da Venda */}
-      {itensVenda.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Package className="w-5 h-5" />
-              <span>Itens da Venda</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+      {/* Lista de Vendas */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Histórico de Vendas</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto"></div>
+              <p className="mt-2 text-sm text-gray-600">Carregando vendas...</p>
+            </div>
+          ) : vendas.length === 0 ? (
+            <div className="text-center py-8">
+              <ShoppingCart className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+              <p className="text-gray-500">Nenhuma venda encontrada para os filtros selecionados.</p>
+            </div>
+          ) : (
             <div className="space-y-3">
-              {itensVenda.map((item) => (
-                <div key={item.produto.id} className="flex items-center space-x-4 p-3 border rounded-lg">
-                  {item.produto.imagem_url && (
-                    <img 
-                      src={item.produto.imagem_url} 
-                      alt={item.produto.nome}
-                      className="w-16 h-16 object-cover rounded"
-                    />
-                  )}
-                  
-                  <div className="flex-1">
-                    <h4 className="font-medium">{item.produto.nome}</h4>
-                    <p className="text-sm text-gray-600">
-                      {formatCurrency(item.produto.preco)} cada
-                    </p>
-                  </div>
+              {vendas.map((venda) => (
+                <div key={venda.id} className="border rounded-lg p-4 hover:bg-gray-50">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      {venda.produto_imagem && (
+                        <img 
+                          src={venda.produto_imagem} 
+                          alt={venda.produto_nome}
+                          className="w-12 h-12 object-cover rounded"
+                          onError={(e) => {
+                            e.currentTarget.src = '/placeholder.svg';
+                          }}
+                        />
+                      )}
+                      
+                      <div>
+                        <h4 className="font-medium">{venda.produto_nome}</h4>
+                        <p className="text-sm text-gray-600">
+                          Venda: {venda.numero_autorizacao}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {formatDate(venda.data_venda)}
+                        </p>
+                      </div>
+                    </div>
 
-                  <div className="flex items-center space-x-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => alterarQuantidade(item.produto.id, item.quantidade - 1)}
-                    >
-                      <Minus className="w-4 h-4" />
-                    </Button>
-                    
-                    <span className="w-12 text-center font-medium">
-                      {item.quantidade}
-                    </span>
-                    
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => alterarQuantidade(item.produto.id, item.quantidade + 1)}
-                    >
-                      <Plus className="w-4 h-4" />
-                    </Button>
+                    <div className="text-right">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <Badge className={getFormaPagamentoBadge(venda.forma_pagamento)}>
+                          {venda.forma_pagamento.replace('_', ' ').toUpperCase()}
+                        </Badge>
+                        {venda.bandeira && (
+                          <Badge variant="outline" className="text-xs">
+                            {venda.bandeira}
+                          </Badge>
+                        )}
+                      </div>
+                      
+                      <div className="space-y-1">
+                        <p className="text-sm">
+                          Qtd: {venda.quantidade} x {formatCurrency(venda.valor_unitario)}
+                        </p>
+                        <p className="font-bold text-green-600">
+                          Total: {formatCurrency(venda.valor_total)}
+                        </p>
+                      </div>
+                      
+                      {venda.nsu && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          NSU: {venda.nsu}
+                        </p>
+                      )}
+                    </div>
                   </div>
-
-                  <div className="text-right">
-                    <p className="font-bold">{formatCurrency(item.subtotal)}</p>
-                  </div>
-
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => removerItem(item.produto.id)}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
                 </div>
               ))}
             </div>
-          </CardContent>
-        </Card>
-      )}
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };
