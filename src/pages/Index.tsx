@@ -1,9 +1,10 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
-import { ShoppingCart, Plus, Minus, ScanBarcode, Package } from 'lucide-react';
+import { ShoppingCart, Plus, Minus, ScanBarcode, Package, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -87,36 +88,71 @@ const Index: React.FC = () => {
   // Mutation para atualizar estoque dos produtos
   const updateProductStockMutation = useMutation({
     mutationFn: async (cartItems: TotemCartItem[]) => {
-      console.log('Atualizando estoque dos produtos:', cartItems);
+      console.log('Iniciando atualização de estoque dos produtos:', cartItems);
+      
+      const updates = [];
       
       // Atualizar estoque de cada produto no carrinho
       for (const item of cartItems) {
         const newStock = item.estoque - item.quantity;
-        console.log(`Atualizando produto ${item.nome}: estoque ${item.estoque} -> ${newStock}`);
+        console.log(`Atualizando produto ${item.nome}: estoque atual ${item.estoque} - vendido ${item.quantity} = novo estoque ${newStock}`);
         
-        const { error } = await supabase
+        if (newStock < 0) {
+          throw new Error(`Estoque insuficiente para o produto ${item.nome}`);
+        }
+        
+        const { data, error } = await supabase
           .from('produtos')
           .update({ 
             estoque: newStock,
             updated_at: new Date().toISOString()
           })
-          .eq('id', item.id);
+          .eq('id', item.id)
+          .select('nome, estoque');
         
         if (error) {
           console.error(`Erro ao atualizar estoque do produto ${item.nome}:`, error);
-          throw error;
+          throw new Error(`Erro ao atualizar estoque do produto ${item.nome}: ${error.message}`);
+        }
+        
+        console.log(`Produto ${item.nome} atualizado com sucesso:`, data);
+        updates.push({ nome: item.nome, novoEstoque: newStock });
+        
+        // Verificar se o estoque está baixo (5 unidades ou menos)
+        if (newStock <= 5 && newStock > 0) {
+          toast.error(`⚠️ ALERTA: Produto "${item.nome}" está com estoque baixo (${newStock} unidades restantes)!`, {
+            duration: 8000,
+            action: {
+              label: 'Reabastecer',
+              onClick: () => navigate('/estoque')
+            }
+          });
+        } else if (newStock === 0) {
+          toast.error(`🚨 PRODUTO ESGOTADO: "${item.nome}" não possui mais estoque disponível!`, {
+            duration: 10000,
+            action: {
+              label: 'Gerenciar Estoque',
+              onClick: () => navigate('/estoque')
+            }
+          });
         }
       }
+      
+      console.log('Todos os produtos foram atualizados:', updates);
+      return updates;
     },
-    onSuccess: () => {
-      console.log('Estoque atualizado com sucesso');
+    onSuccess: (updates) => {
+      console.log('Estoque atualizado com sucesso para todos os produtos:', updates);
       // Invalidar cache para atualizar a lista de produtos
       queryClient.invalidateQueries({ queryKey: ['produtos-totem'] });
-      toast.success('Estoque atualizado com sucesso!');
+      queryClient.invalidateQueries({ queryKey: ['categorias-produtos-ativos'] });
+      
+      const totalProdutos = updates.length;
+      toast.success(`✅ Estoque atualizado com sucesso para ${totalProdutos} produto(s)!`);
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       console.error('Erro ao atualizar estoque:', error);
-      toast.error('Erro ao atualizar estoque dos produtos');
+      toast.error(`❌ Erro ao atualizar estoque: ${error.message}`);
     }
   });
 
@@ -173,6 +209,19 @@ const Index: React.FC = () => {
       return;
     }
 
+    // Verificar se há estoque suficiente antes de gerar o pedido
+    const stockErrors = [];
+    for (const item of cart) {
+      if (item.quantity > item.estoque) {
+        stockErrors.push(`${item.nome}: solicitado ${item.quantity}, disponível ${item.estoque}`);
+      }
+    }
+    
+    if (stockErrors.length > 0) {
+      toast.error(`Estoque insuficiente:\n${stockErrors.join('\n')}`);
+      return;
+    }
+
     const orderId = `PED-${Date.now()}`;
     setCurrentOrderId(orderId);
     setShowQRCode(true);
@@ -187,13 +236,17 @@ const Index: React.FC = () => {
   const handlePrintClose = () => {
     setShowPrintSimulator(false);
     
+    console.log('Iniciando finalização da venda e atualização do estoque...');
+    
     // Atualizar estoque dos produtos vendidos
-    updateProductStockMutation.mutate(cart);
+    if (cart.length > 0) {
+      updateProductStockMutation.mutate(cart);
+    }
     
     // Limpar carrinho e order ID
     setCart([]);
     setCurrentOrderId('');
-    toast.success('Venda finalizada e estoque atualizado!');
+    toast.success('🎉 Venda finalizada com sucesso!');
   };
 
   const handleBarcodeProductScanned = (product: any) => {
@@ -312,6 +365,7 @@ const Index: React.FC = () => {
             const cartItem = cart.find(item => item.id === product.id);
             const quantity = cartItem?.quantity || 0;
             const availableStock = product.estoque - quantity;
+            const isLowStock = product.estoque <= 5;
 
             return (
               <div key={product.id} className="relative">
@@ -339,13 +393,21 @@ const Index: React.FC = () => {
                         <CardTitle className="text-xs sm:text-sm line-clamp-2 leading-tight">{product.nome}</CardTitle>
                         <Badge variant="outline" className="mt-1 text-[10px] sm:text-xs">{product.categoria}</Badge>
                       </div>
-                      <div className="flex-shrink-0">
+                      <div className="flex-shrink-0 flex flex-col items-end gap-1">
                         <Badge 
                           variant={availableStock < 10 ? "destructive" : "secondary"}
                           className="text-[10px] sm:text-xs whitespace-nowrap"
                         >
                           {availableStock} un.
                         </Badge>
+                        {isLowStock && (
+                          <div className="flex items-center">
+                            <AlertTriangle className="w-3 h-3 text-orange-500" />
+                            <Badge variant="outline" className="text-[8px] text-orange-600 border-orange-300">
+                              Baixo
+                            </Badge>
+                          </div>
+                        )}
                       </div>
                     </div>
                     
