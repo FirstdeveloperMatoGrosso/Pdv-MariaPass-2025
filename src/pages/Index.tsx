@@ -98,7 +98,7 @@ const Index: React.FC = () => {
       produto_nome: string;
       quantidade: number;
     }) => {
-      console.log('Registrando impressão no histórico:', dadosImpressao);
+      console.log('🖨️ REGISTRANDO IMPRESSÃO NO HISTÓRICO:', dadosImpressao);
       
       const { data, error } = await supabase
         .from('impressoes')
@@ -116,15 +116,26 @@ const Index: React.FC = () => {
         .single();
       
       if (error) {
-        console.error('Erro ao registrar impressão:', error);
+        console.error('❌ Erro ao registrar impressão:', error);
         throw error;
       }
       
-      console.log('Impressão registrada com sucesso:', data);
+      console.log('✅ Impressão registrada com sucesso no histórico:', data);
       return data;
     },
+    onSuccess: (data) => {
+      console.log('✅ Impressão salva no banco de dados:', data);
+      // Invalidar cache das impressões para atualizar a página de histórico
+      queryClient.invalidateQueries({ queryKey: ['impressoes'] });
+    },
     onError: (error) => {
-      console.error('Erro ao registrar impressão no histórico:', error);
+      console.error('❌ Erro ao registrar impressão no histórico:', error);
+      showAlert({
+        type: 'error',
+        title: 'Erro no Registro de Impressão',
+        message: 'Falha ao registrar impressão no histórico: ' + error.message,
+        duration: 5000
+      });
     }
   });
 
@@ -241,9 +252,13 @@ const Index: React.FC = () => {
     onSuccess: ({ salesRecords, stockUpdates }) => {
       console.log('Pedido processado com sucesso:', { salesRecords, stockUpdates });
       
-      // Registrar impressões no histórico para cada produto vendido
+      // 🖨️ REGISTRAR IMPRESSÕES NO HISTÓRICO PARA CADA PRODUTO VENDIDO
       const orderId = currentOrderId;
-      stockUpdates.forEach(update => {
+      console.log('📝 Registrando impressões para pedido:', orderId);
+      
+      stockUpdates.forEach((update, index) => {
+        console.log(`🖨️ Registrando impressão ${index + 1}/${stockUpdates.length} para produto:`, update.nome);
+        
         registrarImpressaoMutation.mutate({
           pedido_id: orderId,
           tipo: 'comprovante',
@@ -266,7 +281,7 @@ const Index: React.FC = () => {
       showAlert({
         type: 'success',
         title: '✅ Venda Finalizada',
-        message: `${totalVendas} item(ns) vendido(s) com sucesso!\n\n${resumo}`,
+        message: `${totalVendas} item(ns) vendido(s) com sucesso!\n\n${resumo}\n\n🖨️ Impressões registradas no histórico!`,
         duration: 6000
       });
     },
