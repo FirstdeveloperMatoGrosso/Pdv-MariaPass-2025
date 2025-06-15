@@ -74,7 +74,7 @@ const Impressoes: React.FC = () => {
       const { data, error } = await supabase
         .from('impressoes')
         .select('*')
-        .order('data_impressao', { ascending: false });
+        .order('created_at', { ascending: false });
       
       if (error) {
         console.error('Erro ao buscar impressões:', error);
@@ -82,6 +82,7 @@ const Impressoes: React.FC = () => {
       }
       
       console.log('Impressões encontradas:', data?.length || 0);
+      console.log('Dados das impressões:', data);
       return data || [];
     },
   });
