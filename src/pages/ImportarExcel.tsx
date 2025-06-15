@@ -52,25 +52,60 @@ const ImportarExcel: React.FC = () => {
   // Mutation para importar produtos
   const importProductsMutation = useMutation({
     mutationFn: async (validProducts: ProductRow[]) => {
+      console.log('Iniciando importação de produtos:', validProducts);
+      
+      // Verificar se há produtos para importar
+      if (!validProducts || validProducts.length === 0) {
+        throw new Error('Nenhum produto válido para importar');
+      }
+
+      // Preparar dados para inserção
       const productsToInsert = validProducts.map(product => ({
-        nome: product.nome,
-        categoria: product.categoria,
-        preco: product.preco,
-        estoque: product.estoque,
-        codigo_barras: product.codigo_barras || null,
+        nome: product.nome?.toString().trim() || '',
+        categoria: product.categoria?.toString().trim() || 'Outros',
+        preco: Number(product.preco) || 0,
+        estoque: Number(product.estoque) || 0,
+        codigo_barras: product.codigo_barras?.toString().trim() || null,
         status: 'ativo'
       }));
 
-      const { error } = await supabase
-        .from('produtos')
-        .insert(productsToInsert);
+      console.log('Produtos preparados para inserção:', productsToInsert);
 
-      if (error) throw error;
+      // Validar dados antes da inserção
+      for (const product of productsToInsert) {
+        if (!product.nome) {
+          throw new Error(`Produto sem nome encontrado`);
+        }
+        if (product.preco <= 0) {
+          throw new Error(`Preço inválido para produto: ${product.nome}`);
+        }
+      }
+
+      // Inserir produtos no banco
+      const { data, error } = await supabase
+        .from('produtos')
+        .insert(productsToInsert)
+        .select();
+
+      if (error) {
+        console.error('Erro ao inserir produtos:', error);
+        
+        // Verificar se é erro de duplicação
+        if (error.code === '23505' && error.message.includes('codigo_barras')) {
+          throw new Error('Erro: Código de barras duplicado. Verifique se algum produto já existe no sistema.');
+        }
+        
+        throw new Error(`Erro ao importar produtos: ${error.message}`);
+      }
+
+      console.log('Produtos importados com sucesso:', data);
+      return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('Importação concluída:', data);
       queryClient.invalidateQueries({ queryKey: ['produtos'] });
       queryClient.invalidateQueries({ queryKey: ['estoque'] });
-      toast.success('Produtos importados com sucesso!');
+      toast.success(`${data?.length || 0} produtos importados com sucesso!`);
       setProducts([]);
       setShowPreview(false);
       setSelectedFile(null);
@@ -78,9 +113,9 @@ const ImportarExcel: React.FC = () => {
         fileInputRef.current.value = '';
       }
     },
-    onError: (error) => {
-      console.error('Erro ao importar produtos:', error);
-      toast.error('Erro ao importar produtos');
+    onError: (error: any) => {
+      console.error('Erro na importação:', error);
+      toast.error(error.message || 'Erro ao importar produtos');
     }
   });
 
@@ -107,6 +142,14 @@ const ImportarExcel: React.FC = () => {
     
     const categoryLower = category.toLowerCase().trim();
     
+    // Verificar se existe categoria exata (case insensitive)
+    const exactMatch = categories.find(cat => 
+      cat.toLowerCase() === categoryLower
+    );
+    if (exactMatch) {
+      return exactMatch;
+    }
+
     // Mapeamento de categorias similares
     const categoryMap: { [key: string]: string } = {
       'bebida': 'Bebidas',
@@ -138,14 +181,6 @@ const ImportarExcel: React.FC = () => {
       return categoryMap[categoryLower];
     }
 
-    // Verificar se existe categoria exata (case insensitive)
-    const exactMatch = categories.find(cat => 
-      cat.toLowerCase() === categoryLower
-    );
-    if (exactMatch) {
-      return exactMatch;
-    }
-
     // Verificar se contém palavras-chave
     for (const [key, value] of Object.entries(categoryMap)) {
       if (categoryLower.includes(key)) {
@@ -159,26 +194,36 @@ const ImportarExcel: React.FC = () => {
   const validateProduct = (product: any, index: number): ProductRow => {
     const errors: string[] = [];
     
-    if (!product.nome || typeof product.nome !== 'string' || product.nome.trim() === '') {
+    // Validar nome
+    const nome = product.nome?.toString().trim() || '';
+    if (!nome) {
       errors.push('Nome é obrigatório');
     }
     
+    // Normalizar categoria
     const normalizedCategory = normalizeCategory(product.categoria);
     
-    if (isNaN(Number(product.preco)) || Number(product.preco) <= 0) {
+    // Validar preço
+    const preco = parseFloat(product.preco) || 0;
+    if (isNaN(preco) || preco <= 0) {
       errors.push('Preço deve ser um número maior que zero');
     }
     
-    if (isNaN(Number(product.estoque)) || Number(product.estoque) < 0) {
+    // Validar estoque
+    const estoque = parseInt(product.estoque) || 0;
+    if (isNaN(estoque) || estoque < 0) {
       errors.push('Estoque deve ser um número maior ou igual a zero');
     }
 
+    // Validar código de barras (opcional)
+    const codigoBarras = product.codigo_barras?.toString().trim() || '';
+
     return {
-      nome: product.nome || '',
+      nome,
       categoria: normalizedCategory,
-      preco: Number(product.preco) || 0,
-      estoque: Number(product.estoque) || 0,
-      codigo_barras: product.codigo_barras || '',
+      preco,
+      estoque,
+      codigo_barras: codigoBarras,
       status: errors.length > 0 ? 'error' : 'valid',
       errors
     };
@@ -231,22 +276,29 @@ const ImportarExcel: React.FC = () => {
         // Processar CSV
         mockProducts = parseCSV(text);
       } else {
-        // Para Excel, manter os dados de exemplo (aqui você implementaria a lógica real de parsing do Excel)
+        // Para Excel, usar dados de exemplo (implementar parsing real se necessário)
         mockProducts = [
           { nome: 'Coca-Cola 350ml', categoria: 'Bebidas', preco: 5.50, estoque: 100, codigo_barras: '7894900011517' },
-          { nome: 'Coxinha de Frango', categoria: 'Salgados', preco: 8.00, estoque: 50, codigo_barras: '' },
+          { nome: 'Coxinha de Frango', categoria: 'Salgados', preco: 8.00, estoque: 50, codigo_barras: '7588888888888' },
           { nome: 'Água Mineral 500ml', categoria: 'Bebidas', preco: 3.00, estoque: 200, codigo_barras: '7891234567890' },
+          { nome: 'Cerveja brahma 250ml', categoria: 'Bebidas', preco: 5.00, estoque: 1899, codigo_barras: '7899999999999' },
+          { nome: 'Cerveja Skol 250ml', categoria: 'Bebidas', preco: 4.50, estoque: 150, codigo_barras: '7888888888888' },
         ];
       }
 
+      console.log('Produtos processados do arquivo:', mockProducts);
+
       const validatedProducts = mockProducts.map((product, index) => validateProduct(product, index));
+      
+      console.log('Produtos validados:', validatedProducts);
+      
       setProducts(validatedProducts);
       setShowPreview(true);
       
       toast.success('Arquivo processado com sucesso!');
     } catch (error) {
       console.error('Erro ao processar arquivo:', error);
-      toast.error('Erro ao processar arquivo');
+      toast.error('Erro ao processar arquivo: ' + (error as Error).message);
     } finally {
       setIsProcessing(false);
       setProgress(0);
@@ -280,6 +332,8 @@ const ImportarExcel: React.FC = () => {
       toast.error('Nenhum produto válido para importar');
       return;
     }
+    
+    console.log('Iniciando importação com produtos válidos:', validProducts);
     importProductsMutation.mutate(validProducts);
   };
 
