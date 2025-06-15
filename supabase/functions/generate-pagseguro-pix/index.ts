@@ -5,9 +5,11 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
 }
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
@@ -31,7 +33,16 @@ serve(async (req) => {
     
     if (!pagseguroEmail || !pagseguroToken) {
       console.error('❌ ERRO: Credenciais PagSeguro não configuradas!')
-      throw new Error('Credenciais PagSeguro não configuradas nas Edge Functions. Verifique PAGSEGURO_EMAIL e PAGSEGURO_TOKEN.')
+      return new Response(
+        JSON.stringify({ 
+          error: 'Credenciais PagSeguro não configuradas nas Edge Functions. Configure PAGSEGURO_EMAIL e PAGSEGURO_TOKEN.',
+          details: 'Acesse o painel do Supabase > Settings > Edge Functions > Environment Variables'
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400,
+        },
+      )
     }
     
     const baseUrl = isSandbox 
@@ -128,10 +139,29 @@ serve(async (req) => {
           errorMessage += errorJson.message || errorText
         }
         
-        throw new Error(errorMessage)
+        return new Response(
+          JSON.stringify({ 
+            error: errorMessage,
+            pagseguro_error: errorJson,
+            timestamp: new Date().toISOString()
+          }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 400,
+          },
+        )
       } catch (parseError) {
         console.error('🔍 Erro em texto puro:', errorText)
-        throw new Error(`Erro PagSeguro ${response.status}: ${errorText}`)
+        return new Response(
+          JSON.stringify({ 
+            error: `Erro PagSeguro ${response.status}: ${errorText}`,
+            timestamp: new Date().toISOString()
+          }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 400,
+          },
+        )
       }
     }
     
@@ -144,7 +174,17 @@ serve(async (req) => {
     
     if (!qrCode) {
       console.error('❌ QR Code não encontrado na resposta:', pagseguroResponse)
-      throw new Error('QR Code não encontrado na resposta do PagSeguro. Verifique a configuração da conta.')
+      return new Response(
+        JSON.stringify({ 
+          error: 'QR Code não encontrado na resposta do PagSeguro. Verifique a configuração da conta.',
+          pagseguro_response: pagseguroResponse,
+          timestamp: new Date().toISOString()
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400,
+        },
+      )
     }
     
     console.log('🎯 PIX gerado com sucesso!')
@@ -191,13 +231,13 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         error: error.message,
-        details: 'Verifique os logs da Edge Function para mais detalhes',
+        details: 'Verifique os logs da Edge Function para mais detalhes. Certifique-se de que PAGSEGURO_EMAIL e PAGSEGURO_TOKEN estão configurados.',
         timestamp: new Date().toISOString(),
         error_code: 'EDGE_FUNCTION_ERROR'
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400,
+        status: 500,
       },
     )
   }
