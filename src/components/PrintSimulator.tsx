@@ -6,8 +6,8 @@ import { Printer, Check, X, FileText, Package } from 'lucide-react';
 
 interface CartItem {
   id: string;
-  name: string;
-  price: number;
+  nome: string;
+  preco: number;
   quantity: number;
 }
 
@@ -66,9 +66,9 @@ const PrintSimulator: React.FC<PrintSimulatorProps> = ({ orderId, cart, total, o
         <div className="text-center py-4">
           <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
             <Package className="w-8 h-8 mx-auto mb-2 text-blue-600" />
-            <p className="font-bold text-lg">{item.name}</p>
+            <p className="font-bold text-lg">{item.nome}</p>
             <p className="text-sm text-gray-600">Quantidade: {item.quantity}</p>
-            <p className="font-semibold text-green-600">R$ {(item.price * item.quantity).toFixed(2)}</p>
+            <p className="font-semibold text-green-600">R$ {(item.preco * item.quantity).toFixed(2)}</p>
           </div>
         </div>
         
@@ -97,8 +97,8 @@ const PrintSimulator: React.FC<PrintSimulatorProps> = ({ orderId, cart, total, o
         
         {cart.map(item => (
           <div key={item.id} className="flex justify-between">
-            <span>{item.quantity}x {item.name}</span>
-            <span>R$ {(item.price * item.quantity).toFixed(2)}</span>
+            <span>{item.quantity}x {item.nome}</span>
+            <span>R$ {(item.preco * item.quantity).toFixed(2)}</span>
           </div>
         ))}
         
@@ -201,7 +201,7 @@ const PrintSimulator: React.FC<PrintSimulatorProps> = ({ orderId, cart, total, o
             {printMode === 'individual' && (
               <div className="bg-blue-50 p-3 rounded-lg">
                 <p className="font-semibold text-blue-800">
-                  {cart[currentPrintingItem]?.name}
+                  {cart[currentPrintingItem]?.nome}
                 </p>
                 <p className="text-sm text-blue-600">
                   Quantidade: {cart[currentPrintingItem]?.quantity}
