@@ -69,7 +69,14 @@ export const useSystemConfig = (categoria?: string) => {
 
   const getConfigValue = (chave: string) => {
     const config = configs.find(c => c.chave === chave);
-    return config?.valor;
+    if (!config) return null;
+    
+    // Se o valor for uma string que começa e termina com aspas, remover as aspas
+    if (typeof config.valor === 'string' && config.valor.startsWith('"') && config.valor.endsWith('"')) {
+      return config.valor.slice(1, -1);
+    }
+    
+    return config.valor;
   };
 
   useEffect(() => {

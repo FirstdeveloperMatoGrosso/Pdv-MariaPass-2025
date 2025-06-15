@@ -24,6 +24,8 @@ interface PaymentProvider {
   apiKey?: string;
   email?: string;
   token?: string;
+  partnerId?: string;
+  accountId?: string;
   webhookUrl: string;
   fees: {
     debit: number;
@@ -33,7 +35,7 @@ interface PaymentProvider {
 }
 
 const Pagamentos: React.FC = () => {
-  const { configs, updateConfig, getConfigValue } = useSystemConfig('pagseguro');
+  const { configs, updateConfig, getConfigValue } = useSystemConfig();
   
   const [providers, setProviders] = useState<PaymentProvider[]>([
     {
@@ -41,40 +43,54 @@ const Pagamentos: React.FC = () => {
       name: 'Stone',
       logo: '🟢',
       status: 'connected',
-      apiKey: 'sk_stone_***************',
-      webhookUrl: 'https://webhook.stone.com.br/callback',
-      fees: { debit: 1.99, credit: 3.99, pix: 0.99 }
+      apiKey: getConfigValue('stone_api_key') || '',
+      webhookUrl: getConfigValue('stone_webhook_url') || '/webhook/stone',
+      fees: { 
+        debit: parseFloat(getConfigValue('stone_taxa_debito')) || 1.99, 
+        credit: parseFloat(getConfigValue('stone_taxa_credito')) || 3.99, 
+        pix: parseFloat(getConfigValue('stone_taxa_pix')) || 0.99 
+      }
     },
     {
       id: 'pagarme',
       name: 'Pagar.me',
       logo: '🔵',
       status: 'disconnected',
-      apiKey: '',
-      webhookUrl: '',
-      fees: { debit: 2.19, credit: 4.19, pix: 1.19 }
+      apiKey: getConfigValue('pagarme_api_key') || 'sk_b5bd7d1e1e6642f5879d0ac424633802',
+      partnerId: getConfigValue('pagarme_partner_id') || '61eaefd286db30019620e5b',
+      accountId: getConfigValue('pagarme_account_id') || 'acc_Q1xPmGvTWGU4oR4y',
+      webhookUrl: getConfigValue('pagarme_webhook_url') || '/webhook/pagarme',
+      fees: { 
+        debit: parseFloat(getConfigValue('pagarme_taxa_debito')) || 2.19, 
+        credit: parseFloat(getConfigValue('pagarme_taxa_credito')) || 4.19, 
+        pix: parseFloat(getConfigValue('pagarme_taxa_pix')) || 1.19 
+      }
     },
     {
       id: 'mercadopago',
       name: 'Mercado Pago',
       logo: '🔷',
       status: 'error',
-      apiKey: 'TEST-***************',
-      webhookUrl: 'https://webhook.mercadopago.com/notifications',
-      fees: { debit: 2.39, credit: 4.39, pix: 0.99 }
+      apiKey: getConfigValue('mercadopago_api_key') || '',
+      webhookUrl: getConfigValue('mercadopago_webhook_url') || '/webhook/mercadopago',
+      fees: { 
+        debit: parseFloat(getConfigValue('mercadopago_taxa_debito')) || 2.39, 
+        credit: parseFloat(getConfigValue('mercadopago_taxa_credito')) || 4.39, 
+        pix: parseFloat(getConfigValue('mercadopago_taxa_pix')) || 0.99 
+      }
     },
     {
       id: 'pagseguro',
       name: 'PagSeguro',
       logo: '🟡',
       status: 'disconnected',
-      email: getConfigValue('email') || '',
-      token: getConfigValue('token') || '',
-      webhookUrl: getConfigValue('webhook_url') || '/webhook/pagseguro',
+      email: getConfigValue('pagseguro_email') || '',
+      token: getConfigValue('pagseguro_token') || '',
+      webhookUrl: getConfigValue('pagseguro_webhook_url') || '/webhook/pagseguro',
       fees: { 
-        debit: 2.79, 
-        credit: 4.99, 
-        pix: parseFloat(getConfigValue('taxa_pix')) || 1.99 
+        debit: parseFloat(getConfigValue('pagseguro_taxa_debito')) || 2.79, 
+        credit: parseFloat(getConfigValue('pagseguro_taxa_credito')) || 4.99, 
+        pix: parseFloat(getConfigValue('pagseguro_taxa_pix')) || 1.99 
       }
     }
   ]);
@@ -118,59 +134,97 @@ const Pagamentos: React.FC = () => {
   };
 
   const handleSaveProvider = async (providerId: string) => {
-    if (providerId === 'pagseguro') {
-      // Salvar configurações específicas do PagSeguro
-      try {
-        console.log('💾 Salvando configurações PagSeguro:', formData);
-        
-        const savePromises = [];
-        
+    try {
+      console.log(`💾 Salvando configurações ${providerId}:`, formData);
+      
+      const savePromises = [];
+      
+      if (providerId === 'pagseguro') {
         if (formData.email !== undefined && formData.email !== '') {
-          console.log('📧 Salvando email:', formData.email);
-          savePromises.push(updateConfig('email', formData.email, 'pagseguro'));
+          savePromises.push(updateConfig('pagseguro_email', formData.email, 'pagamento'));
         }
         if (formData.token !== undefined && formData.token !== '') {
-          console.log('🔑 Salvando token:', formData.token?.substring(0, 10) + '...');
-          savePromises.push(updateConfig('token', formData.token, 'pagseguro'));
+          savePromises.push(updateConfig('pagseguro_token', formData.token, 'pagamento'));
         }
         if (formData.webhookUrl !== undefined) {
-          savePromises.push(updateConfig('webhook_url', formData.webhookUrl, 'pagseguro'));
+          savePromises.push(updateConfig('pagseguro_webhook_url', formData.webhookUrl, 'pagamento'));
         }
         if (formData.taxaDebit !== undefined) {
-          savePromises.push(updateConfig('taxa_debito', formData.taxaDebit.toString(), 'pagseguro'));
+          savePromises.push(updateConfig('pagseguro_taxa_debito', formData.taxaDebit.toString(), 'pagamento'));
         }
         if (formData.taxaCredit !== undefined) {
-          savePromises.push(updateConfig('taxa_credito', formData.taxaCredit.toString(), 'pagseguro'));
+          savePromises.push(updateConfig('pagseguro_taxa_credito', formData.taxaCredit.toString(), 'pagamento'));
         }
         if (formData.taxaPix !== undefined) {
-          savePromises.push(updateConfig('taxa_pix', formData.taxaPix.toString(), 'pagseguro'));
+          savePromises.push(updateConfig('pagseguro_taxa_pix', formData.taxaPix.toString(), 'pagamento'));
         }
-        
-        await Promise.all(savePromises);
-        
-        // Atualizar o estado local
-        setProviders(prev => prev.map(p => 
-          p.id === providerId ? { 
-            ...p, 
-            email: formData.email || p.email,
-            token: formData.token || p.token,
-            webhookUrl: formData.webhookUrl || p.webhookUrl,
-            status: (formData.email && formData.token) ? 'connected' : 'disconnected'
-          } : p
-        ));
-        
-        console.log('✅ Todas as configurações do PagSeguro salvas!');
-        toast.success('Configurações do PagSeguro salvas com sucesso!');
-      } catch (error) {
-        console.error('❌ Erro ao salvar configurações do PagSeguro:', error);
-        toast.error('Erro ao salvar configurações do PagSeguro');
+      } else if (providerId === 'pagarme') {
+        if (formData.apiKey !== undefined && formData.apiKey !== '') {
+          savePromises.push(updateConfig('pagarme_api_key', formData.apiKey, 'pagamento'));
+        }
+        if (formData.partnerId !== undefined && formData.partnerId !== '') {
+          savePromises.push(updateConfig('pagarme_partner_id', formData.partnerId, 'pagamento'));
+        }
+        if (formData.accountId !== undefined && formData.accountId !== '') {
+          savePromises.push(updateConfig('pagarme_account_id', formData.accountId, 'pagamento'));
+        }
+        if (formData.webhookUrl !== undefined) {
+          savePromises.push(updateConfig('pagarme_webhook_url', formData.webhookUrl, 'pagamento'));
+        }
+        if (formData.taxaDebit !== undefined) {
+          savePromises.push(updateConfig('pagarme_taxa_debito', formData.taxaDebit.toString(), 'pagamento'));
+        }
+        if (formData.taxaCredit !== undefined) {
+          savePromises.push(updateConfig('pagarme_taxa_credito', formData.taxaCredit.toString(), 'pagamento'));
+        }
+        if (formData.taxaPix !== undefined) {
+          savePromises.push(updateConfig('pagarme_taxa_pix', formData.taxaPix.toString(), 'pagamento'));
+        }
+      } else {
+        // Para Stone e Mercado Pago
+        if (formData.apiKey !== undefined && formData.apiKey !== '') {
+          savePromises.push(updateConfig(`${providerId}_api_key`, formData.apiKey, 'pagamento'));
+        }
+        if (formData.webhookUrl !== undefined) {
+          savePromises.push(updateConfig(`${providerId}_webhook_url`, formData.webhookUrl, 'pagamento'));
+        }
+        if (formData.taxaDebit !== undefined) {
+          savePromises.push(updateConfig(`${providerId}_taxa_debito`, formData.taxaDebit.toString(), 'pagamento'));
+        }
+        if (formData.taxaCredit !== undefined) {
+          savePromises.push(updateConfig(`${providerId}_taxa_credito`, formData.taxaCredit.toString(), 'pagamento'));
+        }
+        if (formData.taxaPix !== undefined) {
+          savePromises.push(updateConfig(`${providerId}_taxa_pix`, formData.taxaPix.toString(), 'pagamento'));
+        }
       }
-    } else {
-      // Lógica para outros provedores
+      
+      await Promise.all(savePromises);
+      
+      // Atualizar o estado local
       setProviders(prev => prev.map(p => 
-        p.id === providerId ? { ...p, ...formData } : p
+        p.id === providerId ? { 
+          ...p, 
+          email: formData.email || p.email,
+          token: formData.token || p.token,
+          apiKey: formData.apiKey || p.apiKey,
+          partnerId: formData.partnerId || p.partnerId,
+          accountId: formData.accountId || p.accountId,
+          webhookUrl: formData.webhookUrl || p.webhookUrl,
+          status: (formData.email || formData.token || formData.apiKey) ? 'connected' : 'disconnected',
+          fees: {
+            debit: formData.taxaDebit || p.fees.debit,
+            credit: formData.taxaCredit || p.fees.credit,
+            pix: formData.taxaPix || p.fees.pix
+          }
+        } : p
       ));
-      toast.success('Configurações salvas com sucesso!');
+      
+      console.log(`✅ Todas as configurações do ${providerId} salvas!`);
+      toast.success(`Configurações do ${providers.find(p => p.id === providerId)?.name} salvas com sucesso!`);
+    } catch (error) {
+      console.error(`❌ Erro ao salvar configurações do ${providerId}:`, error);
+      toast.error(`Erro ao salvar configurações do ${providers.find(p => p.id === providerId)?.name}`);
     }
     
     setEditingProvider(null);
@@ -183,6 +237,8 @@ const Pagamentos: React.FC = () => {
       email: provider.email || '',
       token: provider.token || '',
       apiKey: provider.apiKey || '',
+      partnerId: provider.partnerId || '',
+      accountId: provider.accountId || '',
       webhookUrl: provider.webhookUrl || '',
       taxaDebit: provider.fees.debit,
       taxaCredit: provider.fees.credit,
@@ -284,6 +340,37 @@ const Pagamentos: React.FC = () => {
                         />
                       </div>
                     </>
+                  ) : provider.id === 'pagarme' ? (
+                    <>
+                      <div>
+                        <label className="block text-xs font-medium mb-1">API Key</label>
+                        <Input 
+                          type="password"
+                          value={formData.apiKey}
+                          onChange={(e) => setFormData({...formData, apiKey: e.target.value})}
+                          placeholder="sk_b5bd7d1e1e6642f5879d0ac424633802"
+                          className="h-8 text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium mb-1">Partner ID</label>
+                        <Input 
+                          value={formData.partnerId}
+                          onChange={(e) => setFormData({...formData, partnerId: e.target.value})}
+                          placeholder="61eaefd286db30019620e5b"
+                          className="h-8 text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium mb-1">Account ID</label>
+                        <Input 
+                          value={formData.accountId}
+                          onChange={(e) => setFormData({...formData, accountId: e.target.value})}
+                          placeholder="acc_Q1xPmGvTWGU4oR4y"
+                          className="h-8 text-sm"
+                        />
+                      </div>
+                    </>
                   ) : (
                     <div>
                       <label className="block text-xs font-medium mb-1">API Key</label>
@@ -371,11 +458,32 @@ const Pagamentos: React.FC = () => {
                           </code>
                         </div>
                       </>
+                    ) : provider.id === 'pagarme' ? (
+                      <>
+                        <div>
+                          <span className="text-xs text-gray-500">API Key:</span>
+                          <code className="block bg-gray-100 px-1 py-1 rounded text-xs mt-1">
+                            {provider.apiKey ? '***' + provider.apiKey.slice(-4) : 'Não configurado'}
+                          </code>
+                        </div>
+                        <div>
+                          <span className="text-xs text-gray-500">Partner ID:</span>
+                          <code className="block bg-gray-100 px-1 py-1 rounded text-xs mt-1">
+                            {provider.partnerId || 'Não configurado'}
+                          </code>
+                        </div>
+                        <div>
+                          <span className="text-xs text-gray-500">Account ID:</span>
+                          <code className="block bg-gray-100 px-1 py-1 rounded text-xs mt-1">
+                            {provider.accountId || 'Não configurado'}
+                          </code>
+                        </div>
+                      </>
                     ) : (
                       <div>
                         <span className="text-xs text-gray-500">API Key:</span>
                         <code className="block bg-gray-100 px-1 py-1 rounded text-xs mt-1">
-                          {provider.apiKey || 'Não configurado'}
+                          {provider.apiKey ? '***' + provider.apiKey.slice(-4) : 'Não configurado'}
                         </code>
                       </div>
                     )}
