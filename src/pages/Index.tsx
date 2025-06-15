@@ -46,7 +46,8 @@ const Index: React.FC = () => {
         .select('*')
         .eq('status', 'ativo')
         .gt('estoque', 0)
-        .order('nome');
+        .order('nome')
+        .limit(5);
       
       if (error) {
         console.error('Erro ao buscar produtos:', error);
@@ -186,8 +187,8 @@ const Index: React.FC = () => {
           <p className="text-gray-500 text-lg">Nenhum produto disponível no momento</p>
         </div>
       ) : (
-        /* Grid de Produtos */
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        /* Grid de Produtos - limitado a 5 produtos */
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
           {products.map((product) => {
             const cartItem = cart.find(item => item.id === product.id);
             const quantity = cartItem?.quantity || 0;

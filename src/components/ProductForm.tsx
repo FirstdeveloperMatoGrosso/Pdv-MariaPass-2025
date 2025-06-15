@@ -25,6 +25,7 @@ interface ProductFormData {
   codigo_barras: string;
   categoria: string;
   estoque: number;
+  descricao: string;
   imagem_url?: string;
 }
 
@@ -48,6 +49,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSuccess }) => {
       codigo_barras: '',
       categoria: 'Bebidas',
       estoque: 0,
+      descricao: '',
       imagem_url: '',
     },
   });
@@ -83,7 +85,12 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSuccess }) => {
       const { data, error } = await supabase
         .from('produtos')
         .insert([{
-          ...productData,
+          nome: productData.nome,
+          preco: productData.preco,
+          codigo_barras: productData.codigo_barras,
+          categoria: productData.categoria,
+          estoque: productData.estoque,
+          descricao: productData.descricao,
           imagem_url: finalImageUrl
         }]);
       
@@ -96,6 +103,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSuccess }) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['produtos'] });
+      queryClient.invalidateQueries({ queryKey: ['produtos-totem'] });
       toast.success('Produto criado com sucesso!');
       form.reset();
       setPreviewUrl('');
@@ -135,7 +143,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSuccess }) => {
           <span>Novo Produto</span>
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Adicionar Novo Produto</DialogTitle>
         </DialogHeader>
@@ -147,9 +155,23 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSuccess }) => {
               name="nome"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Nome do Produto</FormLabel>
+                  <FormLabel>Nome do Produto *</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="Digite o nome do produto" />
+                    <Input {...field} placeholder="Digite o nome do produto" required />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="descricao"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Descrição</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="Digite a descrição do produto" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -161,11 +183,12 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSuccess }) => {
               name="categoria"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Categoria</FormLabel>
+                  <FormLabel>Categoria *</FormLabel>
                   <FormControl>
                     <select 
                       {...field}
                       className="w-full border rounded-md px-3 py-2"
+                      required
                     >
                       {categories.map(cat => (
                         <option key={cat} value={cat}>{cat}</option>
@@ -182,14 +205,16 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSuccess }) => {
               name="preco"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Preço (R$)</FormLabel>
+                  <FormLabel>Preço (R$) *</FormLabel>
                   <FormControl>
                     <Input 
                       {...field} 
                       type="number" 
                       step="0.01"
+                      min="0"
                       placeholder="0.00"
                       onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                      required
                     />
                   </FormControl>
                   <FormMessage />
@@ -202,13 +227,15 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSuccess }) => {
               name="estoque"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Estoque</FormLabel>
+                  <FormLabel>Quantidade em Estoque *</FormLabel>
                   <FormControl>
                     <Input 
                       {...field} 
                       type="number"
+                      min="0"
                       placeholder="0"
                       onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                      required
                     />
                   </FormControl>
                   <FormMessage />
