@@ -73,14 +73,14 @@ const Relatorios: React.FC = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen p-1 pb-4">
+      <div className="min-h-screen p-1">
         <div className="flex items-center justify-center min-h-[400px]">
           <Card className="w-full max-w-md">
-            <CardContent className="p-4 text-center">
-              <AlertCircle className="w-8 h-8 text-red-500 mx-auto mb-2" />
+            <CardContent className="p-3 text-center">
+              <AlertCircle className="w-6 h-6 text-red-500 mx-auto mb-2" />
               <h3 className="text-sm font-semibold mb-1">Erro ao carregar dados</h3>
               <p className="text-xs text-gray-600 mb-2">{error}</p>
-              <Button onClick={refetch} className="w-full text-xs h-7">
+              <Button onClick={refetch} className="w-full text-xs h-6">
                 <RefreshCw className="w-3 h-3 mr-1" />
                 Tentar novamente
               </Button>
@@ -92,7 +92,7 @@ const Relatorios: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen p-1 pb-4 space-y-1">
+    <div className="min-h-screen p-1 space-y-1">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1">
         <div className="flex items-center space-x-1">
@@ -191,142 +191,90 @@ const Relatorios: React.FC = () => {
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-1">
-        {/* Produtos Mais Vendidos */}
-        <Card>
-          <CardHeader className="p-1.5">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-xs font-semibold text-gray-800">Produtos Mais Vendidos</CardTitle>
-              <Badge variant="outline" className="text-xs px-1 py-0">
-                {produtosMaisVendidos.length} produtos
-              </Badge>
+      {/* Vendas Recentes */}
+      <Card>
+        <CardHeader className="p-1.5">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-xs font-semibold text-gray-800">Vendas Recentes</CardTitle>
+            <Badge variant="outline" className="text-xs px-1 py-0">
+              {pedidosRecentes.length} vendas
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          {loading ? (
+            <div className="p-2 text-center">
+              <RefreshCw className="w-4 h-4 animate-spin mx-auto mb-1" />
+              <p className="text-xs text-gray-500">Carregando vendas...</p>
             </div>
-          </CardHeader>
-          <CardContent className="p-0">
-            {loading ? (
-              <div className="p-2 text-center">
-                <RefreshCw className="w-4 h-4 animate-spin mx-auto mb-1" />
-                <p className="text-xs text-gray-500">Carregando produtos...</p>
-              </div>
-            ) : produtosMaisVendidos.length === 0 ? (
-              <div className="p-2 text-center">
-                <Package className="w-6 h-6 text-gray-400 mx-auto mb-1" />
-                <p className="text-xs text-gray-500">Nenhum produto vendido no período</p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader className="bg-gray-50">
-                    <TableRow>
-                      <TableHead className="h-6 text-xs px-2">Produto</TableHead>
-                      <TableHead className="h-6 text-xs px-2">Qtd</TableHead>
-                      <TableHead className="h-6 text-xs px-2">Receita</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {produtosMaisVendidos.map((produto, index) => (
-                      <TableRow key={produto.id} className="h-6">
-                        <TableCell className="font-medium p-1 text-xs">{produto.nome}</TableCell>
-                        <TableCell className="p-1">
-                          <Badge variant="secondary" className="text-xs px-1 py-0">{produto.quantidade}</Badge>
-                        </TableCell>
-                        <TableCell className="text-green-600 font-bold p-1 text-xs">
-                          {formatCurrency(produto.receita)}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Pedidos Recentes */}
-        <Card>
-          <CardHeader className="p-1.5">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-xs font-semibold text-gray-800">Vendas Recentes</CardTitle>
-              <Badge variant="outline" className="text-xs px-1 py-0">
-                {pedidosRecentes.length} vendas
-              </Badge>
+          ) : pedidosRecentes.length === 0 ? (
+            <div className="p-2 text-center">
+              <Package className="w-6 h-6 text-gray-400 mx-auto mb-1" />
+              <p className="text-xs text-gray-500">Nenhuma venda no período</p>
             </div>
-          </CardHeader>
-          <CardContent className="p-0">
-            {loading ? (
-              <div className="p-2 text-center">
-                <RefreshCw className="w-4 h-4 animate-spin mx-auto mb-1" />
-                <p className="text-xs text-gray-500">Carregando vendas...</p>
-              </div>
-            ) : pedidosRecentes.length === 0 ? (
-              <div className="p-2 text-center">
-                <Package className="w-6 h-6 text-gray-400 mx-auto mb-1" />
-                <p className="text-xs text-gray-500">Nenhuma venda no período</p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader className="bg-gray-50">
-                    <TableRow>
-                      <TableHead className="h-6 text-xs px-2">Código</TableHead>
-                      <TableHead className="hidden sm:table-cell h-6 text-xs px-2">Hora</TableHead>
-                      <TableHead className="h-6 text-xs px-2">Itens</TableHead>
-                      <TableHead className="h-6 text-xs px-2">Total</TableHead>
-                      <TableHead className="h-6 text-xs px-2">Pagamento</TableHead>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader className="bg-gray-50">
+                  <TableRow>
+                    <TableHead className="h-6 text-xs px-2">Código</TableHead>
+                    <TableHead className="hidden sm:table-cell h-6 text-xs px-2">Hora</TableHead>
+                    <TableHead className="h-6 text-xs px-2">Itens</TableHead>
+                    <TableHead className="h-6 text-xs px-2">Total</TableHead>
+                    <TableHead className="h-6 text-xs px-2">Pagamento</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {pedidosRecentes.map((pedido) => (
+                    <TableRow key={pedido.id} className="h-6">
+                      <TableCell className="p-1">
+                        <code className="bg-gray-100 px-1 py-0.5 rounded text-xs">
+                          {pedido.numeroAutorizacao}
+                        </code>
+                      </TableCell>
+                      <TableCell className="hidden sm:table-cell p-1 text-xs">
+                        {formatTime(pedido.dataVenda)}
+                      </TableCell>
+                      <TableCell className="p-1 text-xs">{pedido.quantidade}</TableCell>
+                      <TableCell className="font-bold p-1 text-xs">
+                        {formatCurrency(pedido.valorTotal)}
+                      </TableCell>
+                      <TableCell className="p-1">
+                        <Badge 
+                          variant="outline"
+                          className="text-xs px-1 py-0"
+                        >
+                          {pedido.formaPagamento}
+                        </Badge>
+                      </TableCell>
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {pedidosRecentes.map((pedido) => (
-                      <TableRow key={pedido.id} className="h-6">
-                        <TableCell className="p-1">
-                          <code className="bg-gray-100 px-1 py-0.5 rounded text-xs">
-                            {pedido.numeroAutorizacao}
-                          </code>
-                        </TableCell>
-                        <TableCell className="hidden sm:table-cell p-1 text-xs">
-                          {formatTime(pedido.dataVenda)}
-                        </TableCell>
-                        <TableCell className="p-1 text-xs">{pedido.quantidade}</TableCell>
-                        <TableCell className="font-bold p-1 text-xs">
-                          {formatCurrency(pedido.valorTotal)}
-                        </TableCell>
-                        <TableCell className="p-1">
-                          <Badge 
-                            variant="outline"
-                            className="text-xs px-1 py-0"
-                          >
-                            {pedido.formaPagamento}
-                          </Badge>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Gráfico de Vendas por Produto */}
       {!loading && dadosGraficoVendas.length > 0 && (
-        <div className="mb-2">
+        <div className="mb-1">
           <GraficoVendas
             dados={dadosGraficoVendas}
             tipo="bar"
-            titulo="Receita por Produto Mais Vendido"
+            titulo="Receita por Produto"
             corPrimaria="#10b981"
           />
         </div>
       )}
 
       {/* Lista Completa de Produtos Vendidos */}
-      <Card className="mb-4">
+      <Card>
         <CardHeader className="p-1.5">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-xs font-semibold text-gray-800">Todos os Produtos Vendidos</CardTitle>
+            <CardTitle className="text-xs font-semibold text-gray-800">Produtos Vendidos</CardTitle>
             <Badge variant="outline" className="text-xs px-1 py-0">
-              Análise detalhada
+              {produtosMaisVendidos.length} produtos
             </Badge>
           </div>
         </CardHeader>
@@ -342,7 +290,7 @@ const Relatorios: React.FC = () => {
               <p className="text-xs text-gray-500">Nenhum produto vendido no período</p>
             </div>
           ) : (
-            <div className="overflow-x-auto mb-2">
+            <div className="overflow-x-auto mb-1">
               <Table>
                 <TableHeader className="bg-gray-50">
                   <TableRow>
