@@ -37,12 +37,36 @@ interface Product {
   updated_at: string;
 }
 
+interface Category {
+  id: string;
+  nome: string;
+  descricao: string;
+}
+
 const Produtos: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const queryClient = useQueryClient();
 
-  const categories = ['Bebidas', 'Salgados', 'Sanduíches', 'Doces', 'Outros'];
+  // Buscar categorias do Supabase
+  const { data: categories = [] } = useQuery({
+    queryKey: ['categorias'],
+    queryFn: async () => {
+      console.log('Buscando categorias do Supabase...');
+      const { data, error } = await supabase
+        .from('categorias')
+        .select('*')
+        .order('nome');
+      
+      if (error) {
+        console.error('Erro ao buscar categorias:', error);
+        throw error;
+      }
+      
+      console.log('Categorias carregadas:', data);
+      return data as Category[];
+    },
+  });
 
   // Buscar produtos do Supabase
   const { data: products = [], isLoading, error } = useQuery({
@@ -193,8 +217,8 @@ const Produtos: React.FC = () => {
                 className="border rounded-md px-2 py-1 text-xs flex-1 h-7"
               >
                 <option value="all">Todas as categorias</option>
-                {categories.map(cat => (
-                  <option key={cat} value={cat}>{cat}</option>
+                {categories.map(category => (
+                  <option key={category.id} value={category.nome}>{category.nome}</option>
                 ))}
               </select>
             </div>

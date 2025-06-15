@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -16,7 +15,7 @@ import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '
 import { Plus, Upload, Link } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 
 interface ProductFormData {
@@ -33,6 +32,12 @@ interface ProductFormProps {
   onSuccess?: () => void;
 }
 
+interface Category {
+  id: string;
+  nome: string;
+  descricao: string;
+}
+
 const ProductForm: React.FC<ProductFormProps> = ({ onSuccess }) => {
   const [open, setOpen] = useState(false);
   const [imageType, setImageType] = useState<'url' | 'upload'>('url');
@@ -40,14 +45,30 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSuccess }) => {
   const [previewUrl, setPreviewUrl] = useState<string>('');
   const queryClient = useQueryClient();
 
-  const categories = ['Bebidas', 'Salgados', 'Sanduíches', 'Doces', 'Outros'];
+  // Buscar categorias do Supabase
+  const { data: categories = [] } = useQuery({
+    queryKey: ['categorias'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('categorias')
+        .select('*')
+        .order('nome');
+      
+      if (error) {
+        console.error('Erro ao buscar categorias:', error);
+        throw error;
+      }
+      
+      return data as Category[];
+    },
+  });
 
   const form = useForm<ProductFormData>({
     defaultValues: {
       nome: '',
       preco: 0,
       codigo_barras: '',
-      categoria: 'Bebidas',
+      categoria: '',
       estoque: 0,
       descricao: '',
       imagem_url: '',
@@ -190,8 +211,9 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSuccess }) => {
                       className="w-full border rounded-md px-3 py-2"
                       required
                     >
-                      {categories.map(cat => (
-                        <option key={cat} value={cat}>{cat}</option>
+                      <option value="">Selecione uma categoria</option>
+                      {categories.map(category => (
+                        <option key={category.id} value={category.nome}>{category.nome}</option>
                       ))}
                     </select>
                   </FormControl>
