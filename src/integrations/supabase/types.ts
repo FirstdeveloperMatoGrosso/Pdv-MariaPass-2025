@@ -762,6 +762,10 @@ export type Database = {
           receita_gerada: number
         }[]
       }
+      salvar_produtos_vendidos: {
+        Args: { data_inicio: string; data_fim: string; periodo_tipo: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
