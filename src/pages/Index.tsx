@@ -187,15 +187,15 @@ const Index: React.FC = () => {
           <p className="text-gray-500 text-lg">Nenhum produto disponível no momento</p>
         </div>
       ) : (
-        /* Grid de Produtos - limitado a 5 produtos */
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+        /* Grid de Produtos - 5 produtos lado a lado */
+        <div className="grid grid-cols-5 gap-4 max-w-full overflow-x-auto">
           {products.map((product) => {
             const cartItem = cart.find(item => item.id === product.id);
             const quantity = cartItem?.quantity || 0;
             const availableStock = product.estoque - quantity;
 
             return (
-              <Card key={product.id} className="relative overflow-hidden">
+              <Card key={product.id} className="relative overflow-hidden min-w-0 flex-shrink-0">
                 <div className="aspect-square bg-gray-100 overflow-hidden">
                   {product.imagem_url ? (
                     <img 
@@ -208,57 +208,59 @@ const Index: React.FC = () => {
                     />
                   ) : (
                     <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                      <Package className="w-16 h-16 text-gray-400" />
+                      <Package className="w-12 h-12 text-gray-400" />
                     </div>
                   )}
                 </div>
                 
-                <CardHeader className="pb-3">
+                <CardHeader className="pb-3 p-3">
                   <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <CardTitle className="text-lg line-clamp-2">{product.nome}</CardTitle>
-                      <Badge variant="outline" className="mt-1">{product.categoria}</Badge>
+                    <div className="flex-1 min-w-0">
+                      <CardTitle className="text-sm line-clamp-2 leading-tight">{product.nome}</CardTitle>
+                      <Badge variant="outline" className="mt-1 text-xs">{product.categoria}</Badge>
                     </div>
                     <Badge 
                       variant={availableStock < 10 ? "destructive" : "secondary"}
-                      className="ml-2"
+                      className="ml-1 text-xs flex-shrink-0"
                     >
                       {availableStock} un.
                     </Badge>
                   </div>
                   
                   {product.descricao && (
-                    <p className="text-sm text-gray-600 mt-2 line-clamp-2">
+                    <p className="text-xs text-gray-600 mt-1 line-clamp-2">
                       {product.descricao}
                     </p>
                   )}
                   
-                  <p className="text-2xl font-bold text-green-600 mt-2">
+                  <p className="text-lg font-bold text-green-600 mt-2">
                     R$ {product.preco.toFixed(2)}
                   </p>
                 </CardHeader>
                 
-                <CardContent className="pt-0">
+                <CardContent className="pt-0 p-3">
                   <div className="flex items-center justify-between">
                     <Button 
                       onClick={() => addToCart(product)}
-                      className="flex-1 mr-2"
+                      className="flex-1 mr-1 text-xs h-8"
                       disabled={availableStock <= 0}
+                      size="sm"
                     >
-                      <Plus className="w-4 h-4 mr-1" />
+                      <Plus className="w-3 h-3 mr-1" />
                       {availableStock <= 0 ? 'Sem Estoque' : 'Adicionar'}
                     </Button>
                     
                     {quantity > 0 && (
-                      <div className="flex items-center space-x-2">
+                      <div className="flex items-center space-x-1">
                         <Button 
                           size="sm" 
                           variant="outline"
                           onClick={() => removeFromCart(product.id)}
+                          className="h-6 w-6 p-0"
                         >
                           <Minus className="w-3 h-3" />
                         </Button>
-                        <Badge variant="secondary">{quantity}</Badge>
+                        <Badge variant="secondary" className="text-xs">{quantity}</Badge>
                       </div>
                     )}
                   </div>
@@ -266,7 +268,7 @@ const Index: React.FC = () => {
                 
                 {quantity > 0 && (
                   <Badge 
-                    className="absolute -top-2 -right-2 bg-red-500"
+                    className="absolute -top-2 -right-2 bg-red-500 text-xs"
                     variant="destructive"
                   >
                     {quantity}
