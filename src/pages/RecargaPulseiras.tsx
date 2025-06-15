@@ -63,6 +63,7 @@ const RecargaPulseiras: React.FC = () => {
   const [selectedPulseira, setSelectedPulseira] = useState<Pulseira | null>(null);
   const [rechargeAmount, setRechargeAmount] = useState('');
   const [showPixPayment, setShowPixPayment] = useState(false);
+  const [showPaymentSelector, setShowPaymentSelector] = useState(false);
   const [currentRecargaId, setCurrentRecargaId] = useState('');
   const queryClient = useQueryClient();
 
@@ -197,31 +198,29 @@ const RecargaPulseiras: React.FC = () => {
     });
   };
 
-  const handlePixPaymentSuccess = async () => {
-    try {
-      // Atualizar saldo da pulseira
-      if (selectedPulseira && rechargeAmount) {
-        const novoSaldo = selectedPulseira.saldo + parseFloat(rechargeAmount);
-        await supabase
-          .from('pulseiras')
-          .update({ saldo: novoSaldo, updated_at: new Date().toISOString() })
-          .eq('id', selectedPulseira.id);
-      }
-
-      queryClient.invalidateQueries({ queryKey: ['recargas_pulseiras'] });
-      queryClient.invalidateQueries({ queryKey: ['pulseiras_ativas'] });
-      setShowPixPayment(false);
-      setSelectedPulseira(null);
-      setRechargeAmount('');
-      toast.success('Recarga realizada com sucesso!');
-    } catch (error) {
-      console.error('Erro ao finalizar recarga:', error);
-      toast.error('Erro ao finalizar recarga');
-    }
+  const handlePixPayment = (recargaId: string) => {
+    console.log('💳 Iniciando pagamento PIX para recarga:', recargaId);
+    setCurrentRecargaId(recargaId);
+    setShowPaymentSelector(true);
   };
 
-  const handlePixPaymentCancel = () => {
+  const handlePaymentSuccess = () => {
+    console.log('✅ Pagamento PIX concluído com sucesso');
     setShowPixPayment(false);
+    setShowPaymentSelector(false);
+    setCurrentRecargaId('');
+    
+    // Invalidar queries para atualizar os dados
+    queryClient.invalidateQueries({ queryKey: ['recargas-pulseiras'] });
+    queryClient.invalidateQueries({ queryKey: ['pulseiras'] });
+    
+    toast.success('Recarga realizada com sucesso!');
+  };
+
+  const handlePaymentCancel = () => {
+    console.log('❌ Pagamento PIX cancelado');
+    setShowPixPayment(false);
+    setShowPaymentSelector(false);
     setCurrentRecargaId('');
   };
 
@@ -256,8 +255,8 @@ const RecargaPulseiras: React.FC = () => {
         <PixPayment
           valor={parseFloat(rechargeAmount)}
           recargaId={currentRecargaId}
-          onPaymentSuccess={handlePixPaymentSuccess}
-          onCancel={handlePixPaymentCancel}
+          onPaymentSuccess={handlePaymentSuccess}
+          onCancel={handlePaymentCancel}
         />
       </div>
     );
@@ -454,6 +453,30 @@ const RecargaPulseiras: React.FC = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Payment Provider Selector Modal */}
+      {showPaymentSelector && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <PaymentProviderSelector
+            valor={parseFloat(valorRecarga) || 0}
+            recargaId={currentRecargaId}
+            onPaymentSuccess={handlePaymentSuccess}
+            onCancel={handlePaymentCancel}
+          />
+        </div>
+      )}
+
+      {/* PIX Payment Modal (mantido para compatibilidade) */}
+      {showPixPayment && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <PixPayment
+            valor={parseFloat(valorRecarga) || 0}
+            recargaId={currentRecargaId}
+            onPaymentSuccess={handlePaymentSuccess}
+            onCancel={handlePaymentCancel}
+          />
+        </div>
+      )}
     </div>
   );
 };
