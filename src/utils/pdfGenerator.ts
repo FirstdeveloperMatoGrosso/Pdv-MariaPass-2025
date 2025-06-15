@@ -40,123 +40,137 @@ interface ReportData {
 export const generateReportPDF = (companyData: CompanyData, reportData: ReportData): jsPDF => {
   const doc = new jsPDF();
   const currentDate = new Date().toLocaleDateString('pt-BR');
-  const reportNumber = `REL-${Date.now().toString().slice(-6)}`;
+  const reportNumber = `#${Date.now().toString().slice(-6)}`;
   
-  // Cores baseadas no modelo
-  const primaryColor: [number, number, number] = [139, 69, 255]; // Roxo
-  const secondaryColor: [number, number, number] = [75, 85, 99]; // Cinza
-  const accentColor: [number, number, number] = [34, 197, 94]; // Verde
+  // Cores exatas da imagem
+  const darkBlue: [number, number, number] = [31, 41, 55]; // Cor do cabeçalho
+  const lightGray: [number, number, number] = [248, 250, 252]; // Fundo das linhas
+  const mediumGray: [number, number, number] = [107, 114, 128]; // Texto secundário
+  const greenAccent: [number, number, number] = [16, 185, 129]; // Verde dos valores
   
-  // ==================== CABEÇALHO ====================
+  // ==================== CABEÇALHO SUPERIOR ====================
   
-  // Título principal
-  doc.setTextColor(...primaryColor);
-  doc.setFontSize(28);
+  // Fundo azul escuro do cabeçalho (toda a largura)
+  doc.setFillColor(...darkBlue);
+  doc.rect(0, 0, 210, 45, 'F');
+  
+  // Título "INVOICE" em branco
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(24);
   doc.setFont('helvetica', 'bold');
-  doc.text('Relatório de Vendas', 20, 30);
+  doc.text('RELATÓRIO', 20, 25);
   
-  // Logo da empresa (área reservada - pode ser customizada)
-  doc.setFillColor(240, 240, 240);
-  doc.rect(150, 15, 40, 20, 'F');
-  doc.setTextColor(100, 100, 100);
-  doc.setFontSize(10);
-  doc.text('LOGO', 165, 27);
-  
-  // ==================== INFORMAÇÕES DO RELATÓRIO ====================
-  
-  let yPos = 55;
-  
-  // Caixa de informações do relatório
-  doc.setFillColor(248, 250, 252);
-  doc.rect(20, yPos, 170, 35, 'F');
-  doc.setDrawColor(200, 200, 200);
-  doc.rect(20, yPos, 170, 35);
-  
-  // Coluna esquerda - Dados do relatório
-  doc.setTextColor(...secondaryColor);
-  doc.setFontSize(10);
+  // Número do relatório no canto direito
+  doc.setFontSize(14);
   doc.setFont('helvetica', 'normal');
+  doc.text(reportNumber, 170, 25);
   
-  doc.text('Relatório #', 25, yPos + 10);
-  doc.text('Período', 25, yPos + 18);
-  doc.text('Data de Emissão', 25, yPos + 26);
+  // Data abaixo do número
+  doc.setFontSize(10);
+  doc.text(currentDate, 170, 32);
   
-  doc.setFont('helvetica', 'bold');
-  doc.text(reportNumber, 65, yPos + 10);
-  doc.text(reportData.period, 65, yPos + 18);
-  doc.text(currentDate, 65, yPos + 26);
+  // ==================== INFORMAÇÕES DA EMPRESA ====================
   
-  // Coluna direita - Dados da empresa
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(...primaryColor);
-  doc.text(companyData.name, 110, yPos + 10);
+  let yPos = 60;
   
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(...secondaryColor);
-  doc.setFontSize(9);
-  
-  const addressLines = companyData.address.split(',');
-  let addressY = yPos + 16;
-  addressLines.forEach(line => {
-    doc.text(line.trim(), 110, addressY);
-    addressY += 4;
-  });
-  
-  doc.text(`CNPJ: ${companyData.cnpj}`, 110, addressY + 2);
-  doc.text(`${companyData.email} | ${companyData.phone}`, 110, addressY + 6);
-  
-  yPos += 50;
-  
-  // ==================== RESUMO EXECUTIVO ====================
-  
-  doc.setTextColor(...primaryColor);
+  // Nome da empresa (grande e em negrito)
+  doc.setTextColor(...darkBlue);
   doc.setFontSize(16);
   doc.setFont('helvetica', 'bold');
-  doc.text('Resumo Executivo', 20, yPos);
+  doc.text(companyData.name, 20, yPos);
   
-  yPos += 15;
+  yPos += 8;
   
-  // Tabela de resumo estilo invoice
-  const summaryData = [
-    ['Faturamento Total', '', '', `R$ ${reportData.salesData.total.toFixed(2)}`],
-    ['Total de Pedidos', '', '', reportData.salesData.orders.toString()],
-    ['Ticket Médio', '', '', `R$ ${reportData.salesData.avgTicket.toFixed(2)}`],
-    ['', '', 'Sub Total', `R$ ${reportData.salesData.total.toFixed(2)}`],
-    ['', '', 'Impostos (est.)', `R$ ${(reportData.salesData.total * 0.08).toFixed(2)}`],
-    ['', '', 'Total Líquido', `R$ ${(reportData.salesData.total * 0.92).toFixed(2)}`]
+  // Endereço da empresa
+  doc.setTextColor(...mediumGray);
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+  
+  const addressLines = companyData.address.split(',');
+  addressLines.forEach(line => {
+    doc.text(line.trim(), 20, yPos);
+    yPos += 4;
+  });
+  
+  doc.text(companyData.email, 20, yPos);
+  yPos += 4;
+  doc.text(companyData.phone, 20, yPos);
+  yPos += 4;
+  doc.text(`CNPJ: ${companyData.cnpj}`, 20, yPos);
+  
+  // ==================== INFORMAÇÕES DO PERÍODO ====================
+  
+  yPos = 60;
+  
+  // Alinhado à direita
+  doc.setTextColor(...mediumGray);
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+  
+  doc.text('Período:', 140, yPos);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(...darkBlue);
+  doc.text(reportData.period, 140, yPos + 6);
+  
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(...mediumGray);
+  doc.text('Data de Emissão:', 140, yPos + 16);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(...darkBlue);
+  doc.text(currentDate, 140, yPos + 22);
+  
+  yPos = 110;
+  
+  // ==================== TABELA PRINCIPAL - RESUMO ====================
+  
+  const summaryTableData = [
+    ['Faturamento Total', '', `R$ ${reportData.salesData.total.toFixed(2)}`],
+    ['Total de Pedidos', '', reportData.salesData.orders.toString()],
+    ['Ticket Médio', '', `R$ ${reportData.salesData.avgTicket.toFixed(2)}`],
+    ['', '', ''], // Linha vazia
+    ['', 'TOTAL GERAL', `R$ ${reportData.salesData.total.toFixed(2)}`]
   ];
   
   autoTable(doc, {
     startY: yPos,
-    head: [['Métrica', 'Período Anterior', 'Variação', 'Valor Atual']],
-    body: summaryData,
+    head: [['Descrição', 'Qtd', 'Valor']],
+    body: summaryTableData,
     theme: 'grid',
     headStyles: {
-      fillColor: primaryColor,
+      fillColor: darkBlue,
       textColor: [255, 255, 255],
-      fontSize: 10,
-      fontStyle: 'bold'
+      fontSize: 11,
+      fontStyle: 'bold',
+      halign: 'left'
     },
     bodyStyles: {
-      fontSize: 9,
-      textColor: secondaryColor
+      fontSize: 10,
+      textColor: [0, 0, 0]
     },
     columnStyles: {
-      0: { cellWidth: 60, fontStyle: 'bold' },
-      1: { cellWidth: 40, halign: 'center' },
-      2: { cellWidth: 30, halign: 'center' },
-      3: { cellWidth: 40, halign: 'right', fontStyle: 'bold' }
+      0: { cellWidth: 100, halign: 'left' },
+      1: { cellWidth: 30, halign: 'center' },
+      2: { cellWidth: 40, halign: 'right', fontStyle: 'bold' }
     },
     margin: { left: 20, right: 20 },
+    alternateRowStyles: {
+      fillColor: lightGray
+    },
     didParseCell: function(data) {
-      if (data.row.index >= 3 && data.column.index === 2) {
-        data.cell.styles.fillColor = [245, 245, 245];
-        data.cell.styles.fontStyle = 'bold';
-      }
-      if (data.row.index === 5) {
-        data.cell.styles.fillColor = accentColor;
+      // Linha do total em destaque
+      if (data.row.index === 4) {
+        data.cell.styles.fillColor = darkBlue;
         data.cell.styles.textColor = [255, 255, 255];
         data.cell.styles.fontStyle = 'bold';
+        data.cell.styles.fontSize = 12;
+      }
+      // Linha vazia
+      if (data.row.index === 3) {
+        data.cell.styles.fillColor = [255, 255, 255];
+      }
+      // Valores em verde
+      if (data.column.index === 2 && data.row.index < 3) {
+        data.cell.styles.textColor = greenAccent;
       }
     }
   });
@@ -165,15 +179,14 @@ export const generateReportPDF = (companyData: CompanyData, reportData: ReportDa
   
   // ==================== PRODUTOS MAIS VENDIDOS ====================
   
-  doc.setTextColor(...primaryColor);
+  doc.setTextColor(...darkBlue);
   doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
-  doc.text('Análise de Produtos', 20, yPos);
+  doc.text('Produtos Mais Vendidos', 20, yPos);
   
   yPos += 10;
   
   const productTableData = reportData.topProducts.map((product, index) => [
-    (index + 1).toString(),
     product.name,
     product.quantity.toString(),
     `R$ ${(product.revenue / product.quantity).toFixed(2)}`,
@@ -182,140 +195,73 @@ export const generateReportPDF = (companyData: CompanyData, reportData: ReportDa
   
   autoTable(doc, {
     startY: yPos,
-    head: [['#', 'Produto/Descrição', 'Qtd', 'Valor Unit.', 'Total']],
+    head: [['Produto', 'Qtd', 'Valor Unit.', 'Total']],
     body: productTableData,
     theme: 'grid',
     headStyles: {
-      fillColor: primaryColor,
+      fillColor: darkBlue,
       textColor: [255, 255, 255],
-      fontSize: 10,
+      fontSize: 11,
       fontStyle: 'bold'
     },
     bodyStyles: {
-      fontSize: 9,
-      textColor: secondaryColor
+      fontSize: 10,
+      textColor: [0, 0, 0]
     },
     columnStyles: {
-      0: { cellWidth: 15, halign: 'center' },
-      1: { cellWidth: 80 },
-      2: { cellWidth: 25, halign: 'center' },
-      3: { cellWidth: 30, halign: 'right' },
-      4: { cellWidth: 30, halign: 'right', fontStyle: 'bold' }
+      0: { cellWidth: 80, halign: 'left' },
+      1: { cellWidth: 25, halign: 'center' },
+      2: { cellWidth: 30, halign: 'right' },
+      3: { cellWidth: 35, halign: 'right', fontStyle: 'bold' }
     },
     margin: { left: 20, right: 20 },
     alternateRowStyles: {
-      fillColor: [248, 250, 252]
-    }
-  });
-  
-  const finalY = (doc as any).lastAutoTable.finalY;
-  
-  // Nova página se necessário
-  if (finalY > 200) {
-    doc.addPage();
-    yPos = 30;
-  } else {
-    yPos = finalY + 20;
-  }
-  
-  // ==================== HISTÓRICO DE PEDIDOS ====================
-  
-  doc.setTextColor(...primaryColor);
-  doc.setFontSize(14);
-  doc.setFont('helvetica', 'bold');
-  doc.text('Histórico de Pedidos Recentes', 20, yPos);
-  
-  yPos += 10;
-  
-  const orderTableData = reportData.recentOrders.map(order => [
-    order.id,
-    order.time,
-    order.items.toString(),
-    `R$ ${order.total.toFixed(2)}`,
-    order.status
-  ]);
-  
-  autoTable(doc, {
-    startY: yPos,
-    head: [['Pedido', 'Horário', 'Itens', 'Valor', 'Status']],
-    body: orderTableData,
-    theme: 'grid',
-    headStyles: {
-      fillColor: primaryColor,
-      textColor: [255, 255, 255],
-      fontSize: 10,
-      fontStyle: 'bold'
+      fillColor: lightGray
     },
-    bodyStyles: {
-      fontSize: 9,
-      textColor: secondaryColor
-    },
-    columnStyles: {
-      0: { cellWidth: 35 },
-      1: { cellWidth: 25, halign: 'center' },
-      2: { cellWidth: 20, halign: 'center' },
-      3: { cellWidth: 30, halign: 'right', fontStyle: 'bold' },
-      4: { cellWidth: 30, halign: 'center' }
-    },
-    margin: { left: 20, right: 20 },
     didParseCell: function(data) {
-      if (data.column.index === 4) {
-        if (data.cell.text[0] === 'Concluído') {
-          data.cell.styles.textColor = accentColor;
-          data.cell.styles.fontStyle = 'bold';
-        } else if (data.cell.text[0] === 'Cancelado') {
-          data.cell.styles.textColor = [239, 68, 68];
-          data.cell.styles.fontStyle = 'bold';
-        }
+      // Valores monetários em verde
+      if (data.column.index >= 2) {
+        data.cell.styles.textColor = greenAccent;
       }
     }
   });
   
-  // ==================== RODAPÉ INFORMATIVO ====================
+  yPos = (doc as any).lastAutoTable.finalY + 20;
   
-  const lastTableY = (doc as any).lastAutoTable.finalY;
-  let footerY = lastTableY + 30;
+  // ==================== OBSERVAÇÕES ====================
   
-  // Caixa de informações adicionais
-  doc.setFillColor(248, 250, 252);
-  doc.rect(20, footerY, 170, 25, 'F');
-  doc.setDrawColor(200, 200, 200);
-  doc.rect(20, footerY, 170, 25);
-  
-  doc.setTextColor(...primaryColor);
-  doc.setFontSize(11);
+  doc.setTextColor(...darkBlue);
+  doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
-  doc.text('Observações e Condições', 25, footerY + 8);
+  doc.text('Observações', 20, yPos);
   
-  doc.setTextColor(...secondaryColor);
+  yPos += 8;
+  
+  doc.setTextColor(...mediumGray);
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  doc.text('• Este relatório foi gerado automaticamente pelo sistema MariaPass', 20, yPos);
+  yPos += 5;
+  doc.text('• Os dados apresentados refletem as vendas do período selecionado', 20, yPos);
+  yPos += 5;
+  doc.text('• Para dúvidas ou esclarecimentos, entre em contato conosco', 20, yPos);
+  
+  // ==================== RODAPÉ ====================
+  
+  // Linha horizontal no rodapé
+  doc.setDrawColor(...mediumGray);
+  doc.setLineWidth(0.5);
+  doc.line(20, 280, 190, 280);
+  
+  // Informações do rodapé
+  doc.setTextColor(...mediumGray);
   doc.setFontSize(8);
   doc.setFont('helvetica', 'normal');
-  doc.text('• Relatório gerado automaticamente pelo Sistema MariaPass', 25, footerY + 15);
-  doc.text('• Dados coletados em tempo real do sistema de vendas', 25, footerY + 19);
+  doc.text(`${companyData.name} - ${companyData.email} - ${companyData.phone}`, 20, 285);
   
-  // ==================== RODAPÉ FINAL ====================
-  
-  const pageCount = doc.getNumberOfPages();
-  for (let i = 1; i <= pageCount; i++) {
-    doc.setPage(i);
-    
-    // Linha do rodapé
-    doc.setDrawColor(...primaryColor);
-    doc.setLineWidth(1);
-    doc.line(20, 285, 190, 285);
-    
-    // Informações do rodapé
-    doc.setTextColor(...secondaryColor);
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`Para dúvidas, entre em contato: ${companyData.email}`, 20, 292);
-    doc.text(`Telefone: ${companyData.phone}`, 20, 296);
-    
-    // Numeração das páginas
-    doc.setFont('helvetica', 'bold');
-    doc.text(`Página ${i} de ${pageCount}`, 170, 292);
-    doc.text(`Gerado em: ${currentDate}`, 170, 296);
-  }
+  // Numeração da página
+  doc.setFont('helvetica', 'bold');
+  doc.text('Página 1 de 1', 170, 285);
   
   return doc;
 };
