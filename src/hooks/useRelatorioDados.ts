@@ -81,24 +81,28 @@ export const useRelatorioDados = (periodo: 'today' | 'week' | 'month') => {
       
       const { inicio, fim } = getDateRange();
       
-      console.log('=== SALVANDO E BUSCANDO PRODUTOS VENDIDOS ===');
+      console.log('=== BUSCANDO DADOS DE RELATÓRIO ===');
       console.log('Período:', periodo);
       console.log('Data início:', inicio);
       console.log('Data fim:', fim);
 
-      // Salvar produtos vendidos usando a função SQL
-      const { error: errorSalvar } = await supabase.rpc('salvar_produtos_vendidos', {
-        data_inicio: inicio,
-        data_fim: fim,
-        periodo_tipo: periodo === 'today' ? 'dia' : periodo === 'week' ? 'semana' : 'mes'
-      });
+      // Tentar salvar produtos vendidos usando a função SQL corrigida
+      try {
+        const { error: errorSalvar } = await supabase.rpc('salvar_produtos_vendidos', {
+          data_inicio: inicio,
+          data_fim: fim,
+          periodo_tipo: periodo === 'today' ? 'dia' : periodo === 'week' ? 'semana' : 'mes'
+        });
 
-      if (errorSalvar) {
-        console.error('Erro ao salvar produtos vendidos:', errorSalvar);
-        throw errorSalvar;
+        if (errorSalvar) {
+          console.warn('Aviso ao salvar produtos vendidos:', errorSalvar);
+          // Não falhar aqui, continuar com busca direta
+        } else {
+          console.log('Produtos vendidos salvos com sucesso!');
+        }
+      } catch (salvarError) {
+        console.warn('Erro ao tentar salvar produtos, continuando com busca direta:', salvarError);
       }
-
-      console.log('Produtos vendidos salvos com sucesso!');
 
       // Buscar dados do relatório usando a função SQL
       const { data: dadosRelatorio, error: errorRelatorio } = await supabase.rpc('calcular_relatorio_vendas', {
@@ -113,7 +117,7 @@ export const useRelatorioDados = (periodo: 'today' | 'week' | 'month') => {
 
       console.log('Dados do relatório:', dadosRelatorio);
 
-      // Buscar produtos mais vendidos da tabela salva
+      // Buscar produtos mais vendidos salvos na tabela
       const { data: produtosSalvos, error: errorProdutos } = await supabase
         .from('produtos_mais_vendidos')
         .select(`
@@ -126,14 +130,62 @@ export const useRelatorioDados = (periodo: 'today' | 'week' | 'month') => {
         .order('posicao_ranking', { ascending: true });
 
       if (errorProdutos) {
-        console.error('Erro ao buscar produtos mais vendidos:', errorProdutos);
-        throw errorProdutos;
+        console.warn('Erro ao buscar produtos salvos, buscando diretamente:', errorProdutos);
+        
+        // Fallback: buscar diretamente das vendas se tabela salva falhar
+        const { data: produtosDiretos, error: errorDiretos } = await supabase
+          .from('vendas_pulseiras')
+          .select(`
+            produto_id,
+            quantidade,
+            valor_total,
+            produtos:produto_id (
+              id,
+              nome
+            )
+          `)
+          .gte('data_venda', inicio)
+          .lt('data_venda', fim)
+          .not('produto_id', 'is', null);
+
+        if (errorDiretos) {
+          console.error('Erro ao buscar produtos diretamente:', errorDiretos);
+        } else {
+          console.log('Produtos encontrados diretamente:', produtosDiretos);
+          // Processar dados diretos
+          const produtosAgrupados = produtosDiretos?.reduce((acc: any, venda: any) => {
+            if (venda.produtos && venda.produtos.id) {
+              const produtoId = venda.produtos.id;
+              if (!acc[produtoId]) {
+                acc[produtoId] = {
+                  id: produtoId,
+                  nome: venda.produtos.nome,
+                  quantidade: 0,
+                  receita: 0
+                };
+              }
+              acc[produtoId].quantidade += Number(venda.quantidade) || 0;
+              acc[produtoId].receita += Number(venda.valor_total) || 0;
+            }
+            return acc;
+          }, {}) || {};
+
+          const produtosArray = Object.values(produtosAgrupados) as ProdutoMaisVendido[];
+          setProdutosMaisVendidos(produtosArray.sort((a: any, b: any) => b.quantidade - a.quantidade));
+        }
+      } else {
+        console.log('Produtos mais vendidos salvos:', produtosSalvos);
+        const produtosProcessados = produtosSalvos?.map(produto => ({
+          id: produto.id,
+          nome: produto.nome_produto,
+          quantidade: produto.quantidade_vendida,
+          receita: Number(produto.receita_gerada)
+        })) || [];
+        setProdutosMaisVendidos(produtosProcessados);
       }
 
-      console.log('Produtos mais vendidos salvos:', produtosSalvos);
-
-      // Buscar vendas com débito de pulseira para pedidos recentes
-      const { data: vendasPulseira, error: errorVendasPulseira } = await supabase
+      // Buscar vendas recentes para pedidos
+      const { data: vendasRecentes, error: errorVendas } = await supabase
         .from('vendas_pulseiras')
         .select(`
           id,
@@ -145,16 +197,23 @@ export const useRelatorioDados = (periodo: 'today' | 'week' | 'month') => {
         `)
         .gte('data_venda', inicio)
         .lt('data_venda', fim)
-        .in('forma_pagamento', ['debito_pulseira', 'Débito Pulseira'])
         .order('data_venda', { ascending: false })
         .limit(15);
 
-      if (errorVendasPulseira) {
-        console.error('Erro ao buscar vendas de pulseira:', errorVendasPulseira);
-        throw errorVendasPulseira;
+      if (errorVendas) {
+        console.error('Erro ao buscar vendas recentes:', errorVendas);
+      } else {
+        console.log('Vendas recentes encontradas:', vendasRecentes?.length || 0);
+        const pedidosProcessados = vendasRecentes?.map(venda => ({
+          id: venda.id,
+          numeroAutorizacao: venda.numero_autorizacao || `VEN-${venda.id.slice(0, 8)}`,
+          dataVenda: venda.data_venda,
+          quantidade: Number(venda.quantidade) || 1,
+          valorTotal: Number(venda.valor_total) || 0,
+          formaPagamento: venda.forma_pagamento || 'Não informado'
+        })) || [];
+        setPedidosRecentes(pedidosProcessados);
       }
-
-      console.log('Vendas com débito de pulseira encontradas:', vendasPulseira?.length || 0);
 
       // Processar dados do relatório
       const dadosProcessados = dadosRelatorio?.[0] || {
@@ -163,25 +222,6 @@ export const useRelatorioDados = (periodo: 'today' | 'week' | 'month') => {
         ticket_medio: 0
       };
 
-      // Processar produtos mais vendidos
-      const produtosProcessados = produtosSalvos?.map(produto => ({
-        id: produto.id,
-        nome: produto.nome_produto,
-        quantidade: produto.quantidade_vendida,
-        receita: Number(produto.receita_gerada)
-      })) || [];
-
-      // Processar pedidos recentes
-      const pedidosProcessados = vendasPulseira?.map(venda => ({
-        id: venda.id,
-        numeroAutorizacao: venda.numero_autorizacao || `PULS-${venda.id.slice(0, 8)}`,
-        dataVenda: venda.data_venda,
-        quantidade: Number(venda.quantidade) || 1,
-        valorTotal: Number(venda.valor_total) || 0,
-        formaPagamento: 'Débito Pulseira'
-      })) || [];
-
-      // Atualizar estados
       setDados({
         faturamentoTotal: Number(dadosProcessados.faturamento_total),
         pedidosRealizados: Number(dadosProcessados.pedidos_realizados),
@@ -189,12 +229,7 @@ export const useRelatorioDados = (periodo: 'today' | 'week' | 'month') => {
         crescimentoPercentual: 12.5
       });
 
-      setProdutosMaisVendidos(produtosProcessados);
-      setPedidosRecentes(pedidosProcessados);
-
       console.log('=== DADOS FINAIS ATUALIZADOS ===');
-      console.log('Produtos salvos na tabela:', produtosProcessados.length);
-      console.log('Vendas recentes com pulseira:', pedidosProcessados.length);
 
     } catch (err) {
       console.error('Erro ao carregar dados do relatório:', err);
