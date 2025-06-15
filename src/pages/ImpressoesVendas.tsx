@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -417,7 +416,9 @@ const ImpressoesVendas: React.FC = () => {
                 {filteredImpressoes.map((impressao: ImpressaoVenda) => (
                   <TableRow key={impressao.id}>
                     <TableCell className="font-medium p-1">
-                      <div className="text-xs font-semibold">{impressao.pedido_id}</div>
+                      <div className="text-xs font-semibold text-blue-700">
+                        {impressao.pedido_id || 'N/A'}
+                      </div>
                       <div className="text-xs text-gray-500">{impressao.usuario}</div>
                     </TableCell>
                     <TableCell className="p-1">
@@ -456,7 +457,7 @@ const ImpressoesVendas: React.FC = () => {
                             </DialogHeader>
                             {selectedImpressao && (
                               <div className="space-y-2 text-xs">
-                                <div><strong>ID:</strong> {selectedImpressao.pedido_id}</div>
+                                <div><strong>ID:</strong> {selectedImpressao.pedido_id || 'N/A'}</div>
                                 <div><strong>Produto:</strong> {selectedImpressao.produto_nome}</div>
                                 <div><strong>Quantidade:</strong> {selectedImpressao.quantidade}</div>
                                 <div><strong>Tipo:</strong> {selectedImpressao.tipo}</div>
