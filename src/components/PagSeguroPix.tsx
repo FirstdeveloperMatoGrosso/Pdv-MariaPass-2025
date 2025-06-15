@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -35,25 +34,26 @@ const PagSeguroPix: React.FC<PagSeguroPixProps> = ({
 
   const generatePagSeguroPix = async () => {
     try {
-      console.log('🏦 Gerando PIX PagSeguro para valor:', valor);
+      console.log('🏦 Gerando PIX PagBank para valor:', valor);
       
-      const apiKey = getConfigValue('api_key') || 'DEMO_API_KEY';
+      const email = getConfigValue('email') || 'demo@exemplo.com';
+      const token = getConfigValue('token') || 'DEMO_TOKEN';
       const isSandbox = getConfigValue('sandbox') || true;
       const expiracaoMinutos = getConfigValue('expiracao_minutos') || 15;
       
       const baseUrl = isSandbox 
-        ? 'https://sandbox.api.pagseguro.com'
-        : 'https://api.pagseguro.com';
+        ? 'https://ws.sandbox.pagseguro.uol.com.br'
+        : 'https://ws.pagseguro.uol.com.br';
       
       const expiresAt = new Date();
       expiresAt.setMinutes(expiresAt.getMinutes() + expiracaoMinutos);
       
-      // Payload para PagSeguro PIX
+      // Payload para PagBank PIX
       const pixPayload = {
         reference_id: `recarga_${recargaId}`,
         description: `Recarga de pulseira - R$ ${valor.toFixed(2)}`,
         amount: {
-          value: Math.round(valor * 100), // PagSeguro trabalha com centavos
+          value: Math.round(valor * 100), // PagBank trabalha com centavos
           currency: 'BRL'
         },
         payment_method: {
@@ -67,9 +67,10 @@ const PagSeguroPix: React.FC<PagSeguroPixProps> = ({
         ]
       };
       
-      console.log('📤 Enviando request para PagSeguro:', pixPayload);
+      console.log('📤 Enviando request para PagBank:', pixPayload);
+      console.log('🔑 Usando credenciais - Email:', email, 'Token:', token?.substring(0, 10) + '...');
       
-      // Simulação de resposta do PagSeguro para desenvolvimento
+      // Simulação de resposta do PagBank para desenvolvimento
       const mockResponse = {
         id: `PIX_${Date.now()}`,
         reference_id: pixPayload.reference_id,
@@ -92,14 +93,17 @@ const PagSeguroPix: React.FC<PagSeguroPixProps> = ({
       const response = await fetch(`${baseUrl}/orders`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${apiKey}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(pixPayload)
+        body: JSON.stringify({
+          ...pixPayload,
+          email: email,
+          token: token
+        })
       });
       
       if (!response.ok) {
-        throw new Error(`Erro PagSeguro: ${response.status}`);
+        throw new Error(`Erro PagBank: ${response.status}`);
       }
       
       const mockResponse = await response.json();
@@ -111,7 +115,7 @@ const PagSeguroPix: React.FC<PagSeguroPixProps> = ({
         .insert({
           recarga_id: recargaId,
           qr_code: mockResponse.qr_codes[0].text,
-          chave_pix: 'pagseguro_pix',
+          chave_pix: 'pagbank_pix',
           valor: valor,
           expira_em: expiresAt.toISOString(),
           status: 'aguardando'
@@ -123,19 +127,19 @@ const PagSeguroPix: React.FC<PagSeguroPixProps> = ({
       
       setPixData({
         ...data,
-        pagseguro_id: mockResponse.id,
+        pagbank_id: mockResponse.id,
         qr_image: mockResponse.qr_codes[0].links[0].href
       });
       
       setTimeLeft(expiracaoMinutos * 60);
       setStatus('waiting');
       
-      console.log('✅ PIX PagSeguro gerado com sucesso:', mockResponse);
-      toast.success('PIX PagSeguro gerado com sucesso!');
+      console.log('✅ PIX PagBank gerado com sucesso:', mockResponse);
+      toast.success('PIX PagBank gerado com sucesso!');
       
     } catch (error) {
-      console.error('❌ Erro ao gerar PIX PagSeguro:', error);
-      toast.error('Erro ao gerar PIX PagSeguro: ' + error.message);
+      console.error('❌ Erro ao gerar PIX PagBank:', error);
+      toast.error('Erro ao gerar PIX PagBank: ' + error.message);
       setStatus('expired');
     }
   };
@@ -143,7 +147,7 @@ const PagSeguroPix: React.FC<PagSeguroPixProps> = ({
   const generateBRCode = (valor: number) => {
     // Geração simplificada de BR Code para desenvolvimento
     const timestamp = Date.now().toString().slice(-8);
-    return `00020126580014br.gov.bcb.pix0136${timestamp}5204000053039865802BR5925Maria Pass Sistema PagSeg6009SAO PAULO62070503***6304${timestamp}`;
+    return `00020126580014br.gov.bcb.pix0136${timestamp}5204000053039865802BR5925Maria Pass Sistema PagBank6009SAO PAULO62070503***6304${timestamp}`;
   };
 
   const copyPixCode = () => {
@@ -153,8 +157,8 @@ const PagSeguroPix: React.FC<PagSeguroPixProps> = ({
     }
   };
 
-  const checkPagSeguroPayment = async () => {
-    if (!pixData?.pagseguro_id) return;
+  const checkPagBankPayment = async () => {
+    if (!pixData?.pagbank_id) return;
     
     try {
       // Verificar status no banco de dados local
@@ -168,25 +172,22 @@ const PagSeguroPix: React.FC<PagSeguroPixProps> = ({
       
       if (data.status === 'pago') {
         setStatus('paid');
-        toast.success('💰 Pagamento PIX confirmado via PagSeguro!');
+        toast.success('💰 Pagamento PIX confirmado via PagBank!');
         setTimeout(() => {
           onPaymentSuccess();
         }, 2000);
       }
       
-      // Em produção, também consultar API do PagSeguro
+      // Em produção, também consultar API do PagBank
       /*
-      const apiKey = getConfigValue('api_key');
+      const email = getConfigValue('email');
+      const token = getConfigValue('token');
       const isSandbox = getConfigValue('sandbox') || true;
       const baseUrl = isSandbox 
-        ? 'https://sandbox.api.pagseguro.com'
-        : 'https://api.pagseguro.com';
+        ? 'https://ws.sandbox.pagseguro.uol.com.br'
+        : 'https://ws.pagseguro.uol.com.br';
       
-      const response = await fetch(`${baseUrl}/orders/${pixData.pagseguro_id}`, {
-        headers: {
-          'Authorization': `Bearer ${apiKey}`
-        }
-      });
+      const response = await fetch(`${baseUrl}/orders/${pixData.pagbank_id}?email=${email}&token=${token}`);
       
       const orderData = await response.json();
       
@@ -201,13 +202,13 @@ const PagSeguroPix: React.FC<PagSeguroPixProps> = ({
           .eq('id', pixData.id);
         
         setStatus('paid');
-        toast.success('💰 Pagamento confirmado via PagSeguro!');
+        toast.success('💰 Pagamento confirmado via PagBank!');
         setTimeout(onPaymentSuccess, 2000);
       }
       */
       
     } catch (error) {
-      console.error('Erro ao verificar pagamento PagSeguro:', error);
+      console.error('Erro ao verificar pagamento PagBank:', error);
     }
   };
 
@@ -228,7 +229,7 @@ const PagSeguroPix: React.FC<PagSeguroPixProps> = ({
 
   useEffect(() => {
     if (status === 'waiting') {
-      const interval = setInterval(checkPagSeguroPayment, 3000);
+      const interval = setInterval(checkPagBankPayment, 3000);
       return () => clearInterval(interval);
     }
   }, [status, pixData]);
@@ -242,13 +243,13 @@ const PagSeguroPix: React.FC<PagSeguroPixProps> = ({
   const getStatusInfo = () => {
     switch (status) {
       case 'generating':
-        return { color: 'bg-blue-100 text-blue-800', text: 'Gerando PIX PagSeguro...' };
+        return { color: 'bg-blue-100 text-blue-800', text: 'Gerando PIX PagBank...' };
       case 'waiting':
         return { color: 'bg-yellow-100 text-yellow-800', text: 'Aguardando Pagamento' };
       case 'expired':
         return { color: 'bg-red-100 text-red-800', text: 'Expirado' };
       case 'paid':
-        return { color: 'bg-green-100 text-green-800', text: 'Pago via PagSeguro' };
+        return { color: 'bg-green-100 text-green-800', text: 'Pago via PagBank' };
       default:
         return { color: 'bg-gray-100 text-gray-800', text: 'Desconhecido' };
     }
@@ -262,7 +263,7 @@ const PagSeguroPix: React.FC<PagSeguroPixProps> = ({
         <div className="flex justify-between items-center">
           <CardTitle className="flex items-center space-x-2 text-base">
             <QrCode className="w-5 h-5 text-orange-600" />
-            <span>PIX PagSeguro</span>
+            <span>PIX PagBank</span>
           </CardTitle>
           <Button variant="ghost" size="sm" onClick={onCancel}>
             <X className="w-4 h-4" />
@@ -282,7 +283,7 @@ const PagSeguroPix: React.FC<PagSeguroPixProps> = ({
                 {pixData?.qr_image ? (
                   <img 
                     src={pixData.qr_image} 
-                    alt="QR Code PIX PagSeguro" 
+                    alt="QR Code PIX PagBank" 
                     className="w-48 h-48 mx-auto"
                   />
                 ) : (
@@ -317,7 +318,7 @@ const PagSeguroPix: React.FC<PagSeguroPixProps> = ({
 
           {status === 'expired' && (
             <div className="space-y-3">
-              <p className="text-sm text-red-600">O PIX PagSeguro expirou</p>
+              <p className="text-sm text-red-600">O PIX PagBank expirou</p>
               <Button 
                 onClick={generatePagSeguroPix}
                 className="w-full bg-orange-600 hover:bg-orange-700"
@@ -331,7 +332,7 @@ const PagSeguroPix: React.FC<PagSeguroPixProps> = ({
           {status === 'paid' && (
             <div className="space-y-3">
               <CheckCircle className="w-16 h-16 text-green-600 mx-auto" />
-              <p className="text-green-600 font-semibold">Pagamento Confirmado via PagSeguro!</p>
+              <p className="text-green-600 font-semibold">Pagamento Confirmado via PagBank!</p>
               <p className="text-sm text-gray-600">Processando recarga...</p>
             </div>
           )}
