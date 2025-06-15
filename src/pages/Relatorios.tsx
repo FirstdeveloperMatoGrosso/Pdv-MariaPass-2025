@@ -73,7 +73,7 @@ const Relatorios: React.FC = () => {
 
   if (error) {
     return (
-      <div className="p-2 sm:p-3">
+      <div className="min-h-screen p-2 sm:p-4 pb-8">
         <div className="flex items-center justify-center min-h-[400px]">
           <Card className="w-full max-w-md">
             <CardContent className="p-6 text-center">
@@ -92,7 +92,7 @@ const Relatorios: React.FC = () => {
   }
 
   return (
-    <div className="p-2 sm:p-3 space-y-2 sm:space-y-3">
+    <div className="min-h-screen p-2 sm:p-4 pb-8 space-y-3">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
         <div className="flex items-center space-x-1">
@@ -191,10 +191,10 @@ const Relatorios: React.FC = () => {
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 sm:gap-3">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         {/* Produtos Mais Vendidos */}
         <Card>
-          <CardHeader className="p-2 sm:p-3">
+          <CardHeader className="p-3">
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-semibold text-gray-800">Produtos Mais Vendidos</CardTitle>
               <Badge variant="outline" className="text-xs px-1 py-0">
@@ -244,7 +244,7 @@ const Relatorios: React.FC = () => {
 
         {/* Pedidos Recentes */}
         <Card>
-          <CardHeader className="p-2 sm:p-3">
+          <CardHeader className="p-3">
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-semibold text-gray-800">Vendas Recentes</CardTitle>
               <Badge variant="outline" className="text-xs px-1 py-0">
@@ -310,17 +310,19 @@ const Relatorios: React.FC = () => {
 
       {/* Gráfico de Vendas por Produto */}
       {!loading && dadosGraficoVendas.length > 0 && (
-        <GraficoVendas
-          dados={dadosGraficoVendas}
-          tipo="bar"
-          titulo="Receita por Produto Mais Vendido"
-          corPrimaria="#10b981"
-        />
+        <div className="mb-4">
+          <GraficoVendas
+            dados={dadosGraficoVendas}
+            tipo="bar"
+            titulo="Receita por Produto Mais Vendido"
+            corPrimaria="#10b981"
+          />
+        </div>
       )}
 
       {/* Lista Completa de Produtos Vendidos */}
-      <Card>
-        <CardHeader className="p-2 sm:p-3">
+      <Card className="mb-8">
+        <CardHeader className="p-3">
           <div className="flex items-center justify-between">
             <CardTitle className="text-sm font-semibold text-gray-800">Todos os Produtos Vendidos</CardTitle>
             <Badge variant="outline" className="text-xs px-1 py-0">
@@ -340,7 +342,7 @@ const Relatorios: React.FC = () => {
               <p className="text-sm text-gray-500">Nenhum produto vendido no período</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto mb-4">
               <Table>
                 <TableHeader className="bg-gray-50">
                   <TableRow>
