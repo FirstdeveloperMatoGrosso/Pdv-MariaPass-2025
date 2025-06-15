@@ -27,6 +27,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import PulseiraReader from '@/components/PulseiraReader';
 import PixPayment from '@/components/PixPayment';
+import PaymentProviderSelector from '@/components/PaymentProviderSelector';
 
 interface PulseiraRecarga {
   id: string;
@@ -458,7 +459,7 @@ const RecargaPulseiras: React.FC = () => {
       {showPaymentSelector && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <PaymentProviderSelector
-            valor={parseFloat(valorRecarga) || 0}
+            valor={parseFloat(rechargeAmount) || 0}
             recargaId={currentRecargaId}
             onPaymentSuccess={handlePaymentSuccess}
             onCancel={handlePaymentCancel}
@@ -470,7 +471,7 @@ const RecargaPulseiras: React.FC = () => {
       {showPixPayment && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <PixPayment
-            valor={parseFloat(valorRecarga) || 0}
+            valor={parseFloat(rechargeAmount) || 0}
             recargaId={currentRecargaId}
             onPaymentSuccess={handlePaymentSuccess}
             onCancel={handlePaymentCancel}
