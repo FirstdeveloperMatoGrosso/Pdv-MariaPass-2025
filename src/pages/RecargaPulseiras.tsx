@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -26,6 +25,8 @@ import {
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import PulseiraReader from '@/components/PulseiraReader';
+import PixPayment from '@/components/PixPayment';
 
 interface PulseiraRecarga {
   id: string;
@@ -59,8 +60,10 @@ interface Pulseira {
 const RecargaPulseiras: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPayment, setSelectedPayment] = useState('all');
-  const [selectedPulseira, setSelectedPulseira] = useState('');
+  const [selectedPulseira, setSelectedPulseira] = useState<Pulseira | null>(null);
   const [rechargeAmount, setRechargeAmount] = useState('');
+  const [showPixPayment, setShowPixPayment] = useState(false);
+  const [currentRecargaId, setCurrentRecargaId] = useState('');
   const queryClient = useQueryClient();
 
   // Buscar recargas do Supabase
@@ -108,9 +111,9 @@ const RecargaPulseiras: React.FC = () => {
     },
   });
 
-  // Mutation para fazer recarga
+  // Mutation para fazer recarga com PIX
   const rechargeMutation = useMutation({
-    mutationFn: async ({ pulseiraId, valor, tipoPagamento }: { pulseiraId: string; valor: number; tipoPagamento: string }) => {
+    mutationFn: async ({ pulseiraId, valor }: { pulseiraId: string; valor: number }) => {
       // Buscar pulseira atual
       const { data: pulseira, error: pulseiraError } = await supabase
         .from('pulseiras')
@@ -124,37 +127,30 @@ const RecargaPulseiras: React.FC = () => {
       const saldoNovo = saldoAnterior + valor;
       
       // Inserir recarga
-      const { error: recargaError } = await supabase
+      const { data: recarga, error: recargaError } = await supabase
         .from('recargas_pulseiras')
         .insert({
           pulseira_id: pulseiraId,
           valor,
           saldo_anterior: saldoAnterior,
           saldo_novo: saldoNovo,
-          tipo_pagamento: tipoPagamento,
-          responsavel: 'Admin'
-        });
+          tipo_pagamento: 'pix',
+          responsavel: 'Sistema'
+        })
+        .select()
+        .single();
       
       if (recargaError) throw recargaError;
       
-      // Atualizar saldo da pulseira
-      const { error: updateError } = await supabase
-        .from('pulseiras')
-        .update({ saldo: saldoNovo, updated_at: new Date().toISOString() })
-        .eq('id', pulseiraId);
-      
-      if (updateError) throw updateError;
+      return recarga;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['recargas_pulseiras'] });
-      queryClient.invalidateQueries({ queryKey: ['pulseiras_ativas'] });
-      toast.success('Recarga realizada com sucesso!');
-      setSelectedPulseira('');
-      setRechargeAmount('');
+    onSuccess: (recarga) => {
+      setCurrentRecargaId(recarga.id);
+      setShowPixPayment(true);
     },
     onError: (error) => {
       console.error('Erro ao fazer recarga:', error);
-      toast.error('Erro ao realizar recarga');
+      toast.error('Erro ao iniciar recarga');
     },
   });
 
@@ -184,6 +180,11 @@ const RecargaPulseiras: React.FC = () => {
       return;
     }
     
+    if (selectedPulseira.status !== 'ativa') {
+      toast.error('Só é possível recarregar pulseiras ativas');
+      return;
+    }
+    
     const valor = parseFloat(rechargeAmount);
     if (valor <= 0) {
       toast.error('Valor da recarga deve ser maior que zero');
@@ -191,10 +192,37 @@ const RecargaPulseiras: React.FC = () => {
     }
     
     rechargeMutation.mutate({
-      pulseiraId: selectedPulseira,
-      valor,
-      tipoPagamento: 'cartao_credito'
+      pulseiraId: selectedPulseira.id,
+      valor
     });
+  };
+
+  const handlePixPaymentSuccess = async () => {
+    try {
+      // Atualizar saldo da pulseira
+      if (selectedPulseira && rechargeAmount) {
+        const novoSaldo = selectedPulseira.saldo + parseFloat(rechargeAmount);
+        await supabase
+          .from('pulseiras')
+          .update({ saldo: novoSaldo, updated_at: new Date().toISOString() })
+          .eq('id', selectedPulseira.id);
+      }
+
+      queryClient.invalidateQueries({ queryKey: ['recargas_pulseiras'] });
+      queryClient.invalidateQueries({ queryKey: ['pulseiras_ativas'] });
+      setShowPixPayment(false);
+      setSelectedPulseira(null);
+      setRechargeAmount('');
+      toast.success('Recarga realizada com sucesso!');
+    } catch (error) {
+      console.error('Erro ao finalizar recarga:', error);
+      toast.error('Erro ao finalizar recarga');
+    }
+  };
+
+  const handlePixPaymentCancel = () => {
+    setShowPixPayment(false);
+    setCurrentRecargaId('');
   };
 
   const totalRecargas = recargas.length;
@@ -211,6 +239,26 @@ const RecargaPulseiras: React.FC = () => {
           <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-green-600 mx-auto"></div>
           <p className="mt-2 text-sm text-gray-600">Carregando recargas...</p>
         </div>
+      </div>
+    );
+  }
+
+  if (showPixPayment) {
+    return (
+      <div className="p-2 sm:p-3 space-y-2 sm:space-y-3">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+          <div className="flex items-center space-x-1">
+            <CreditCard className="w-5 h-5 text-green-600" />
+            <h1 className="text-lg sm:text-xl font-bold text-gray-800">Pagamento PIX</h1>
+          </div>
+        </div>
+        
+        <PixPayment
+          valor={parseFloat(rechargeAmount)}
+          recargaId={currentRecargaId}
+          onPaymentSuccess={handlePixPaymentSuccess}
+          onCancel={handlePixPaymentCancel}
+        />
       </div>
     );
   }
@@ -272,48 +320,52 @@ const RecargaPulseiras: React.FC = () => {
         </Card>
       </div>
 
+      {/* Leitura de Pulseira */}
+      <PulseiraReader 
+        onPulseiraSelected={(pulseira) => setSelectedPulseira(pulseira)}
+      />
+
       {/* Nova Recarga */}
-      <Card>
-        <CardHeader className="p-2 sm:p-3">
-          <CardTitle className="flex items-center space-x-1 text-sm sm:text-base">
-            <Zap className="w-4 h-4" />
-            <span>Nova Recarga</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-2 sm:p-3 pt-0">
-          <div className="flex flex-col sm:flex-row gap-2">
-            <select 
-              value={selectedPulseira}
-              onChange={(e) => setSelectedPulseira(e.target.value)}
-              className="border rounded-md px-2 py-1 text-sm flex-1"
-            >
-              <option value="">Selecione uma pulseira</option>
-              {pulseiras.map((pulseira: any) => (
-                <option key={pulseira.id} value={pulseira.id}>
-                  {pulseira.codigo} - {pulseira.cliente_nome} (Saldo: R$ {pulseira.saldo.toFixed(2)})
-                </option>
-              ))}
-            </select>
-            <Input
-              type="number"
-              placeholder="Valor da recarga"
-              value={rechargeAmount}
-              onChange={(e) => setRechargeAmount(e.target.value)}
-              className="flex-1 sm:max-w-[150px] h-8 text-sm"
-              min="0"
-              step="0.01"
-            />
-            <Button 
-              onClick={handleRecharge}
-              disabled={rechargeMutation.isPending}
-              className="flex items-center space-x-1 w-full sm:w-auto h-8 text-sm px-3"
-            >
-              <Plus className="w-3 h-3" />
-              <span>Recarregar</span>
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      {selectedPulseira && (
+        <Card>
+          <CardHeader className="p-2 sm:p-3">
+            <CardTitle className="flex items-center space-x-1 text-sm sm:text-base">
+              <Zap className="w-4 h-4" />
+              <span>Nova Recarga</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-2 sm:p-3 pt-0">
+            <div className="flex flex-col sm:flex-row gap-2">
+              <div className="flex-1">
+                <p className="text-xs text-gray-600 mb-1">Pulseira Selecionada:</p>
+                <p className="text-sm font-medium">
+                  {selectedPulseira.codigo} - {selectedPulseira.cliente_nome}
+                </p>
+                <p className="text-xs text-green-600">
+                  Saldo atual: R$ {selectedPulseira.saldo.toFixed(2)}
+                </p>
+              </div>
+              <Input
+                type="number"
+                placeholder="Valor da recarga"
+                value={rechargeAmount}
+                onChange={(e) => setRechargeAmount(e.target.value)}
+                className="flex-1 sm:max-w-[150px] h-8 text-sm"
+                min="0"
+                step="0.01"
+              />
+              <Button 
+                onClick={handleRecharge}
+                disabled={rechargeMutation.isPending || selectedPulseira.status !== 'ativa'}
+                className="flex items-center space-x-1 w-full sm:w-auto h-8 text-sm px-3"
+              >
+                <Plus className="w-3 h-3" />
+                <span>Recarregar com PIX</span>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Filtros */}
       <Card>

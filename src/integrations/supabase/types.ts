@@ -438,6 +438,53 @@ export type Database = {
         }
         Relationships: []
       }
+      transacoes_pix: {
+        Row: {
+          chave_pix: string
+          created_at: string
+          expira_em: string
+          id: string
+          pago_em: string | null
+          qr_code: string
+          recarga_id: string | null
+          status: string
+          updated_at: string
+          valor: number
+        }
+        Insert: {
+          chave_pix: string
+          created_at?: string
+          expira_em: string
+          id?: string
+          pago_em?: string | null
+          qr_code: string
+          recarga_id?: string | null
+          status?: string
+          updated_at?: string
+          valor: number
+        }
+        Update: {
+          chave_pix?: string
+          created_at?: string
+          expira_em?: string
+          id?: string
+          pago_em?: string | null
+          qr_code?: string
+          recarga_id?: string | null
+          status?: string
+          updated_at?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transacoes_pix_recarga_id_fkey"
+            columns: ["recarga_id"]
+            isOneToOne: false
+            referencedRelation: "recargas_pulseiras"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vouchers: {
         Row: {
           cliente_email: string | null
