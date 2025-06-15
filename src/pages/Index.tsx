@@ -3,18 +3,25 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ShoppingCart, Plus, Minus, ScanBarcode } from 'lucide-react';
+import { ShoppingCart, Plus, Minus, ScanBarcode, Package } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import QRCodeGenerator from '../components/QRCodeGenerator';
 import PrintSimulator from '../components/PrintSimulator';
 import BarcodeModal from '../components/BarcodeModal';
 
 interface Product {
   id: string;
-  name: string;
-  price: number;
-  barcode: string;
+  nome: string;
+  preco: number;
+  codigo_barras: string;
+  categoria: string;
+  estoque: number;
+  status: string;
+  imagem_url?: string;
+  descricao?: string;
 }
 
 interface CartItem extends Product {
@@ -29,20 +36,42 @@ const Index: React.FC = () => {
   const [currentOrderId, setCurrentOrderId] = useState('');
   const [showBarcodeModal, setShowBarcodeModal] = useState(false);
 
-  // Base de produtos disponíveis
-  const products: Product[] = [
-    { id: '1', name: 'Suco Natural Laranja', price: 10.00, barcode: '7891234567890' },
-    { id: '2', name: 'Pão de Queijo Tradicional', price: 5.00, barcode: '7891234567891' },
-    { id: '3', name: 'Sanduíche Natural Frango', price: 15.00, barcode: '7891234567892' },
-    { id: '4', name: 'Água Mineral 500ml', price: 3.00, barcode: '7891234567893' },
-    { id: '5', name: 'Café Expresso Premium', price: 8.00, barcode: '7891234567894' },
-    { id: '6', name: 'Croissant Integral', price: 12.00, barcode: '7891234567895' },
-  ];
+  // Buscar produtos do Supabase
+  const { data: products = [], isLoading, error } = useQuery({
+    queryKey: ['produtos-totem'],
+    queryFn: async () => {
+      console.log('Buscando produtos para o totem...');
+      const { data, error } = await supabase
+        .from('produtos')
+        .select('*')
+        .eq('status', 'ativo')
+        .gt('estoque', 0)
+        .order('nome');
+      
+      if (error) {
+        console.error('Erro ao buscar produtos:', error);
+        toast.error('Erro ao carregar produtos: ' + error.message);
+        throw error;
+      }
+      
+      console.log('Produtos carregados para totem:', data);
+      return data as Product[];
+    },
+  });
 
   const addToCart = (product: Product) => {
+    if (product.estoque <= 0) {
+      toast.error('Produto sem estoque disponível!');
+      return;
+    }
+
     setCart(prevCart => {
       const existingItem = prevCart.find(item => item.id === product.id);
       if (existingItem) {
+        if (existingItem.quantity >= product.estoque) {
+          toast.error('Estoque insuficiente para este produto!');
+          return prevCart;
+        }
         return prevCart.map(item =>
           item.id === product.id 
             ? { ...item, quantity: item.quantity + 1 }
@@ -65,7 +94,7 @@ const Index: React.FC = () => {
   };
 
   const getTotalPrice = () => {
-    return cart.reduce((total, item) => total + (item.price * item.quantity), 0);
+    return cart.reduce((total, item) => total + (item.preco * item.quantity), 0);
   };
 
   const getTotalItems = () => {
@@ -100,6 +129,30 @@ const Index: React.FC = () => {
     addToCart(product);
   };
 
+  if (isLoading) {
+    return (
+      <div className="p-6 flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-green-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Carregando produtos...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6 flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <p className="text-red-600">Erro ao carregar produtos: {error.message}</p>
+          <Button className="mt-4" onClick={() => window.location.reload()}>
+            Tentar Novamente
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 space-y-6">
       <div className="text-center mb-8">
@@ -127,61 +180,106 @@ const Index: React.FC = () => {
         onProductScanned={handleBarcodeProductScanned}
       />
 
-      {/* Grid de Produtos */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {products.map((product) => {
-          const cartItem = cart.find(item => item.id === product.id);
-          const quantity = cartItem?.quantity || 0;
+      {products.length === 0 ? (
+        <div className="text-center py-12">
+          <Package className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+          <p className="text-gray-500 text-lg">Nenhum produto disponível no momento</p>
+        </div>
+      ) : (
+        /* Grid de Produtos */
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {products.map((product) => {
+            const cartItem = cart.find(item => item.id === product.id);
+            const quantity = cartItem?.quantity || 0;
+            const availableStock = product.estoque - quantity;
 
-          return (
-            <Card key={product.id} className="relative">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg">{product.name}</CardTitle>
-                <p className="text-xl font-bold text-green-600">
-                  R$ {product.price.toFixed(2)}
-                </p>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <div className="flex items-center justify-between">
-                  <Button 
-                    onClick={() => addToCart(product)}
-                    className="flex-1 mr-2"
-                  >
-                    <Plus className="w-4 h-4 mr-1" />
-                    Adicionar
-                  </Button>
-                  
-                  {quantity > 0 && (
-                    <div className="flex items-center space-x-2">
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        onClick={() => removeFromCart(product.id)}
-                      >
-                        <Minus className="w-3 h-3" />
-                      </Button>
-                      <Badge variant="secondary">{quantity}</Badge>
+            return (
+              <Card key={product.id} className="relative overflow-hidden">
+                <div className="aspect-square bg-gray-100 overflow-hidden">
+                  {product.imagem_url ? (
+                    <img 
+                      src={product.imagem_url} 
+                      alt={product.nome}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.src = '/placeholder.svg';
+                      }}
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                      <Package className="w-16 h-16 text-gray-400" />
                     </div>
                   )}
                 </div>
-              </CardContent>
-              
-              {quantity > 0 && (
-                <Badge 
-                  className="absolute -top-2 -right-2 bg-red-500"
-                  variant="destructive"
-                >
-                  {quantity}
-                </Badge>
-              )}
-            </Card>
-          );
-        })}
-      </div>
+                
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <CardTitle className="text-lg line-clamp-2">{product.nome}</CardTitle>
+                      <Badge variant="outline" className="mt-1">{product.categoria}</Badge>
+                    </div>
+                    <Badge 
+                      variant={availableStock < 10 ? "destructive" : "secondary"}
+                      className="ml-2"
+                    >
+                      {availableStock} un.
+                    </Badge>
+                  </div>
+                  
+                  {product.descricao && (
+                    <p className="text-sm text-gray-600 mt-2 line-clamp-2">
+                      {product.descricao}
+                    </p>
+                  )}
+                  
+                  <p className="text-2xl font-bold text-green-600 mt-2">
+                    R$ {product.preco.toFixed(2)}
+                  </p>
+                </CardHeader>
+                
+                <CardContent className="pt-0">
+                  <div className="flex items-center justify-between">
+                    <Button 
+                      onClick={() => addToCart(product)}
+                      className="flex-1 mr-2"
+                      disabled={availableStock <= 0}
+                    >
+                      <Plus className="w-4 h-4 mr-1" />
+                      {availableStock <= 0 ? 'Sem Estoque' : 'Adicionar'}
+                    </Button>
+                    
+                    {quantity > 0 && (
+                      <div className="flex items-center space-x-2">
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => removeFromCart(product.id)}
+                        >
+                          <Minus className="w-3 h-3" />
+                        </Button>
+                        <Badge variant="secondary">{quantity}</Badge>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+                
+                {quantity > 0 && (
+                  <Badge 
+                    className="absolute -top-2 -right-2 bg-red-500"
+                    variant="destructive"
+                  >
+                    {quantity}
+                  </Badge>
+                )}
+              </Card>
+            );
+          })}
+        </div>
+      )}
 
       {/* Carrinho Flutuante */}
       {cart.length > 0 && (
-        <Card className="fixed bottom-4 right-4 w-80 shadow-lg border-2 border-green-500">
+        <Card className="fixed bottom-4 right-4 w-80 shadow-lg border-2 border-green-500 z-40">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
@@ -192,22 +290,26 @@ const Index: React.FC = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {cart.map((item) => (
-              <div key={item.id} className="flex justify-between items-center text-sm">
-                <span>{item.name}</span>
-                <div className="flex items-center space-x-2">
-                  <span>{item.quantity}x</span>
-                  <span className="font-bold">
-                    R$ {(item.price * item.quantity).toFixed(2)}
+            <div className="max-h-40 overflow-y-auto space-y-2">
+              {cart.map((item) => (
+                <div key={item.id} className="flex justify-between items-center text-sm p-2 bg-gray-50 rounded">
+                  <div className="flex-1">
+                    <span className="font-medium">{item.nome}</span>
+                    <div className="text-xs text-gray-500">
+                      {item.quantity}x R$ {item.preco.toFixed(2)}
+                    </div>
+                  </div>
+                  <span className="font-bold text-green-600">
+                    R$ {(item.preco * item.quantity).toFixed(2)}
                   </span>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
             
             <div className="border-t pt-2">
               <div className="flex justify-between items-center font-bold">
                 <span>Total:</span>
-                <span className="text-green-600">R$ {getTotalPrice().toFixed(2)}</span>
+                <span className="text-green-600 text-lg">R$ {getTotalPrice().toFixed(2)}</span>
               </div>
             </div>
             
