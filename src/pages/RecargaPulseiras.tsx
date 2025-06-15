@@ -206,66 +206,66 @@ const RecargaPulseiras: React.FC = () => {
 
   if (loadingRecargas || loadingPulseiras) {
     return (
-      <div className="p-3 sm:p-6 flex items-center justify-center">
+      <div className="p-2 sm:p-3 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-green-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Carregando recargas...</p>
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-green-600 mx-auto"></div>
+          <p className="mt-2 text-sm text-gray-600">Carregando recargas...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div className="flex items-center space-x-2">
-          <CreditCard className="w-6 h-6 text-green-600" />
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-800">Recarga de Pulseiras</h1>
+    <div className="p-2 sm:p-3 space-y-2 sm:space-y-3">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+        <div className="flex items-center space-x-1">
+          <CreditCard className="w-5 h-5 text-green-600" />
+          <h1 className="text-lg sm:text-xl font-bold text-gray-800">Recarga de Pulseiras</h1>
         </div>
       </div>
 
       {/* Estatísticas */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
         <Card>
-          <CardContent className="p-3 sm:p-4">
-            <div className="flex items-center space-x-2">
-              <Activity className="w-5 h-5 text-blue-600" />
+          <CardContent className="p-2 sm:p-3">
+            <div className="flex items-center space-x-1">
+              <Activity className="w-4 h-4 text-blue-600" />
               <div className="min-w-0">
-                <p className="text-xs sm:text-sm text-gray-600 truncate">Total de Recargas</p>
-                <p className="text-lg sm:text-2xl font-bold">{totalRecargas}</p>
+                <p className="text-xs text-gray-600 truncate">Total de Recargas</p>
+                <p className="text-sm sm:text-lg font-bold">{totalRecargas}</p>
               </div>
             </div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-3 sm:p-4">
-            <div className="flex items-center space-x-2">
-              <DollarSign className="w-5 h-5 text-green-600" />
+          <CardContent className="p-2 sm:p-3">
+            <div className="flex items-center space-x-1">
+              <DollarSign className="w-4 h-4 text-green-600" />
               <div className="min-w-0">
-                <p className="text-xs sm:text-sm text-gray-600 truncate">Valor Total</p>
-                <p className="text-lg sm:text-2xl font-bold text-green-600">R$ {valorTotalRecargas.toFixed(2)}</p>
+                <p className="text-xs text-gray-600 truncate">Valor Total</p>
+                <p className="text-sm sm:text-lg font-bold text-green-600">R$ {valorTotalRecargas.toFixed(2)}</p>
               </div>
             </div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-3 sm:p-4">
-            <div className="flex items-center space-x-2">
-              <Clock className="w-5 h-5 text-orange-600" />
+          <CardContent className="p-2 sm:p-3">
+            <div className="flex items-center space-x-1">
+              <Clock className="w-4 h-4 text-orange-600" />
               <div className="min-w-0">
-                <p className="text-xs sm:text-sm text-gray-600 truncate">Recargas Hoje</p>
-                <p className="text-lg sm:text-2xl font-bold text-orange-600">{recargasHoje}</p>
+                <p className="text-xs text-gray-600 truncate">Recargas Hoje</p>
+                <p className="text-sm sm:text-lg font-bold text-orange-600">{recargasHoje}</p>
               </div>
             </div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-3 sm:p-4">
-            <div className="flex items-center space-x-2">
-              <Users className="w-5 h-5 text-purple-600" />
+          <CardContent className="p-2 sm:p-3">
+            <div className="flex items-center space-x-1">
+              <Users className="w-4 h-4 text-purple-600" />
               <div className="min-w-0">
-                <p className="text-xs sm:text-sm text-gray-600 truncate">Pulseiras Ativas</p>
-                <p className="text-lg sm:text-2xl font-bold text-purple-600">{pulseirasAtivas}</p>
+                <p className="text-xs text-gray-600 truncate">Pulseiras Ativas</p>
+                <p className="text-sm sm:text-lg font-bold text-purple-600">{pulseirasAtivas}</p>
               </div>
             </div>
           </CardContent>
@@ -274,18 +274,18 @@ const RecargaPulseiras: React.FC = () => {
 
       {/* Nova Recarga */}
       <Card>
-        <CardHeader className="p-3 sm:p-6">
-          <CardTitle className="flex items-center space-x-2 text-lg sm:text-xl">
-            <Zap className="w-5 h-5" />
+        <CardHeader className="p-2 sm:p-3">
+          <CardTitle className="flex items-center space-x-1 text-sm sm:text-base">
+            <Zap className="w-4 h-4" />
             <span>Nova Recarga</span>
           </CardTitle>
         </CardHeader>
-        <CardContent className="p-3 sm:p-6 pt-0">
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+        <CardContent className="p-2 sm:p-3 pt-0">
+          <div className="flex flex-col sm:flex-row gap-2">
             <select 
               value={selectedPulseira}
               onChange={(e) => setSelectedPulseira(e.target.value)}
-              className="border rounded-md px-3 py-2 flex-1"
+              className="border rounded-md px-2 py-1 text-sm flex-1"
             >
               <option value="">Selecione uma pulseira</option>
               {pulseiras.map((pulseira: any) => (
@@ -299,16 +299,16 @@ const RecargaPulseiras: React.FC = () => {
               placeholder="Valor da recarga"
               value={rechargeAmount}
               onChange={(e) => setRechargeAmount(e.target.value)}
-              className="flex-1 sm:max-w-[200px]"
+              className="flex-1 sm:max-w-[150px] h-8 text-sm"
               min="0"
               step="0.01"
             />
             <Button 
               onClick={handleRecharge}
               disabled={rechargeMutation.isPending}
-              className="flex items-center space-x-2 w-full sm:w-auto"
+              className="flex items-center space-x-1 w-full sm:w-auto h-8 text-sm px-3"
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-3 h-3" />
               <span>Recarregar</span>
             </Button>
           </div>
@@ -317,23 +317,23 @@ const RecargaPulseiras: React.FC = () => {
 
       {/* Filtros */}
       <Card>
-        <CardContent className="p-3 sm:p-4">
-          <div className="flex flex-col gap-3 sm:gap-4">
+        <CardContent className="p-2 sm:p-3">
+          <div className="flex flex-col gap-2">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 w-3 h-3" />
               <Input
                 placeholder="Buscar por código da pulseira, cliente ou responsável..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="pl-7 h-8 text-sm"
               />
             </div>
-            <div className="flex items-center space-x-2">
-              <Filter className="w-4 h-4 text-gray-500" />
+            <div className="flex items-center space-x-1">
+              <Filter className="w-3 h-3 text-gray-500" />
               <select 
                 value={selectedPayment}
                 onChange={(e) => setSelectedPayment(e.target.value)}
-                className="border rounded-md px-3 py-2 flex-1"
+                className="border rounded-md px-2 py-1 text-sm flex-1"
               >
                 <option value="all">Todos os tipos de pagamento</option>
                 {paymentTypes.map(type => (
@@ -347,52 +347,52 @@ const RecargaPulseiras: React.FC = () => {
 
       {/* Tabela de Recargas */}
       <Card>
-        <CardHeader className="p-3 sm:p-6">
-          <CardTitle className="text-lg sm:text-xl">Histórico de Recargas ({filteredRecargas.length})</CardTitle>
+        <CardHeader className="p-2 sm:p-3">
+          <CardTitle className="text-sm sm:text-base">Histórico de Recargas ({filteredRecargas.length})</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="min-w-[100px]">Pulseira</TableHead>
-                  <TableHead className="hidden sm:table-cell">Cliente</TableHead>
-                  <TableHead>Valor</TableHead>
-                  <TableHead className="hidden md:table-cell">Saldo Anterior</TableHead>
-                  <TableHead className="hidden md:table-cell">Saldo Novo</TableHead>
-                  <TableHead className="hidden lg:table-cell">Pagamento</TableHead>
-                  <TableHead className="hidden sm:table-cell">Responsável</TableHead>
-                  <TableHead className="hidden lg:table-cell">Data/Hora</TableHead>
+                  <TableHead className="min-w-[80px] h-8 text-xs">Pulseira</TableHead>
+                  <TableHead className="hidden sm:table-cell h-8 text-xs">Cliente</TableHead>
+                  <TableHead className="h-8 text-xs">Valor</TableHead>
+                  <TableHead className="hidden md:table-cell h-8 text-xs">Saldo Anterior</TableHead>
+                  <TableHead className="hidden md:table-cell h-8 text-xs">Saldo Novo</TableHead>
+                  <TableHead className="hidden lg:table-cell h-8 text-xs">Pagamento</TableHead>
+                  <TableHead className="hidden sm:table-cell h-8 text-xs">Responsável</TableHead>
+                  <TableHead className="hidden lg:table-cell h-8 text-xs">Data/Hora</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredRecargas.map((recarga: PulseiraRecarga) => (
                   <TableRow key={recarga.id}>
-                    <TableCell className="font-medium">
+                    <TableCell className="font-medium p-2">
                       <div>
-                        <div className="font-semibold">{recarga.pulseiras?.codigo}</div>
+                        <div className="text-xs font-semibold">{recarga.pulseiras?.codigo}</div>
                         <div className="text-xs text-gray-500 sm:hidden">
                           {recarga.pulseiras?.cliente_nome}
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell className="hidden sm:table-cell">{recarga.pulseiras?.cliente_nome}</TableCell>
-                    <TableCell>
-                      <span className="font-semibold text-green-600">
+                    <TableCell className="hidden sm:table-cell p-2 text-xs">{recarga.pulseiras?.cliente_nome}</TableCell>
+                    <TableCell className="p-2">
+                      <span className="text-xs font-semibold text-green-600">
                         R$ {recarga.valor.toFixed(2)}
                       </span>
                     </TableCell>
-                    <TableCell className="hidden md:table-cell">
+                    <TableCell className="hidden md:table-cell p-2 text-xs">
                       R$ {recarga.saldo_anterior.toFixed(2)}
                     </TableCell>
-                    <TableCell className="hidden md:table-cell">
+                    <TableCell className="hidden md:table-cell p-2 text-xs">
                       R$ {recarga.saldo_novo.toFixed(2)}
                     </TableCell>
-                    <TableCell className="hidden lg:table-cell">
-                      <Badge variant="outline">{getPaymentLabel(recarga.tipo_pagamento)}</Badge>
+                    <TableCell className="hidden lg:table-cell p-2">
+                      <Badge variant="outline" className="text-xs">{getPaymentLabel(recarga.tipo_pagamento)}</Badge>
                     </TableCell>
-                    <TableCell className="hidden sm:table-cell">{recarga.responsavel}</TableCell>
-                    <TableCell className="hidden lg:table-cell text-sm">
+                    <TableCell className="hidden sm:table-cell p-2 text-xs">{recarga.responsavel}</TableCell>
+                    <TableCell className="hidden lg:table-cell p-2 text-xs">
                       {new Date(recarga.created_at).toLocaleString('pt-BR')}
                     </TableCell>
                   </TableRow>
