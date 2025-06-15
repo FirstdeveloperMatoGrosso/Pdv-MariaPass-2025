@@ -270,7 +270,8 @@ const Index: React.FC = () => {
                       </Button>
                       
                       {quantity > 0 && (
-                        <div className="flex items-center space-x-1 flex-shrink-0">
+                        <>
+                          <Badge variant="secondary" className="text-[10px] sm:text-xs flex-shrink-0">{quantity}</Badge>
                           <Button 
                             size="sm" 
                             variant="outline"
@@ -279,8 +280,7 @@ const Index: React.FC = () => {
                           >
                             <Minus className="w-4 h-4" />
                           </Button>
-                          <Badge variant="secondary" className="text-[10px] sm:text-xs">{quantity}</Badge>
-                        </div>
+                        </>
                       )}
                     </div>
                   </CardContent>
