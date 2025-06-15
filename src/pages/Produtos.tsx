@@ -1,11 +1,9 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { 
-  Edit, 
   Trash2, 
   Package,
   Search,
@@ -23,6 +21,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import ProductForm from '@/components/ProductForm';
+import ProductEditForm from '@/components/ProductEditForm';
 
 interface Product {
   id: string;
@@ -160,26 +159,26 @@ const Produtos: React.FC = () => {
   }
 
   return (
-    <div className="p-2 sm:p-3 space-y-2 sm:space-y-3">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+    <div className="p-1 sm:p-2 space-y-1 sm:space-y-2">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1">
         <div className="flex items-center space-x-1">
-          <Package className="w-5 h-5 text-green-600" />
-          <h1 className="text-lg sm:text-xl font-bold text-gray-800">Gestão de Produtos</h1>
+          <Package className="w-4 h-4 text-green-600" />
+          <h1 className="text-base sm:text-lg font-bold text-gray-800">Gestão de Produtos</h1>
         </div>
         <ProductForm onSuccess={() => queryClient.invalidateQueries({ queryKey: ['produtos'] })} />
       </div>
 
       {/* Filtros */}
       <Card>
-        <CardContent className="p-2 sm:p-3">
-          <div className="flex flex-col gap-2">
+        <CardContent className="p-1 sm:p-2">
+          <div className="flex flex-col gap-1">
             <div className="relative">
               <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 w-3 h-3" />
               <Input
                 placeholder="Buscar por nome ou código de barras..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-7 h-8 text-sm"
+                className="pl-7 h-7 text-xs"
               />
             </div>
             <div className="flex items-center space-x-1">
@@ -187,7 +186,7 @@ const Produtos: React.FC = () => {
               <select 
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
-                className="border rounded-md px-2 py-1 text-sm flex-1"
+                className="border rounded-md px-2 py-1 text-xs flex-1 h-7"
               >
                 <option value="all">Todas as categorias</option>
                 {categories.map(cat => (
@@ -199,20 +198,22 @@ const Produtos: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Debug info */}
-      <div className="text-xs text-gray-500">
-        Total de produtos carregados: {products.length} | Filtrados: {filteredProducts.length}
-      </div>
-
       {/* Tabela de Produtos */}
       <Card>
-        <CardHeader className="p-2 sm:p-3">
-          <CardTitle className="text-sm sm:text-base">Produtos Cadastrados ({filteredProducts.length})</CardTitle>
+        <CardHeader className="p-1 sm:p-2">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+            <CardTitle className="text-xs sm:text-sm font-semibold text-gray-800">
+              Produtos Cadastrados
+            </CardTitle>
+            <Badge variant="outline" className="text-xs px-1 py-0 w-fit">
+              {filteredProducts.length} {filteredProducts.length === 1 ? 'produto' : 'produtos'}
+            </Badge>
+          </div>
         </CardHeader>
         <CardContent className="p-0">
           {filteredProducts.length === 0 ? (
-            <div className="text-center py-6">
-              <p className="text-gray-500 text-sm">
+            <div className="text-center py-4">
+              <p className="text-gray-500 text-xs">
                 {products.length === 0 
                   ? 'Nenhum produto encontrado no banco de dados.'
                   : 'Nenhum produto encontrado com os filtros aplicados.'
@@ -224,36 +225,35 @@ const Produtos: React.FC = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="h-8 text-xs">Imagem</TableHead>
-                    <TableHead className="h-8 text-xs">Nome</TableHead>
-                    <TableHead className="hidden sm:table-cell h-8 text-xs">Categoria</TableHead>
-                    <TableHead className="hidden md:table-cell h-8 text-xs">Código</TableHead>
-                    <TableHead className="h-8 text-xs">Preço</TableHead>
-                    <TableHead className="hidden lg:table-cell h-8 text-xs">Estoque</TableHead>
-                    <TableHead className="hidden sm:table-cell h-8 text-xs">Status</TableHead>
-                    <TableHead className="h-8 text-xs">Ações</TableHead>
+                    <TableHead className="h-6 text-xs">Imagem</TableHead>
+                    <TableHead className="h-6 text-xs">Nome</TableHead>
+                    <TableHead className="hidden sm:table-cell h-6 text-xs">Categoria</TableHead>
+                    <TableHead className="h-6 text-xs">Preço</TableHead>
+                    <TableHead className="hidden lg:table-cell h-6 text-xs">Estoque</TableHead>
+                    <TableHead className="hidden sm:table-cell h-6 text-xs">Status</TableHead>
+                    <TableHead className="h-6 text-xs">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredProducts.map((product: Product) => (
                     <TableRow key={product.id}>
-                      <TableCell className="p-2">
+                      <TableCell className="p-1">
                         {product.imagem_url ? (
                           <img 
                             src={product.imagem_url} 
                             alt={product.nome}
-                            className="w-8 h-8 sm:w-10 sm:h-10 object-cover rounded-md border"
+                            className="w-6 h-6 sm:w-8 sm:h-8 object-cover rounded-md border"
                             onError={(e) => {
                               e.currentTarget.src = '/placeholder.svg';
                             }}
                           />
                         ) : (
-                          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gray-200 rounded-md flex items-center justify-center">
-                            <Package className="w-4 h-4 text-gray-400" />
+                          <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gray-200 rounded-md flex items-center justify-center">
+                            <Package className="w-3 h-3 text-gray-400" />
                           </div>
                         )}
                       </TableCell>
-                      <TableCell className="font-medium p-2">
+                      <TableCell className="font-medium p-1">
                         <div>
                           <div className="text-xs font-semibold">{product.nome}</div>
                           <div className="text-xs text-gray-500 sm:hidden">
@@ -261,16 +261,11 @@ const Produtos: React.FC = () => {
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell className="hidden sm:table-cell p-2">
+                      <TableCell className="hidden sm:table-cell p-1">
                         <Badge variant="outline" className="text-xs">{product.categoria}</Badge>
                       </TableCell>
-                      <TableCell className="hidden md:table-cell p-2">
-                        <code className="bg-gray-100 px-1 py-1 rounded text-xs">
-                          {product.codigo_barras || 'N/A'}
-                        </code>
-                      </TableCell>
-                      <TableCell className="p-2 text-xs font-semibold">R$ {product.preco.toFixed(2)}</TableCell>
-                      <TableCell className="hidden lg:table-cell p-2">
+                      <TableCell className="p-1 text-xs font-semibold">R$ {product.preco.toFixed(2)}</TableCell>
+                      <TableCell className="hidden lg:table-cell p-1">
                         <Badge 
                           variant={product.estoque < 10 ? "destructive" : "secondary"}
                           className="text-xs"
@@ -278,7 +273,7 @@ const Produtos: React.FC = () => {
                           {product.estoque} un.
                         </Badge>
                       </TableCell>
-                      <TableCell className="hidden sm:table-cell p-2">
+                      <TableCell className="hidden sm:table-cell p-1">
                         <Badge 
                           variant={product.status === 'ativo' ? "default" : "secondary"}
                           className="cursor-pointer text-xs"
@@ -287,11 +282,12 @@ const Produtos: React.FC = () => {
                           {product.status === 'ativo' ? 'Ativo' : 'Inativo'}
                         </Badge>
                       </TableCell>
-                      <TableCell className="p-2">
+                      <TableCell className="p-1">
                         <div className="flex space-x-1">
-                          <Button size="sm" variant="outline" className="h-6 w-6 p-0">
-                            <Edit className="w-3 h-3" />
-                          </Button>
+                          <ProductEditForm 
+                            product={product}
+                            onSuccess={() => queryClient.invalidateQueries({ queryKey: ['produtos'] })}
+                          />
                           <Button 
                             size="sm" 
                             variant="destructive"

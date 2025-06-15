@@ -14,7 +14,8 @@ import {
   Clock,
   RotateCcw,
   Filter,
-  TrendingUp
+  TrendingUp,
+  Eye
 } from 'lucide-react';
 import {
   Table,
@@ -31,6 +32,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -51,6 +59,7 @@ const Impressoes: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPrinter, setSelectedPrinter] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('all');
+  const [selectedJob, setSelectedJob] = useState<any>(null);
   const queryClient = useQueryClient();
 
   const printers = ['Impressora Principal', 'Impressora Vouchers', 'Impressora Backup'];
@@ -184,26 +193,26 @@ const Impressoes: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="p-2 sm:p-3 flex items-center justify-center">
+      <div className="p-1 sm:p-2 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-2 text-sm text-gray-600">Carregando impressões...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-2 text-xs text-gray-600">Carregando impressões...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-2 sm:p-3 space-y-2 sm:space-y-3">
+    <div className="p-1 sm:p-2 space-y-1 sm:space-y-2">
       {/* Header */}
-      <div className="flex flex-col space-y-2 lg:flex-row lg:items-center lg:justify-between lg:space-y-0">
+      <div className="flex flex-col space-y-1 lg:flex-row lg:items-center lg:justify-between lg:space-y-0">
         <div className="flex items-center space-x-1">
-          <Printer className="w-5 h-5 text-blue-600" />
-          <h1 className="text-lg sm:text-xl font-bold text-gray-800">Controle de Impressões</h1>
+          <Printer className="w-4 h-4 text-blue-600" />
+          <h1 className="text-base sm:text-lg font-bold text-gray-800">Controle de Impressões</h1>
         </div>
         <Button 
           onClick={testPrint} 
-          className="flex items-center justify-center space-x-1 h-8 text-sm"
+          className="flex items-center justify-center space-x-1 h-7 text-xs"
           disabled={testPrintMutation.isPending}
         >
           <Printer className="w-3 h-3" />
@@ -212,62 +221,62 @@ const Impressoes: React.FC = () => {
       </div>
 
       {/* Estatísticas */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-2 sm:gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-1 sm:gap-2">
         <Card>
-          <CardContent className="p-2 sm:p-3">
+          <CardContent className="p-1 sm:p-2">
             <div className="flex items-center space-x-1">
-              <FileText className="w-4 h-4 text-blue-600" />
+              <FileText className="w-3 h-3 text-blue-600" />
               <div className="min-w-0">
-                <p className="text-xs sm:text-sm text-gray-600 truncate">Total</p>
-                <p className="text-lg sm:text-xl font-bold">{totalJobs}</p>
+                <p className="text-xs text-gray-600 truncate">Total</p>
+                <p className="text-sm sm:text-base font-bold">{totalJobs}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-2 sm:p-3">
+          <CardContent className="p-1 sm:p-2">
             <div className="flex items-center space-x-1">
-              <CheckCircle className="w-4 h-4 text-green-600" />
+              <CheckCircle className="w-3 h-3 text-green-600" />
               <div className="min-w-0">
-                <p className="text-xs sm:text-sm text-gray-600 truncate">Concluídas</p>
-                <p className="text-lg sm:text-xl font-bold text-green-600">{completedJobs}</p>
+                <p className="text-xs text-gray-600 truncate">Concluídas</p>
+                <p className="text-sm sm:text-base font-bold text-green-600">{completedJobs}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-2 sm:p-3">
+          <CardContent className="p-1 sm:p-2">
             <div className="flex items-center space-x-1">
-              <XCircle className="w-4 h-4 text-red-600" />
+              <XCircle className="w-3 h-3 text-red-600" />
               <div className="min-w-0">
-                <p className="text-xs sm:text-sm text-gray-600 truncate">Falharam</p>
-                <p className="text-lg sm:text-xl font-bold text-red-600">{failedJobs}</p>
+                <p className="text-xs text-gray-600 truncate">Falharam</p>
+                <p className="text-sm sm:text-base font-bold text-red-600">{failedJobs}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-2 sm:p-3">
+          <CardContent className="p-1 sm:p-2">
             <div className="flex items-center space-x-1">
-              <Clock className="w-4 h-4 text-yellow-600" />
+              <Clock className="w-3 h-3 text-yellow-600" />
               <div className="min-w-0">
-                <p className="text-xs sm:text-sm text-gray-600 truncate">Pendentes</p>
-                <p className="text-lg sm:text-xl font-bold text-yellow-600">{pendingJobs}</p>
+                <p className="text-xs text-gray-600 truncate">Pendentes</p>
+                <p className="text-sm sm:text-base font-bold text-yellow-600">{pendingJobs}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-2 sm:p-3">
+          <CardContent className="p-1 sm:p-2">
             <div className="flex items-center space-x-1">
-              <TrendingUp className="w-4 h-4 text-purple-600" />
+              <TrendingUp className="w-3 h-3 text-purple-600" />
               <div className="min-w-0">
-                <p className="text-xs sm:text-sm text-gray-600 truncate">Taxa Sucesso</p>
-                <p className="text-lg sm:text-xl font-bold text-purple-600">{successRate}%</p>
+                <p className="text-xs text-gray-600 truncate">Taxa Sucesso</p>
+                <p className="text-sm sm:text-base font-bold text-purple-600">{successRate}%</p>
               </div>
             </div>
           </CardContent>
@@ -276,28 +285,22 @@ const Impressoes: React.FC = () => {
 
       {/* Filtros */}
       <Card>
-        <CardHeader className="p-2 sm:p-3">
-          <CardTitle className="flex items-center text-sm font-semibold text-gray-800">
-            <Filter className="w-3 h-3 mr-1 text-gray-600" />
-            Filtros de Pesquisa
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-2 sm:p-3 pt-0">
-          <div className="space-y-2">
+        <CardContent className="p-1 sm:p-2">
+          <div className="space-y-1">
             <div className="relative">
               <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 w-3 h-3" />
               <Input
                 placeholder="Buscar por ID do pedido ou usuário..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-7 h-8 text-sm"
+                className="pl-7 h-7 text-xs"
               />
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
               <div className="space-y-1">
                 <label className="text-xs font-medium text-gray-700">Impressora</label>
                 <Select value={selectedPrinter} onValueChange={setSelectedPrinter}>
-                  <SelectTrigger className="h-8 text-sm">
+                  <SelectTrigger className="h-7 text-xs">
                     <SelectValue placeholder="Todas as impressoras" />
                   </SelectTrigger>
                   <SelectContent>
@@ -311,7 +314,7 @@ const Impressoes: React.FC = () => {
               <div className="space-y-1">
                 <label className="text-xs font-medium text-gray-700">Status</label>
                 <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-                  <SelectTrigger className="h-8 text-sm">
+                  <SelectTrigger className="h-7 text-xs">
                     <SelectValue placeholder="Todos os status" />
                   </SelectTrigger>
                   <SelectContent>
@@ -330,12 +333,12 @@ const Impressoes: React.FC = () => {
 
       {/* Tabela de Impressões */}
       <Card>
-        <CardHeader className="p-2 sm:p-3">
+        <CardHeader className="p-1 sm:p-2">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
-            <CardTitle className="text-sm sm:text-base font-semibold text-gray-800">
+            <CardTitle className="text-xs sm:text-sm font-semibold text-gray-800">
               Histórico de Impressões
             </CardTitle>
-            <Badge variant="outline" className="text-xs px-2 py-1 w-fit">
+            <Badge variant="outline" className="text-xs px-1 py-0 w-fit">
               {filteredJobs.length} {filteredJobs.length === 1 ? 'resultado' : 'resultados'}
             </Badge>
           </div>
@@ -345,68 +348,81 @@ const Impressoes: React.FC = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="h-8 text-xs">ID / Pedido</TableHead>
-                  <TableHead className="h-8 text-xs">Tipo</TableHead>
-                  <TableHead className="hidden sm:table-cell h-8 text-xs">Impressora</TableHead>
-                  <TableHead className="h-8 text-xs">Status</TableHead>
-                  <TableHead className="hidden md:table-cell h-8 text-xs">Data/Hora</TableHead>
-                  <TableHead className="hidden lg:table-cell h-8 text-xs">Páginas</TableHead>
-                  <TableHead className="hidden lg:table-cell h-8 text-xs">Cópias</TableHead>
-                  <TableHead className="hidden sm:table-cell h-8 text-xs">Usuário</TableHead>
-                  <TableHead className="h-8 text-xs">Ações</TableHead>
+                  <TableHead className="h-6 text-xs">ID / Pedido</TableHead>
+                  <TableHead className="h-6 text-xs">Tipo</TableHead>
+                  <TableHead className="h-6 text-xs">Status</TableHead>
+                  <TableHead className="hidden sm:table-cell h-6 text-xs">Data/Hora</TableHead>
+                  <TableHead className="h-6 text-xs">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredJobs.map((job: any) => (
                   <TableRow key={job.id}>
-                    <TableCell className="font-medium p-2">
+                    <TableCell className="font-medium p-1">
                       <div>
                         <div className="text-xs font-semibold">{job.pedido_id}</div>
-                        <div className="text-xs text-gray-500 sm:hidden">
-                          {job.impressora}
-                        </div>
+                        <div className="text-xs text-gray-500">{job.usuario}</div>
                       </div>
                     </TableCell>
-                    <TableCell className="p-2">
+                    <TableCell className="p-1">
                       {getTypeBadge(job.tipo)}
                     </TableCell>
-                    <TableCell className="hidden sm:table-cell p-2 text-xs">{job.impressora}</TableCell>
-                    <TableCell className="p-2">{getStatusBadge(job.status)}</TableCell>
-                    <TableCell className="hidden md:table-cell p-2 text-xs">
+                    <TableCell className="p-1">{getStatusBadge(job.status)}</TableCell>
+                    <TableCell className="hidden sm:table-cell p-1 text-xs">
                       {new Date(job.data_impressao).toLocaleString('pt-BR')}
                     </TableCell>
-                    <TableCell className="hidden lg:table-cell p-2 text-center">
-                      <Badge variant="outline" className="text-xs">{job.paginas}</Badge>
-                    </TableCell>
-                    <TableCell className="hidden lg:table-cell p-2 text-center">
-                      <Badge variant="outline" className="text-xs">{job.copias}</Badge>
-                    </TableCell>
-                    <TableCell className="hidden sm:table-cell p-2 text-xs">{job.usuario}</TableCell>
-                    <TableCell className="p-2">
-                      {job.status === 'falhou' && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => retryPrint(job.id)}
-                          disabled={retryPrintMutation.isPending}
-                          className="flex items-center space-x-1 h-6 px-2 text-xs"
-                        >
-                          <RotateCcw className="w-2 h-2" />
-                          <span className="hidden xl:inline">Reimprimir</span>
-                        </Button>
-                      )}
-                      {job.status !== 'falhou' && (
-                        <span className="text-gray-400 text-xs">—</span>
-                      )}
+                    <TableCell className="p-1">
+                      <div className="flex space-x-1">
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setSelectedJob(job)}
+                              className="h-5 w-5 p-0"
+                            >
+                              <Eye className="w-3 h-3" />
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-md">
+                            <DialogHeader>
+                              <DialogTitle className="text-sm">Detalhes da Impressão</DialogTitle>
+                            </DialogHeader>
+                            {selectedJob && (
+                              <div className="space-y-2 text-xs">
+                                <div><strong>ID:</strong> {selectedJob.pedido_id}</div>
+                                <div><strong>Tipo:</strong> {getTypeLabel(selectedJob.tipo)}</div>
+                                <div><strong>Impressora:</strong> {selectedJob.impressora}</div>
+                                <div><strong>Status:</strong> {selectedJob.status}</div>
+                                <div><strong>Páginas:</strong> {selectedJob.paginas}</div>
+                                <div><strong>Cópias:</strong> {selectedJob.copias}</div>
+                                <div><strong>Usuário:</strong> {selectedJob.usuario}</div>
+                                <div><strong>Data:</strong> {new Date(selectedJob.data_impressao).toLocaleString('pt-BR')}</div>
+                              </div>
+                            )}
+                          </DialogContent>
+                        </Dialog>
+                        {job.status === 'falhou' && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => retryPrint(job.id)}
+                            disabled={retryPrintMutation.isPending}
+                            className="h-5 w-5 p-0"
+                          >
+                            <RotateCcw className="w-3 h-3" />
+                          </Button>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
                 {filteredJobs.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center py-6">
-                      <div className="space-y-2">
-                        <FileText className="w-6 h-6 text-gray-400 mx-auto" />
-                        <p className="text-gray-500 text-sm">Nenhuma impressão encontrada</p>
+                    <TableCell colSpan={5} className="text-center py-4">
+                      <div className="space-y-1">
+                        <FileText className="w-4 h-4 text-gray-400 mx-auto" />
+                        <p className="text-gray-500 text-xs">Nenhuma impressão encontrada</p>
                         <p className="text-xs text-gray-400">Tente ajustar os filtros de pesquisa</p>
                       </div>
                     </TableCell>
