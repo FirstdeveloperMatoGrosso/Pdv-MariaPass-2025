@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { ShoppingCart, Plus, Minus, ScanBarcode, Package } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
@@ -197,7 +197,7 @@ const Index: React.FC = () => {
         <p className="text-xs sm:text-sm text-gray-600">Selecione seus produtos e faça o pagamento via QR Code</p>
         
         {/* Controles de Scanner e Categoria */}
-        <div className="mt-2 sm:mt-3 flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4">
+        <div className="mt-2 sm:mt-3 flex flex-col items-center justify-center gap-3">
           <Button
             onClick={() => setShowBarcodeModal(true)}
             variant="outline"
@@ -208,21 +208,36 @@ const Index: React.FC = () => {
             <span className="text-blue-600 font-medium">Adicionar por Código de Barras</span>
           </Button>
           
-          <div className="flex items-center space-x-2">
-            <span className="text-xs sm:text-sm text-gray-700 font-medium">Categoria:</span>
-            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-              <SelectTrigger className="w-[140px] sm:w-[160px] h-8 text-xs sm:text-sm">
-                <SelectValue placeholder="Todas" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todas">Todas</SelectItem>
+          <div className="w-full max-w-md">
+            <span className="block text-xs sm:text-sm text-gray-700 font-medium mb-2">Categorias:</span>
+            <Carousel className="w-full">
+              <CarouselContent className="-ml-1">
+                <CarouselItem className="pl-1 basis-auto">
+                  <Button
+                    variant={selectedCategory === 'todas' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setSelectedCategory('todas')}
+                    className="text-xs whitespace-nowrap"
+                  >
+                    Todas
+                  </Button>
+                </CarouselItem>
                 {categories.map((category) => (
-                  <SelectItem key={category} value={category}>
-                    {category}
-                  </SelectItem>
+                  <CarouselItem key={category} className="pl-1 basis-auto">
+                    <Button
+                      variant={selectedCategory === category ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setSelectedCategory(category)}
+                      className="text-xs whitespace-nowrap"
+                    >
+                      {category}
+                    </Button>
+                  </CarouselItem>
                 ))}
-              </SelectContent>
-            </Select>
+              </CarouselContent>
+              <CarouselPrevious className="hidden sm:flex" />
+              <CarouselNext className="hidden sm:flex" />
+            </Carousel>
           </div>
         </div>
       </div>
