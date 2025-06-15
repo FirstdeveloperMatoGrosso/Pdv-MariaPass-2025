@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,7 +11,7 @@ import QRCodeGenerator from '../components/QRCodeGenerator';
 import PrintSimulator from '../components/PrintSimulator';
 import BarcodeModal from '../components/BarcodeModal';
 
-interface Product {
+interface TotemProduct {
   id: string;
   nome: string;
   preco: number;
@@ -24,13 +23,13 @@ interface Product {
   descricao?: string;
 }
 
-interface CartItem extends Product {
+interface TotemCartItem extends TotemProduct {
   quantity: number;
 }
 
 const Index: React.FC = () => {
   const navigate = useNavigate();
-  const [cart, setCart] = useState<CartItem[]>([]);
+  const [cart, setCart] = useState<TotemCartItem[]>([]);
   const [showQRCode, setShowQRCode] = useState(false);
   const [showPrintSimulator, setShowPrintSimulator] = useState(false);
   const [currentOrderId, setCurrentOrderId] = useState('');
@@ -56,11 +55,11 @@ const Index: React.FC = () => {
       }
       
       console.log('Produtos carregados para totem:', data);
-      return data as Product[];
+      return data as TotemProduct[];
     },
   });
 
-  const addToCart = (product: Product) => {
+  const addToCart = (product: TotemProduct) => {
     if (product.estoque <= 0) {
       toast.error('Produto sem estoque disponível!');
       return;
@@ -126,8 +125,20 @@ const Index: React.FC = () => {
     toast.success('Novo pedido iniciado!');
   };
 
-  const handleBarcodeProductScanned = (product: Product) => {
-    addToCart(product);
+  const handleBarcodeProductScanned = (product: any) => {
+    // Convert the scanned product to TotemProduct format
+    const totemProduct: TotemProduct = {
+      id: product.id,
+      nome: product.nome || product.name,
+      preco: product.preco || product.price,
+      codigo_barras: product.codigo_barras || product.barcode,
+      categoria: product.categoria || product.category,
+      estoque: product.estoque || product.stock,
+      status: product.status || 'ativo',
+      imagem_url: product.imagem_url || product.image_url,
+      descricao: product.descricao || product.description
+    };
+    addToCart(totemProduct);
   };
 
   if (isLoading) {
@@ -195,7 +206,7 @@ const Index: React.FC = () => {
             const availableStock = product.estoque - quantity;
 
             return (
-              <Card key={product.id} className="relative overflow-visible min-w-0 flex-shrink-0">
+              <Card key={product.id} className="relative min-w-0 flex-shrink-0" style={{ overflow: 'visible' }}>
                 <div className="aspect-square bg-gray-100 overflow-hidden">
                   {product.imagem_url ? (
                     <img 
@@ -270,8 +281,14 @@ const Index: React.FC = () => {
                 
                 {quantity > 0 && (
                   <Badge 
-                    className="absolute -top-3 -right-3 bg-red-500 text-white text-xs min-w-[20px] h-5 flex items-center justify-center rounded-full z-10"
+                    className="absolute bg-red-500 text-white text-xs min-w-[24px] h-6 flex items-center justify-center rounded-full font-bold shadow-lg"
                     variant="destructive"
+                    style={{ 
+                      top: '-12px', 
+                      right: '-12px', 
+                      zIndex: 50,
+                      border: '2px solid white'
+                    }}
                   >
                     {quantity}
                   </Badge>
