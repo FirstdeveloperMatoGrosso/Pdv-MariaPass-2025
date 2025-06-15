@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Plus, Search, Edit, Trash2, Package, AlertCircle, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -109,99 +110,143 @@ const Produtos = () => {
 
   const getStatusBadge = (status: string) => {
     return status === 'ativo' ? (
-      <Badge className="bg-green-100 text-green-800">Ativo</Badge>
+      <Badge className="bg-green-100 text-green-800 text-xs px-1 py-0">Ativo</Badge>
     ) : (
-      <Badge variant="secondary">Inativo</Badge>
+      <Badge variant="secondary" className="text-xs px-1 py-0">Inativo</Badge>
     );
   };
 
   const getStockBadge = (estoque: number) => {
     if (estoque === 0) {
-      return <Badge variant="destructive">Sem estoque</Badge>;
+      return <Badge variant="destructive" className="text-xs px-1 py-0">Sem estoque</Badge>;
     } else if (estoque <= 5) {
-      return <Badge className="bg-yellow-100 text-yellow-800">Estoque baixo</Badge>;
+      return <Badge className="bg-yellow-100 text-yellow-800 text-xs px-1 py-0">Estoque baixo</Badge>;
     }
-    return <Badge className="bg-blue-100 text-blue-800">Em estoque</Badge>;
+    return <Badge className="bg-blue-100 text-blue-800 text-xs px-1 py-0">Em estoque</Badge>;
   };
 
   const handleCategorySuccess = () => {
     fetchProdutos();
   };
 
+  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const target = e.currentTarget;
+    target.style.display = 'none';
+    const fallback = target.nextElementSibling as HTMLElement;
+    if (fallback) {
+      fallback.style.display = 'flex';
+    }
+  };
+
   return (
-    <div className="container mx-auto p-4 lg:p-6 space-y-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div className="flex items-center space-x-2">
-          <Package className="w-6 h-6" />
-          <h1 className="text-2xl font-bold">Produtos</h1>
+    <div className="p-2 sm:p-3 space-y-2 sm:space-y-3">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+        <div className="flex items-center space-x-1">
+          <Package className="w-5 h-5" />
+          <h1 className="text-lg sm:text-xl font-bold">Produtos</h1>
         </div>
-        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+        <div className="flex flex-col sm:flex-row gap-1 w-full sm:w-auto">
           <CategoryForm onSuccess={handleCategorySuccess} />
           <ProductForm onSuccess={fetchProdutos} />
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Total de Produtos</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{produtos.length}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Produtos Ativos</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {produtos.filter(p => p.status === 'ativo').length}
+      {/* Estatísticas Compactas */}
+      <div className="grid grid-cols-3 gap-2">
+        <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
+          <CardContent className="p-2">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0">
+                <p className="text-xs font-medium text-blue-700">Total</p>
+                <p className="text-base font-bold text-blue-900">{produtos.length}</p>
+              </div>
+              <div className="p-1 bg-blue-200 rounded">
+                <Package className="w-3 h-3 text-blue-700" />
+              </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Produtos Inativos</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {produtos.filter(p => p.status === 'inativo').length}
+        <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200">
+          <CardContent className="p-2">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0">
+                <p className="text-xs font-medium text-green-700">Ativos</p>
+                <p className="text-base font-bold text-green-900">
+                  {produtos.filter(p => p.status === 'ativo').length}
+                </p>
+              </div>
+              <div className="p-1 bg-green-200 rounded">
+                <Package className="w-3 h-3 text-green-700" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-red-50 to-red-100 border-red-200">
+          <CardContent className="p-2">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0">
+                <p className="text-xs font-medium text-red-700">Inativos</p>
+                <p className="text-base font-bold text-red-900">
+                  {produtos.filter(p => p.status === 'inativo').length}
+                </p>
+              </div>
+              <div className="p-1 bg-red-200 rounded">
+                <Package className="w-3 h-3 text-red-700" />
+              </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
+      {/* Filtros Compactos */}
       <Card>
-        <CardHeader>
-          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
-            <CardTitle>Lista de Produtos</CardTitle>
-            <div className="relative w-full lg:w-72">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <Input
-                placeholder="Buscar por nome, categoria ou código..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
+        <CardHeader className="pb-1 p-2 sm:p-3">
+          <CardTitle className="flex items-center text-sm font-semibold text-gray-800">
+            <Search className="w-3 h-3 mr-1 text-gray-600" />
+            Pesquisar Produtos
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-0 p-2 sm:p-3">
+          <div className="relative">
+            <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 w-3 h-3" />
+            <Input
+              placeholder="Buscar por nome, categoria ou código..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-7 h-8 border-gray-300 focus:border-blue-500 focus:ring-blue-500 text-xs"
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Lista de Produtos Compacta */}
+      <Card>
+        <CardHeader className="pb-1 p-2 sm:p-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-sm font-semibold text-gray-800">
+              Lista de Produtos
+            </CardTitle>
+            <Badge variant="outline" className="text-xs px-1 py-0">
+              {filteredProducts.length} {filteredProducts.length === 1 ? 'produto' : 'produtos'}
+            </Badge>
           </div>
         </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <Table>
-              <TableHeader>
+              <TableHeader className="bg-gray-50">
                 <TableRow>
-                  <TableHead className="w-16">Imagem</TableHead>
-                  <TableHead className="min-w-[150px]">Nome</TableHead>
-                  <TableHead className="min-w-[120px]">Categoria</TableHead>
-                  <TableHead className="min-w-[100px]">Preço</TableHead>
-                  <TableHead className="min-w-[120px]">Estoque</TableHead>
-                  <TableHead className="min-w-[100px]">Status</TableHead>
-                  <TableHead className="min-w-[120px]">Código</TableHead>
-                  <TableHead className="text-right min-w-[150px]">Ações</TableHead>
+                  <TableHead className="font-semibold text-gray-700 w-12 text-xs h-7">Img</TableHead>
+                  <TableHead className="font-semibold text-gray-700 min-w-[120px] text-xs h-7">Nome</TableHead>
+                  <TableHead className="font-semibold text-gray-700 hidden sm:table-cell text-xs h-7">Categoria</TableHead>
+                  <TableHead className="font-semibold text-gray-700 text-xs h-7">Preço</TableHead>
+                  <TableHead className="font-semibold text-gray-700 text-xs h-7">Estoque</TableHead>
+                  <TableHead className="font-semibold text-gray-700 hidden md:table-cell text-xs h-7">Status</TableHead>
+                  <TableHead className="font-semibold text-gray-700 hidden lg:table-cell text-xs h-7">Código</TableHead>
+                  <TableHead className="font-semibold text-gray-700 text-center text-xs h-7">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -210,81 +255,89 @@ const Produtos = () => {
                     <TableCell colSpan={8} className="text-center py-8">
                       <div className="flex items-center justify-center space-x-2">
                         <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-                        <span>Carregando produtos...</span>
+                        <span className="text-sm">Carregando produtos...</span>
                       </div>
                     </TableCell>
                   </TableRow>
                 ) : filteredProducts.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={8} className="text-center py-8 text-gray-500">
-                      {searchTerm ? 'Nenhum produto encontrado com os critérios de busca.' : 'Nenhum produto cadastrado.'}
+                      <div className="space-y-1">
+                        <Package className="w-5 h-5 text-gray-400 mx-auto" />
+                        <p className="text-xs">
+                          {searchTerm ? 'Nenhum produto encontrado com os critérios de busca.' : 'Nenhum produto cadastrado.'}
+                        </p>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ) : (
                   filteredProducts.map((produto) => (
-                    <TableRow key={produto.id}>
-                      <TableCell className="p-2">
-                        <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
+                    <TableRow key={produto.id} className="hover:bg-gray-50 transition-colors h-8">
+                      <TableCell className="p-1">
+                        <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center overflow-hidden">
                           {produto.imagem_url ? (
                             <img
                               src={produto.imagem_url}
                               alt={produto.nome}
                               className="w-full h-full object-cover"
-                              onError={(e) => {
-                                e.currentTarget.style.display = 'none';
-                                e.currentTarget.nextElementSibling.style.display = 'flex';
-                              }}
+                              onError={handleImageError}
                             />
                           ) : (
-                            <Package className="w-6 h-6 text-gray-400" />
+                            <Package className="w-4 h-4 text-gray-400" />
                           )}
                           <div className="w-full h-full items-center justify-center hidden">
-                            <Package className="w-6 h-6 text-gray-400" />
+                            <Package className="w-4 h-4 text-gray-400" />
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell>
-                        <div className="font-medium">{produto.nome}</div>
+                      <TableCell className="py-1 p-2">
+                        <div className="space-y-0">
+                          <div className="font-medium text-xs">{produto.nome}</div>
+                          <div className="text-xs text-gray-500 sm:hidden">{produto.categoria}</div>
+                        </div>
                       </TableCell>
-                      <TableCell>{produto.categoria}</TableCell>
-                      <TableCell>R$ {produto.preco.toFixed(2)}</TableCell>
-                      <TableCell>
-                        <div className="flex flex-col space-y-1">
-                          <span className="text-sm font-medium">{produto.estoque}</span>
+                      <TableCell className="hidden sm:table-cell text-xs py-1 p-2">{produto.categoria}</TableCell>
+                      <TableCell className="text-xs py-1 p-2">R$ {produto.preco.toFixed(2)}</TableCell>
+                      <TableCell className="py-1 p-2">
+                        <div className="flex flex-col space-y-0">
+                          <span className="text-xs font-medium">{produto.estoque}</span>
                           {getStockBadge(produto.estoque)}
                         </div>
                       </TableCell>
-                      <TableCell>{getStatusBadge(produto.status)}</TableCell>
-                      <TableCell>
-                        <code className="text-xs bg-gray-100 px-2 py-1 rounded block max-w-[100px] truncate">
+                      <TableCell className="hidden md:table-cell py-1 p-2">{getStatusBadge(produto.status)}</TableCell>
+                      <TableCell className="hidden lg:table-cell py-1 p-2">
+                        <code className="text-xs bg-gray-100 px-1 py-0.5 rounded font-mono max-w-[80px] block truncate">
                           {produto.codigo_barras || 'N/A'}
                         </code>
                       </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end space-x-1">
+                      <TableCell className="py-1 p-2">
+                        <div className="flex items-center justify-center space-x-0.5">
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => setEditingProduct(produto)}
-                            className="p-2"
+                            className="h-5 w-5 p-0"
+                            title="Editar produto"
                           >
-                            <Edit className="w-4 h-4" />
+                            <Edit className="w-2 h-2" />
                           </Button>
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => setCancelamentoProduct(produto)}
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50 p-2"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50 h-5 w-5 p-0"
+                            title="Cancelar produto"
                           >
-                            <XCircle className="w-4 h-4" />
+                            <XCircle className="w-2 h-2" />
                           </Button>
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => setDeleteProduct(produto)}
-                            className="text-red-600 hover:text-red-700 p-2"
+                            className="text-red-600 hover:text-red-700 h-5 w-5 p-0"
+                            title="Deletar produto"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="w-2 h-2" />
                           </Button>
                         </div>
                       </TableCell>
