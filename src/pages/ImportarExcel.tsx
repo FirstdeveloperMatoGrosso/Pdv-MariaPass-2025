@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -71,9 +70,12 @@ const ImportarExcel: React.FC = () => {
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      if (file.type !== 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' && 
-          file.type !== 'application/vnd.ms-excel') {
-        toast.error('Por favor, selecione um arquivo Excel (.xlsx ou .xls)');
+      const isExcel = file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || 
+                     file.type === 'application/vnd.ms-excel';
+      const isCsv = file.type === 'text/csv' || file.name.toLowerCase().endsWith('.csv');
+      
+      if (!isExcel && !isCsv) {
+        toast.error('Por favor, selecione um arquivo Excel (.xlsx, .xls) ou CSV (.csv)');
         return;
       }
       setSelectedFile(file);
@@ -112,6 +114,29 @@ const ImportarExcel: React.FC = () => {
     };
   };
 
+  const parseCSV = (csvText: string): any[] => {
+    const lines = csvText.split('\n').filter(line => line.trim());
+    if (lines.length < 2) return [];
+    
+    const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim().toLowerCase());
+    const products = [];
+    
+    for (let i = 1; i < lines.length; i++) {
+      const values = lines[i].split(',').map(v => v.replace(/"/g, '').trim());
+      const product: any = {};
+      
+      headers.forEach((header, index) => {
+        if (values[index] !== undefined) {
+          product[header] = values[index];
+        }
+      });
+      
+      products.push(product);
+    }
+    
+    return products;
+  };
+
   const processFile = async () => {
     if (!selectedFile) return;
 
@@ -127,13 +152,22 @@ const ImportarExcel: React.FC = () => {
         await new Promise(resolve => setTimeout(resolve, 50));
       }
 
-      // Aqui você implementaria a lógica real de parsing do Excel
-      // Por simplicidade, vou criar produtos de exemplo
-      const mockProducts = [
-        { nome: 'Coca-Cola 350ml', categoria: 'Bebidas', preco: 5.50, estoque: 100, codigo_barras: '7894900011517' },
-        { nome: 'Coxinha de Frango', categoria: 'Salgados', preco: 8.00, estoque: 50, codigo_barras: '' },
-        { nome: 'Água Mineral 500ml', categoria: 'Bebidas', preco: 3.00, estoque: 200, codigo_barras: '7891234567890' },
-      ];
+      let mockProducts: any[] = [];
+
+      // Verificar se é CSV ou Excel
+      const isCsv = selectedFile.type === 'text/csv' || selectedFile.name.toLowerCase().endsWith('.csv');
+      
+      if (isCsv) {
+        // Processar CSV
+        mockProducts = parseCSV(text);
+      } else {
+        // Para Excel, manter os dados de exemplo (aqui você implementaria a lógica real de parsing do Excel)
+        mockProducts = [
+          { nome: 'Coca-Cola 350ml', categoria: 'Bebidas', preco: 5.50, estoque: 100, codigo_barras: '7894900011517' },
+          { nome: 'Coxinha de Frango', categoria: 'Salgados', preco: 8.00, estoque: 50, codigo_barras: '' },
+          { nome: 'Água Mineral 500ml', categoria: 'Bebidas', preco: 3.00, estoque: 200, codigo_barras: '7891234567890' },
+        ];
+      }
 
       const validatedProducts = mockProducts.map((product, index) => validateProduct(product, index));
       setProducts(validatedProducts);
@@ -142,7 +176,7 @@ const ImportarExcel: React.FC = () => {
       toast.success('Arquivo processado com sucesso!');
     } catch (error) {
       console.error('Erro ao processar arquivo:', error);
-      toast.error('Erro ao processar arquivo Excel');
+      toast.error('Erro ao processar arquivo');
     } finally {
       setIsProcessing(false);
       setProgress(0);
@@ -190,7 +224,7 @@ const ImportarExcel: React.FC = () => {
       {/* Header */}
       <div className="flex items-center space-x-2">
         <FileSpreadsheet className="w-6 h-6 text-green-600" />
-        <h1 className="text-2xl font-bold text-gray-800">Importar Produtos via Excel</h1>
+        <h1 className="text-2xl font-bold text-gray-800">Importar Produtos via Excel/CSV</h1>
       </div>
 
       {/* Template Download */}
@@ -202,7 +236,7 @@ const ImportarExcel: React.FC = () => {
           <div className="flex flex-col sm:flex-row gap-4 items-start">
             <div className="flex-1">
               <p className="text-sm text-gray-600 mb-2">
-                Baixe o template Excel para ver o formato correto dos dados:
+                Baixe o template CSV para ver o formato correto dos dados:
               </p>
               <ul className="text-xs text-gray-500 list-disc list-inside space-y-1">
                 <li><strong>nome:</strong> Nome do produto (obrigatório)</li>
@@ -227,11 +261,11 @@ const ImportarExcel: React.FC = () => {
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <Label htmlFor="file-upload">Selecionar arquivo Excel (.xlsx, .xls)</Label>
+            <Label htmlFor="file-upload">Selecionar arquivo Excel (.xlsx, .xls) ou CSV (.csv)</Label>
             <Input
               id="file-upload"
               type="file"
-              accept=".xlsx,.xls"
+              accept=".xlsx,.xls,.csv"
               onChange={handleFileChange}
               ref={fileInputRef}
               className="mt-1"
