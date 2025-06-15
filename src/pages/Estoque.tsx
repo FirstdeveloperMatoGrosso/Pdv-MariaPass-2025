@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import CategoryForm from '@/components/CategoryForm';
 
 // Using the actual Supabase type instead of custom interface
 type EstoqueItem = {
@@ -21,6 +23,12 @@ type EstoqueItem = {
   created_at: string;
   updated_at: string;
 };
+
+interface Category {
+  id: string;
+  nome: string;
+  descricao: string;
+}
 
 const Estoque: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -38,7 +46,28 @@ const Estoque: React.FC = () => {
   });
   const [showAddProduct, setShowAddProduct] = useState(false);
   const queryClient = useQueryClient();
-  const categories = ['Bebidas', 'Salgados', 'Sanduíches', 'Doces', 'Outros'];
+
+  // Buscar categorias reais do Supabase
+  const { data: categories = [] } = useQuery({
+    queryKey: ['categorias'],
+    queryFn: async () => {
+      console.log('Buscando categorias do Supabase...');
+      const { data, error } = await supabase
+        .from('categorias')
+        .select('*')
+        .order('nome');
+      
+      if (error) {
+        console.error('Erro ao buscar categorias:', error);
+        throw error;
+      }
+      
+      console.log('Categorias carregadas:', data);
+      return data as Category[];
+    },
+    staleTime: 30000, // Cache por 30 segundos
+    refetchOnWindowFocus: true,
+  });
 
   // Buscar produtos para controle de estoque
   const {
@@ -80,7 +109,7 @@ const Estoque: React.FC = () => {
       toast.success('Produto adicionado com sucesso!');
       setNewProduct({
         nome: '',
-        categoria: 'Bebidas',
+        categoria: categories.length > 0 ? categories[0].nome : 'Bebidas',
         preco: 0,
         estoque: 0,
         codigo_barras: ''
@@ -203,6 +232,12 @@ const Estoque: React.FC = () => {
     createProductMutation.mutate(newProduct);
   };
 
+  const handleCategorySuccess = () => {
+    // Invalidar queries relacionadas às categorias quando uma nova categoria for criada
+    queryClient.invalidateQueries({ queryKey: ['categorias'] });
+    queryClient.invalidateQueries({ queryKey: ['estoque'] });
+  };
+
   if (isLoading) {
     return <div className="p-2 sm:p-3 flex items-center justify-center">
         <div className="text-center">
@@ -220,6 +255,7 @@ const Estoque: React.FC = () => {
           <h1 className="text-lg sm:text-xl font-bold text-gray-800">Controle de Estoque</h1>
         </div>
         <div className="flex gap-1 w-full sm:w-auto">
+          <CategoryForm onSuccess={handleCategorySuccess} />
           <Button onClick={() => setShowAddProduct(!showAddProduct)} className="flex items-center space-x-1 flex-1 sm:flex-none h-8 text-sm">
             <Plus className="w-3 h-3" />
             <span>Adicionar</span>
@@ -251,7 +287,7 @@ const Estoque: React.FC = () => {
               ...prev,
               categoria: e.target.value
             }))} className="w-full border rounded-md px-2 py-1 h-8 text-sm">
-                  {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                  {categories.map(cat => <option key={cat.id} value={cat.nome}>{cat.nome}</option>)}
                 </select>
               </div>
               <div>
@@ -348,7 +384,7 @@ const Estoque: React.FC = () => {
                 <Filter className="w-3 h-3 text-gray-500" />
                 <select value={selectedCategory} onChange={e => setSelectedCategory(e.target.value)} className="border rounded-md px-2 py-1 w-full h-8 text-sm">
                   <option value="all">Todas as categorias</option>
-                  {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                  {categories.map(cat => <option key={cat.id} value={cat.nome}>{cat.nome}</option>)}
                 </select>
               </div>
               <div className="flex items-center space-x-1 flex-1">
