@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -257,13 +256,13 @@ const Index: React.FC = () => {
                     <div className="flex items-center justify-between gap-1 sm:gap-2">
                       <Button 
                         onClick={() => addToCart(product)}
-                        className="flex-1 text-[10px] sm:text-xs h-8 sm:h-9 bg-green-600 hover:bg-green-700 text-white px-1 sm:px-2 flex items-center justify-center"
+                        className="w-8 h-8 sm:w-9 sm:h-9 bg-green-600 hover:bg-green-700 text-white p-0 flex items-center justify-center flex-shrink-0"
                         disabled={availableStock <= 0}
                         size="sm"
                       >
                         {availableStock <= 0 ? (
-                          <span className="text-[8px] sm:text-[10px] leading-none text-center">
-                            Sem Estoque
+                          <span className="text-[8px] sm:text-[10px] leading-none text-center px-1">
+                            Sem
                           </span>
                         ) : (
                           <Plus className="w-4 h-4" />
