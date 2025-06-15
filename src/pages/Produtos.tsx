@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Plus, Search, Edit, Trash2, Package, AlertCircle, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -45,7 +46,6 @@ const Produtos = () => {
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Produto | null>(null);
   const [deleteProduct, setDeleteProduct] = useState<Produto | null>(null);
   const [cancelamentoProduct, setCancelamentoProduct] = useState<Produto | null>(null);
@@ -131,10 +131,7 @@ const Produtos = () => {
           <Package className="w-6 h-6" />
           <h1 className="text-2xl font-bold">Produtos</h1>
         </div>
-        <Button onClick={() => setShowForm(true)}>
-          <Plus className="w-4 h-4 mr-2" />
-          Novo Produto
-        </Button>
+        <ProductForm onSuccess={fetchProdutos} />
       </div>
 
       {/* Estatísticas */}
@@ -276,15 +273,6 @@ const Produtos = () => {
           </div>
         </CardContent>
       </Card>
-
-      <ProductForm
-        isOpen={showForm}
-        onClose={() => setShowForm(false)}
-        onProductCreated={() => {
-          setShowForm(false);
-          fetchProdutos();
-        }}
-      />
 
       <ProductEditForm
         open={!!editingProduct}
