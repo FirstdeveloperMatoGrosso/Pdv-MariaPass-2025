@@ -21,7 +21,7 @@ import { AspectRatio } from '@/components/ui/aspect-ratio';
 import { Edit, Upload, Link } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 
 interface Product {
   id: string;
@@ -37,6 +37,12 @@ interface Product {
 interface ProductEditFormProps {
   product: Product;
   onSuccess?: () => void;
+}
+
+interface Category {
+  id: string;
+  nome: string;
+  descricao: string;
 }
 
 const ProductEditForm: React.FC<ProductEditFormProps> = ({ product, onSuccess }) => {
@@ -56,7 +62,27 @@ const ProductEditForm: React.FC<ProductEditFormProps> = ({ product, onSuccess })
 
   const queryClient = useQueryClient();
 
-  const categories = ['Bebidas', 'Salgados', 'Sanduíches', 'Doces', 'Outros'];
+  // Buscar categorias do Supabase
+  const { data: categories = [], isLoading: categoriesLoading } = useQuery({
+    queryKey: ['categorias'],
+    queryFn: async () => {
+      console.log('Buscando categorias para edição...');
+      const { data, error } = await supabase
+        .from('categorias')
+        .select('*')
+        .order('nome');
+      
+      if (error) {
+        console.error('Erro ao buscar categorias:', error);
+        throw error;
+      }
+      
+      console.log('Categorias carregadas na edição:', data);
+      return data as Category[];
+    },
+    staleTime: 30000,
+    refetchOnWindowFocus: true,
+  });
 
   const updateProductMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
@@ -209,14 +235,29 @@ const ProductEditForm: React.FC<ProductEditFormProps> = ({ product, onSuccess })
 
           <div className="space-y-1">
             <Label htmlFor="categoria" className="text-xs">Categoria *</Label>
-            <Select value={formData.categoria} onValueChange={(value) => handleInputChange('categoria', value)}>
+            <Select 
+              value={formData.categoria} 
+              onValueChange={(value) => {
+                console.log('Categoria selecionada na edição:', value);
+                handleInputChange('categoria', value);
+              }}
+              disabled={categoriesLoading}
+            >
               <SelectTrigger className="h-7 text-xs">
-                <SelectValue placeholder="Selecione uma categoria" />
+                <SelectValue placeholder={categoriesLoading ? "Carregando..." : "Selecione uma categoria"} />
               </SelectTrigger>
               <SelectContent>
-                {categories.map(cat => (
-                  <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                ))}
+                {categories.length === 0 && !categoriesLoading ? (
+                  <SelectItem value="no-categories" disabled>
+                    Nenhuma categoria encontrada
+                  </SelectItem>
+                ) : (
+                  categories.map((category) => (
+                    <SelectItem key={category.id} value={category.nome}>
+                      {category.nome}
+                    </SelectItem>
+                  ))
+                )}
               </SelectContent>
             </Select>
           </div>
