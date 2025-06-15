@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -80,12 +81,12 @@ export const useRelatorioDados = (periodo: 'today' | 'week' | 'month') => {
       
       const { inicio, fim } = getDateRange();
       
-      console.log('=== BUSCANDO RELATÓRIOS DE PRODUTOS VENDIDOS ===');
+      console.log('=== BUSCANDO TODOS OS PRODUTOS VENDIDOS ===');
       console.log('Período:', periodo);
       console.log('Data início:', inicio);
       console.log('Data fim:', fim);
 
-      // Buscar APENAS vendas de produtos (com produto_id válido)
+      // Buscar TODAS as vendas de produtos com join para garantir que temos os dados do produto
       const { data: vendasProdutos, error: errorVendasProdutos } = await supabase
         .from('vendas_pulseiras')
         .select(`
@@ -97,7 +98,7 @@ export const useRelatorioDados = (periodo: 'today' | 'week' | 'month') => {
           forma_pagamento,
           numero_autorizacao,
           data_venda,
-          produtos!vendas_pulseiras_produto_id_fkey(
+          produtos!inner(
             id,
             nome
           )
@@ -113,9 +114,9 @@ export const useRelatorioDados = (periodo: 'today' | 'week' | 'month') => {
       }
 
       console.log('Total de vendas de produtos encontradas:', vendasProdutos?.length || 0);
-      console.log('Vendas de produtos brutas:', vendasProdutos);
+      console.log('Vendas de produtos completas:', vendasProdutos);
       
-      // Calcular dados consolidados APENAS das vendas de produtos
+      // Calcular dados consolidados
       const faturamentoTotal = vendasProdutos?.reduce((total, venda) => {
         const valor = Number(venda.valor_total) || 0;
         return total + valor;
@@ -124,15 +125,14 @@ export const useRelatorioDados = (periodo: 'today' | 'week' | 'month') => {
       const pedidosRealizados = vendasProdutos?.length || 0;
       const ticketMedio = pedidosRealizados > 0 ? faturamentoTotal / pedidosRealizados : 0;
 
-      console.log('Dados calculados (PRODUTOS):');
+      console.log('Dados calculados:');
       console.log('- Faturamento total:', faturamentoTotal);
       console.log('- Pedidos realizados:', pedidosRealizados);
       console.log('- Ticket médio:', ticketMedio);
 
-      // Agrupar produtos mais vendidos - verificando se tem produto válido
+      // Agrupar todos os produtos vendidos
       const produtosGrouped = vendasProdutos?.reduce((acc: any, venda: any) => {
-        // Verificar se a venda tem produto_id e dados do produto
-        if (!venda.produto_id || !venda.produtos || !venda.produtos.nome) {
+        if (!venda.produto_id || !venda.produtos?.nome) {
           console.warn('Venda sem produto válido ignorada:', venda);
           return acc;
         }
@@ -155,12 +155,13 @@ export const useRelatorioDados = (periodo: 'today' | 'week' | 'month') => {
         return acc;
       }, {}) || {};
 
-      const produtosMaisVendidosArray = Object.values(produtosGrouped)
+      // Converter para array e ordenar por quantidade vendida
+      const produtosVendidosArray = Object.values(produtosGrouped)
         .sort((a: any, b: any) => b.quantidade - a.quantidade);
 
-      console.log('Produtos mais vendidos (AGRUPADOS):', produtosMaisVendidosArray);
+      console.log('TODOS os produtos vendidos agrupados:', produtosVendidosArray);
 
-      // Processar pedidos recentes (vendas de produtos)
+      // Processar pedidos recentes
       const pedidosRecentesProcessados = (vendasProdutos || []).slice(0, 15).map((venda: any) => ({
         id: venda.id,
         numeroAutorizacao: venda.numero_autorizacao || `PROD-${venda.id.slice(0, 8)}`,
@@ -170,7 +171,7 @@ export const useRelatorioDados = (periodo: 'today' | 'week' | 'month') => {
         formaPagamento: venda.forma_pagamento || 'Pulseira'
       }));
 
-      console.log('Pedidos recentes de produtos:', pedidosRecentesProcessados);
+      console.log('Pedidos recentes processados:', pedidosRecentesProcessados);
 
       // Atualizar estados
       setDados({
@@ -180,14 +181,14 @@ export const useRelatorioDados = (periodo: 'today' | 'week' | 'month') => {
         crescimentoPercentual: 12.5
       });
 
-      setProdutosMaisVendidos(produtosMaisVendidosArray as ProdutoMaisVendido[]);
+      setProdutosMaisVendidos(produtosVendidosArray as ProdutoMaisVendido[]);
       setPedidosRecentes(pedidosRecentesProcessados);
 
-      console.log('=== DADOS FINAIS DE PRODUTOS ATUALIZADOS ===');
-      console.log('Total produtos diferentes:', produtosMaisVendidosArray.length);
+      console.log('=== DADOS FINAIS ATUALIZADOS ===');
+      console.log('Total de produtos diferentes vendidos:', produtosVendidosArray.length);
 
     } catch (err) {
-      console.error('Erro ao carregar dados do relatório de produtos:', err);
+      console.error('Erro ao carregar dados do relatório:', err);
       setError(err instanceof Error ? err.message : 'Erro desconhecido');
     } finally {
       setLoading(false);
@@ -214,7 +215,7 @@ export const useRelatorioDados = (periodo: 'today' | 'week' | 'month') => {
         (payload) => {
           console.log('Mudança detectada na tabela vendas_pulseiras:', payload);
           // Recarregar dados quando houver mudanças
-          setTimeout(() => buscarDados(), 1000); // Small delay to ensure data is committed
+          setTimeout(() => buscarDados(), 1000);
         }
       )
       .subscribe();
