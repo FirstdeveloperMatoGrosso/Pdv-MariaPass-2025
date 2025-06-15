@@ -66,44 +66,70 @@ const ProductEditForm: React.FC<ProductEditFormProps> = ({ product, onSuccess })
 
       // Se foi feito upload de arquivo, fazer upload para o Supabase Storage
       if (uploadedFile && imageType === 'upload') {
-        const fileExt = uploadedFile.name.split('.').pop();
-        const fileName = `${Date.now()}.${fileExt}`;
-        
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from('produtos')
-          .upload(fileName, uploadedFile);
+        try {
+          const fileExt = uploadedFile.name.split('.').pop();
+          const fileName = `produto-${product.id}-${Date.now()}.${fileExt}`;
+          
+          console.log('Fazendo upload do arquivo:', fileName);
+          
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('produtos')
+            .upload(fileName, uploadedFile, {
+              cacheControl: '3600',
+              upsert: false
+            });
 
-        if (uploadError) {
-          console.error('Erro no upload:', uploadError);
-          throw new Error('Erro ao fazer upload da imagem: ' + uploadError.message);
+          if (uploadError) {
+            console.error('Erro no upload:', uploadError);
+            throw new Error('Erro ao fazer upload da imagem: ' + uploadError.message);
+          }
+
+          console.log('Upload realizado com sucesso:', uploadData);
+
+          // Obter URL pública da imagem
+          const { data: { publicUrl } } = supabase.storage
+            .from('produtos')
+            .getPublicUrl(fileName);
+          
+          console.log('URL pública da imagem:', publicUrl);
+          finalImageUrl = publicUrl;
+        } catch (error) {
+          console.error('Erro durante upload:', error);
+          throw error;
         }
-
-        // Obter URL pública da imagem
-        const { data: { publicUrl } } = supabase.storage
-          .from('produtos')
-          .getPublicUrl(fileName);
-        
-        finalImageUrl = publicUrl;
       }
+
+      // Atualizar produto no banco
+      const updateData = {
+        nome: data.nome,
+        preco: data.preco,
+        codigo_barras: data.codigo_barras,
+        categoria: data.categoria,
+        estoque: data.estoque,
+        status: data.status,
+        imagem_url: finalImageUrl,
+        updated_at: new Date().toISOString()
+      };
+
+      console.log('Dados para atualização:', updateData);
 
       const { error } = await supabase
         .from('produtos')
-        .update({
-          ...data,
-          imagem_url: finalImageUrl,
-          updated_at: new Date().toISOString()
-        })
+        .update(updateData)
         .eq('id', product.id);
       
       if (error) {
         console.error('Erro ao atualizar produto:', error);
         throw error;
       }
+
+      console.log('Produto atualizado com sucesso');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['produtos'] });
       toast.success('Produto atualizado com sucesso!');
       setOpen(false);
+      setUploadedFile(null);
       onSuccess?.();
     },
     onError: (error: any) => {
@@ -133,9 +159,22 @@ const ProductEditForm: React.FC<ProductEditFormProps> = ({ product, onSuccess })
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      // Validar tipo de arquivo
+      if (!file.type.startsWith('image/')) {
+        toast.error('Por favor, selecione apenas arquivos de imagem');
+        return;
+      }
+
+      // Validar tamanho do arquivo (máximo 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('A imagem deve ter no máximo 5MB');
+        return;
+      }
+
       setUploadedFile(file);
       const url = URL.createObjectURL(file);
       setPreviewUrl(url);
+      console.log('Arquivo selecionado:', file.name, file.size, file.type);
     }
   };
 
