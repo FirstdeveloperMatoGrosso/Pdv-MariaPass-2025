@@ -93,6 +93,7 @@ const Relatorios: React.FC = () => {
 
   return (
     <div className="p-2 sm:p-3 space-y-2 sm:space-y-3">
+      {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
         <div className="flex items-center space-x-1">
           <BarChart3 className="w-5 h-5 text-green-600" />
@@ -103,7 +104,7 @@ const Relatorios: React.FC = () => {
           <select 
             value={selectedPeriod}
             onChange={(e) => setSelectedPeriod(e.target.value as 'today' | 'week' | 'month')}
-            className="border rounded-md px-2 py-1 text-sm"
+            className="border rounded-md px-2 py-1 text-sm h-8"
             disabled={loading}
           >
             <option value="today">Hoje</option>
@@ -120,8 +121,7 @@ const Relatorios: React.FC = () => {
             <span>Atualizar</span>
           </Button>
           <Button 
-            variant="outline" 
-            className="flex items-center space-x-1 h-8 text-sm px-2"
+            className="flex items-center space-x-1 bg-blue-600 hover:bg-blue-700 h-8 text-sm px-3"
             onClick={() => setExportModalOpen(true)}
             disabled={loading}
           >
@@ -131,49 +131,61 @@ const Relatorios: React.FC = () => {
         </div>
       </div>
 
-      {/* Cards de Resumo */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-2 sm:gap-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-2 sm:p-3">
-            <CardTitle className="text-xs sm:text-sm font-medium">Faturamento Total</CardTitle>
-            <DollarSign className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent className="p-2 sm:p-3 pt-0">
-            <div className="text-lg sm:text-xl font-bold text-green-600">
-              {loading ? '...' : formatCurrency(dados?.faturamentoTotal || 0)}
+      {/* Estatísticas Compactas */}
+      <div className="grid grid-cols-3 gap-2">
+        <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200">
+          <CardContent className="p-2">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0">
+                <p className="text-xs font-medium text-green-700">Faturamento Total</p>
+                <p className="text-base font-bold text-green-900">
+                  {loading ? '...' : formatCurrency(dados?.faturamentoTotal || 0)}
+                </p>
+              </div>
+              <div className="p-1 bg-green-200 rounded">
+                <DollarSign className="w-3 h-3 text-green-700" />
+              </div>
             </div>
-            <p className="text-xs text-muted-foreground">
-              {loading ? '...' : `+${dados?.crescimentoPercentual || 0}% em relação ao período anterior`}
+            <p className="text-xs text-green-600 mt-1">
+              {loading ? '...' : `+${dados?.crescimentoPercentual || 0}% período anterior`}
             </p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-2 sm:p-3">
-            <CardTitle className="text-xs sm:text-sm font-medium">Pedidos Realizados</CardTitle>
-            <Package className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent className="p-2 sm:p-3 pt-0">
-            <div className="text-lg sm:text-xl font-bold text-blue-600">
-              {loading ? '...' : dados?.pedidosRealizados || 0}
+        <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
+          <CardContent className="p-2">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0">
+                <p className="text-xs font-medium text-blue-700">Pedidos Realizados</p>
+                <p className="text-base font-bold text-blue-900">
+                  {loading ? '...' : dados?.pedidosRealizados || 0}
+                </p>
+              </div>
+              <div className="p-1 bg-blue-200 rounded">
+                <Package className="w-3 h-3 text-blue-700" />
+              </div>
             </div>
-            <p className="text-xs text-muted-foreground">
-              {loading ? '...' : '+8.2% em relação ao período anterior'}
+            <p className="text-xs text-blue-600 mt-1">
+              {loading ? '...' : '+8.2% período anterior'}
             </p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-2 sm:p-3">
-            <CardTitle className="text-xs sm:text-sm font-medium">Ticket Médio</CardTitle>
-            <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent className="p-2 sm:p-3 pt-0">
-            <div className="text-lg sm:text-xl font-bold text-purple-600">
-              {loading ? '...' : formatCurrency(dados?.ticketMedio || 0)}
+        <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
+          <CardContent className="p-2">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0">
+                <p className="text-xs font-medium text-purple-700">Ticket Médio</p>
+                <p className="text-base font-bold text-purple-900">
+                  {loading ? '...' : formatCurrency(dados?.ticketMedio || 0)}
+                </p>
+              </div>
+              <div className="p-1 bg-purple-200 rounded">
+                <TrendingUp className="w-3 h-3 text-purple-700" />
+              </div>
             </div>
-            <p className="text-xs text-muted-foreground">
-              {loading ? '...' : '+3.8% em relação ao período anterior'}
+            <p className="text-xs text-purple-600 mt-1">
+              {loading ? '...' : '+3.8% período anterior'}
             </p>
           </CardContent>
         </Card>
@@ -183,7 +195,12 @@ const Relatorios: React.FC = () => {
         {/* Produtos Mais Vendidos */}
         <Card>
           <CardHeader className="p-2 sm:p-3">
-            <CardTitle className="text-sm sm:text-base">Produtos Mais Vendidos</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-semibold text-gray-800">Produtos Mais Vendidos</CardTitle>
+              <Badge variant="outline" className="text-xs px-1 py-0">
+                {produtosMaisVendidos.length} produtos
+              </Badge>
+            </div>
           </CardHeader>
           <CardContent className="p-0">
             {loading ? (
@@ -199,21 +216,21 @@ const Relatorios: React.FC = () => {
             ) : (
               <div className="overflow-x-auto">
                 <Table>
-                  <TableHeader>
+                  <TableHeader className="bg-gray-50">
                     <TableRow>
-                      <TableHead className="h-8 text-xs">Produto</TableHead>
-                      <TableHead className="h-8 text-xs">Qtd</TableHead>
-                      <TableHead className="h-8 text-xs">Receita</TableHead>
+                      <TableHead className="h-6 text-xs">Produto</TableHead>
+                      <TableHead className="h-6 text-xs">Qtd</TableHead>
+                      <TableHead className="h-6 text-xs">Receita</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {produtosMaisVendidos.map((produto, index) => (
-                      <TableRow key={produto.id}>
-                        <TableCell className="font-medium p-2 text-xs">{produto.nome}</TableCell>
-                        <TableCell className="p-2">
-                          <Badge variant="secondary" className="text-xs">{produto.quantidade}</Badge>
+                      <TableRow key={produto.id} className="h-8">
+                        <TableCell className="font-medium p-1 text-xs">{produto.nome}</TableCell>
+                        <TableCell className="p-1">
+                          <Badge variant="secondary" className="text-xs px-1 py-0">{produto.quantidade}</Badge>
                         </TableCell>
-                        <TableCell className="text-green-600 font-bold p-2 text-xs">
+                        <TableCell className="text-green-600 font-bold p-1 text-xs">
                           {formatCurrency(produto.receita)}
                         </TableCell>
                       </TableRow>
@@ -228,7 +245,12 @@ const Relatorios: React.FC = () => {
         {/* Pedidos Recentes */}
         <Card>
           <CardHeader className="p-2 sm:p-3">
-            <CardTitle className="text-sm sm:text-base">Vendas Recentes</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-semibold text-gray-800">Vendas Recentes</CardTitle>
+              <Badge variant="outline" className="text-xs px-1 py-0">
+                {pedidosRecentes.length} vendas
+              </Badge>
+            </div>
           </CardHeader>
           <CardContent className="p-0">
             {loading ? (
@@ -244,34 +266,34 @@ const Relatorios: React.FC = () => {
             ) : (
               <div className="overflow-x-auto">
                 <Table>
-                  <TableHeader>
+                  <TableHeader className="bg-gray-50">
                     <TableRow>
-                      <TableHead className="h-8 text-xs">Código</TableHead>
-                      <TableHead className="hidden sm:table-cell h-8 text-xs">Hora</TableHead>
-                      <TableHead className="h-8 text-xs">Itens</TableHead>
-                      <TableHead className="h-8 text-xs">Total</TableHead>
-                      <TableHead className="h-8 text-xs">Pagamento</TableHead>
+                      <TableHead className="h-6 text-xs">Código</TableHead>
+                      <TableHead className="hidden sm:table-cell h-6 text-xs">Hora</TableHead>
+                      <TableHead className="h-6 text-xs">Itens</TableHead>
+                      <TableHead className="h-6 text-xs">Total</TableHead>
+                      <TableHead className="h-6 text-xs">Pagamento</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {pedidosRecentes.map((pedido) => (
-                      <TableRow key={pedido.id}>
-                        <TableCell className="p-2">
-                          <code className="bg-gray-100 px-1 py-1 rounded text-xs">
+                      <TableRow key={pedido.id} className="h-8">
+                        <TableCell className="p-1">
+                          <code className="bg-gray-100 px-1 py-0.5 rounded text-xs">
                             {pedido.numeroAutorizacao}
                           </code>
                         </TableCell>
-                        <TableCell className="hidden sm:table-cell p-2 text-xs">
+                        <TableCell className="hidden sm:table-cell p-1 text-xs">
                           {formatTime(pedido.dataVenda)}
                         </TableCell>
-                        <TableCell className="p-2 text-xs">{pedido.quantidade}</TableCell>
-                        <TableCell className="font-bold p-2 text-xs">
+                        <TableCell className="p-1 text-xs">{pedido.quantidade}</TableCell>
+                        <TableCell className="font-bold p-1 text-xs">
                           {formatCurrency(pedido.valorTotal)}
                         </TableCell>
-                        <TableCell className="p-2">
+                        <TableCell className="p-1">
                           <Badge 
                             variant="outline"
-                            className="text-xs"
+                            className="text-xs px-1 py-0"
                           >
                             {pedido.formaPagamento}
                           </Badge>
@@ -299,7 +321,12 @@ const Relatorios: React.FC = () => {
       {/* Lista Completa de Produtos Vendidos */}
       <Card>
         <CardHeader className="p-2 sm:p-3">
-          <CardTitle className="text-sm sm:text-base">Todos os Produtos Vendidos</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-sm font-semibold text-gray-800">Todos os Produtos Vendidos</CardTitle>
+            <Badge variant="outline" className="text-xs px-1 py-0">
+              Análise detalhada
+            </Badge>
+          </div>
         </CardHeader>
         <CardContent className="p-0">
           {loading ? (
@@ -315,13 +342,13 @@ const Relatorios: React.FC = () => {
           ) : (
             <div className="overflow-x-auto">
               <Table>
-                <TableHeader>
+                <TableHeader className="bg-gray-50">
                   <TableRow>
-                    <TableHead className="h-8 text-xs">Produto</TableHead>
-                    <TableHead className="h-8 text-xs">Quantidade</TableHead>
-                    <TableHead className="h-8 text-xs">Preço Médio</TableHead>
-                    <TableHead className="h-8 text-xs">Receita Total</TableHead>
-                    <TableHead className="h-8 text-xs">Participação</TableHead>
+                    <TableHead className="h-6 text-xs">Produto</TableHead>
+                    <TableHead className="h-6 text-xs">Quantidade</TableHead>
+                    <TableHead className="h-6 text-xs">Preço Médio</TableHead>
+                    <TableHead className="h-6 text-xs">Receita Total</TableHead>
+                    <TableHead className="h-6 text-xs">Participação</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -331,9 +358,9 @@ const Relatorios: React.FC = () => {
                     const participacao = receitaTotal > 0 ? (produto.receita / receitaTotal) * 100 : 0;
                     
                     return (
-                      <TableRow key={produto.id}>
-                        <TableCell className="font-medium p-2 text-xs">
-                          <div className="flex items-center space-x-2">
+                      <TableRow key={produto.id} className="h-8">
+                        <TableCell className="font-medium p-1 text-xs">
+                          <div className="flex items-center space-x-1">
                             <Badge 
                               variant="outline" 
                               className="text-xs px-1 py-0"
@@ -343,18 +370,18 @@ const Relatorios: React.FC = () => {
                             <span>{produto.nome}</span>
                           </div>
                         </TableCell>
-                        <TableCell className="p-2 text-xs">
-                          <Badge variant="secondary" className="text-xs">
+                        <TableCell className="p-1 text-xs">
+                          <Badge variant="secondary" className="text-xs px-1 py-0">
                             {produto.quantidade}
                           </Badge>
                         </TableCell>
-                        <TableCell className="p-2 text-xs text-blue-600">
+                        <TableCell className="p-1 text-xs text-blue-600">
                           {formatCurrency(precoMedio)}
                         </TableCell>
-                        <TableCell className="text-green-600 font-bold p-2 text-xs">
+                        <TableCell className="text-green-600 font-bold p-1 text-xs">
                           {formatCurrency(produto.receita)}
                         </TableCell>
-                        <TableCell className="p-2 text-xs">
+                        <TableCell className="p-1 text-xs">
                           <div className="flex items-center space-x-1">
                             <div className="w-12 bg-gray-200 rounded-full h-2">
                               <div 
