@@ -485,6 +485,76 @@ export type Database = {
           },
         ]
       }
+      vendas_pulseiras: {
+        Row: {
+          bandeira: string | null
+          created_at: string
+          data_venda: string
+          forma_pagamento: string
+          id: string
+          nsu: string | null
+          numero_autorizacao: string | null
+          produto_id: string | null
+          pulseira_id: string | null
+          quantidade: number
+          terminal_id: string | null
+          valor_total: number
+          valor_unitario: number
+        }
+        Insert: {
+          bandeira?: string | null
+          created_at?: string
+          data_venda?: string
+          forma_pagamento: string
+          id?: string
+          nsu?: string | null
+          numero_autorizacao?: string | null
+          produto_id?: string | null
+          pulseira_id?: string | null
+          quantidade?: number
+          terminal_id?: string | null
+          valor_total: number
+          valor_unitario: number
+        }
+        Update: {
+          bandeira?: string | null
+          created_at?: string
+          data_venda?: string
+          forma_pagamento?: string
+          id?: string
+          nsu?: string | null
+          numero_autorizacao?: string | null
+          produto_id?: string | null
+          pulseira_id?: string | null
+          quantidade?: number
+          terminal_id?: string | null
+          valor_total?: number
+          valor_unitario?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendas_pulseiras_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendas_pulseiras_pulseira_id_fkey"
+            columns: ["pulseira_id"]
+            isOneToOne: false
+            referencedRelation: "pulseiras"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendas_pulseiras_terminal_id_fkey"
+            columns: ["terminal_id"]
+            isOneToOne: false
+            referencedRelation: "terminais"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vouchers: {
         Row: {
           cliente_email: string | null

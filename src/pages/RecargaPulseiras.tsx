@@ -320,7 +320,7 @@ const RecargaPulseiras: React.FC = () => {
         </Card>
       </div>
 
-      {/* Leitura de Pulseira */}
+      {/* Leitura de Pulseira com histórico */}
       <PulseiraReader 
         onPulseiraSelected={(pulseira) => setSelectedPulseira(pulseira)}
       />
