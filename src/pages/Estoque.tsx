@@ -3,7 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Archive, AlertTriangle, TrendingUp, TrendingDown, Search, Filter, RefreshCw, Plus, Minus, Edit, Check, X } from 'lucide-react';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
+import { Archive, AlertTriangle, TrendingUp, TrendingDown, Search, Filter, RefreshCw, Plus, Minus, Edit, Check, X, Upload, Link } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -41,9 +43,16 @@ const Estoque: React.FC = () => {
     categoria: 'Bebidas',
     preco: 0,
     estoque: 0,
-    codigo_barras: ''
+    codigo_barras: '',
+    tipo_venda: 'unidade',
+    unidades_por_caixa: undefined as number | undefined,
+    imagem_url: '',
+    descricao: ''
   });
   const [showAddProduct, setShowAddProduct] = useState(false);
+  const [imageType, setImageType] = useState<'url' | 'upload'>('url');
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string>('');
   const queryClient = useQueryClient();
 
   // Buscar categorias reais do Supabase
@@ -93,10 +102,35 @@ const Estoque: React.FC = () => {
   // Mutation para criar produto
   const createProductMutation = useMutation({
     mutationFn: async (productData: typeof newProduct) => {
+      let finalImageUrl = productData.imagem_url;
+
+      // Se foi feito upload de arquivo, fazer upload para o Supabase Storage
+      if (uploadedFile && imageType === 'upload') {
+        const fileExt = uploadedFile.name.split('.').pop();
+        const fileName = `${Date.now()}.${fileExt}`;
+        
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('produtos')
+          .upload(fileName, uploadedFile);
+
+        if (uploadError) {
+          console.error('Erro no upload:', uploadError);
+          throw new Error('Erro ao fazer upload da imagem: ' + uploadError.message);
+        }
+
+        // Obter URL pública da imagem
+        const { data: { publicUrl } } = supabase.storage
+          .from('produtos')
+          .getPublicUrl(fileName);
+        
+        finalImageUrl = publicUrl;
+      }
+
       const {
         error
       } = await supabase.from('produtos').insert([{
         ...productData,
+        imagem_url: finalImageUrl,
         status: 'ativo'
       }]);
       if (error) throw error;
@@ -111,8 +145,14 @@ const Estoque: React.FC = () => {
         categoria: categories.length > 0 ? categories[0].nome : 'Bebidas',
         preco: 0,
         estoque: 0,
-        codigo_barras: ''
+        codigo_barras: '',
+        tipo_venda: 'unidade',
+        unidades_por_caixa: undefined,
+        imagem_url: '',
+        descricao: ''
       });
+      setPreviewUrl('');
+      setUploadedFile(null);
       setShowAddProduct(false);
     },
     onError: error => {
@@ -223,9 +263,27 @@ const Estoque: React.FC = () => {
     };
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setUploadedFile(file);
+      const url = URL.createObjectURL(file);
+      setPreviewUrl(url);
+    }
+  };
+
+  const handleUrlChange = (url: string) => {
+    setNewProduct(prev => ({ ...prev, imagem_url: url }));
+    setPreviewUrl(url);
+  };
+
   const handleAddProduct = () => {
     if (!newProduct.nome.trim()) {
       toast.error('Nome do produto é obrigatório');
+      return;
+    }
+    if (newProduct.tipo_venda === 'caixa' && (!newProduct.unidades_por_caixa || newProduct.unidades_por_caixa <= 0)) {
+      toast.error('Unidades por caixa é obrigatório quando o tipo de venda é caixa');
       return;
     }
     createProductMutation.mutate(newProduct);
@@ -280,6 +338,15 @@ const Estoque: React.FC = () => {
               nome: e.target.value
             }))} placeholder="Digite o nome do produto" className="h-8 text-sm" />
               </div>
+              
+              <div>
+                <label className="block text-xs font-medium mb-1">Descrição</label>
+                <Input value={newProduct.descricao} onChange={e => setNewProduct(prev => ({
+              ...prev,
+              descricao: e.target.value
+            }))} placeholder="Digite a descrição" className="h-8 text-sm" />
+              </div>
+              
               <div>
                 <label className="block text-xs font-medium mb-1">Categoria</label>
                 <select value={newProduct.categoria} onChange={e => setNewProduct(prev => ({
@@ -289,20 +356,70 @@ const Estoque: React.FC = () => {
                   {categories.map(cat => <option key={cat.id} value={cat.nome}>{cat.nome}</option>)}
                 </select>
               </div>
+
               <div>
-                <label className="block text-xs font-medium mb-1">Preço (R$)</label>
+                <label className="block text-xs font-medium mb-1">Tipo de Venda</label>
+                <RadioGroup
+                  value={newProduct.tipo_venda}
+                  onValueChange={(value) => setNewProduct(prev => ({
+                    ...prev,
+                    tipo_venda: value,
+                    unidades_por_caixa: value === 'unidade' ? undefined : prev.unidades_por_caixa
+                  }))}
+                  className="flex gap-4"
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="unidade" id="unidade" />
+                    <Label htmlFor="unidade" className="text-xs">Unidade</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="caixa" id="caixa" />
+                    <Label htmlFor="caixa" className="text-xs">Caixa</Label>
+                  </div>
+                </RadioGroup>
+              </div>
+
+              {newProduct.tipo_venda === 'caixa' && (
+                <div>
+                  <label className="block text-xs font-medium mb-1">Unidades por Caixa</label>
+                  <Input 
+                    type="number"
+                    min="1"
+                    value={newProduct.unidades_por_caixa || ''}
+                    onChange={e => setNewProduct(prev => ({
+                      ...prev,
+                      unidades_por_caixa: parseInt(e.target.value) || undefined
+                    }))}
+                    placeholder="Ex: 12"
+                    className="h-8 text-sm"
+                  />
+                </div>
+              )}
+              
+              <div>
+                <label className="block text-xs font-medium mb-1">
+                  Preço (R$)
+                  {newProduct.tipo_venda === 'caixa' && ' - Por Caixa'}
+                  {newProduct.tipo_venda === 'unidade' && ' - Por Unidade'}
+                </label>
                 <Input type="number" step="0.01" min="0" value={newProduct.preco} onChange={e => setNewProduct(prev => ({
               ...prev,
               preco: parseFloat(e.target.value) || 0
             }))} placeholder="0.00" className="h-8 text-sm" />
               </div>
+              
               <div>
-                <label className="block text-xs font-medium mb-1">Quantidade Inicial</label>
+                <label className="block text-xs font-medium mb-1">
+                  Quantidade em Estoque
+                  {newProduct.tipo_venda === 'caixa' && ' - Caixas'}
+                  {newProduct.tipo_venda === 'unidade' && ' - Unidades'}
+                </label>
                 <Input type="number" min="0" value={newProduct.estoque} onChange={e => setNewProduct(prev => ({
               ...prev,
               estoque: parseInt(e.target.value) || 0
             }))} placeholder="0" className="h-8 text-sm" />
               </div>
+              
               <div>
                 <label className="block text-xs font-medium mb-1">Código de Barras (Opcional)</label>
                 <Input value={newProduct.codigo_barras} onChange={e => setNewProduct(prev => ({
@@ -310,11 +427,65 @@ const Estoque: React.FC = () => {
               codigo_barras: e.target.value
             }))} placeholder="Digite o código de barras" className="h-8 text-sm" />
               </div>
-              <div className="flex items-end">
-                <Button onClick={handleAddProduct} disabled={createProductMutation.isPending} className="w-full h-8 text-sm">
-                  {createProductMutation.isPending ? 'Adicionando...' : 'Adicionar'}
+            </div>
+
+            {/* Seção de Imagem */}
+            <div className="space-y-2 mt-3">
+              <label className="block text-xs font-medium">Imagem do Produto</label>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant={imageType === 'url' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setImageType('url')}
+                  className="h-7 text-xs"
+                >
+                  <Link className="w-3 h-3 mr-1" />
+                  URL
+                </Button>
+                <Button
+                  type="button"
+                  variant={imageType === 'upload' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setImageType('upload')}
+                  className="h-7 text-xs"
+                >
+                  <Upload className="w-3 h-3 mr-1" />
+                  Upload
                 </Button>
               </div>
+
+              {imageType === 'url' ? (
+                <Input
+                  placeholder="Cole a URL da imagem aqui"
+                  value={newProduct.imagem_url || ''}
+                  onChange={(e) => handleUrlChange(e.target.value)}
+                  className="h-8 text-sm"
+                />
+              ) : (
+                <Input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  className="h-8 text-sm"
+                />
+              )}
+
+              {previewUrl && (
+                <div className="mt-2">
+                  <img 
+                    src={previewUrl} 
+                    alt="Preview" 
+                    className="w-full h-32 object-cover rounded-md border"
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end mt-3">
+              <Button onClick={handleAddProduct} disabled={createProductMutation.isPending} className="h-8 text-sm">
+                {createProductMutation.isPending ? 'Adicionando...' : 'Adicionar'}
+              </Button>
             </div>
           </CardContent>
         </Card>}
