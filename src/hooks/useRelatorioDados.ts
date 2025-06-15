@@ -102,7 +102,7 @@ export const useRelatorioDados = (periodo: 'today' | 'week' | 'month') => {
 
       console.log('Dados do relatório:', dadosRelatorio);
 
-      // Buscar produtos mais vendidos diretamente das vendas com JOIN na tabela produtos
+      // Buscar TODOS os produtos vendidos diretamente das vendas com JOIN na tabela produtos
       const { data: produtosVendidos, error: errorProdutos } = await supabase
         .from('vendas_pulseiras')
         .select(`
