@@ -257,14 +257,17 @@ const Index: React.FC = () => {
                     <div className="flex items-center justify-between gap-1 sm:gap-2">
                       <Button 
                         onClick={() => addToCart(product)}
-                        className="flex-1 text-[10px] sm:text-xs h-12 sm:h-6 bg-green-600 hover:bg-green-700 text-white px-1 sm:px-2 flex flex-col items-center py-1"
+                        className="flex-1 text-[10px] sm:text-xs h-12 sm:h-8 bg-green-600 hover:bg-green-700 text-white px-1 sm:px-2 flex items-center justify-center"
                         disabled={availableStock <= 0}
                         size="sm"
                       >
-                        <Plus className="w-3 h-3 mb-0.5" />
-                        <span className="text-[8px] sm:text-[10px] leading-none text-center">
-                          {availableStock <= 0 ? 'Sem Estoque' : 'Adicionar'}
-                        </span>
+                        {availableStock <= 0 ? (
+                          <span className="text-[8px] sm:text-[10px] leading-none text-center">
+                            Sem Estoque
+                          </span>
+                        ) : (
+                          <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
+                        )}
                       </Button>
                       
                       {quantity > 0 && (
