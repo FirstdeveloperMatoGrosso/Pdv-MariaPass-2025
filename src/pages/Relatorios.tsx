@@ -308,16 +308,26 @@ const Relatorios: React.FC = () => {
                     const participacao = receitaTotal > 0 ? (produto.receita / receitaTotal) * 100 : 0;
                     
                     return (
-                      <TableRow key={produto.id} className="h-6">
+                      <TableRow key={produto.id} className="h-8">
                         <TableCell className="font-medium p-1 text-xs">
-                          <div className="flex items-center space-x-1">
+                          <div className="flex items-center space-x-2">
                             <Badge 
                               variant="outline" 
                               className="text-xs px-1 py-0"
                             >
                               #{index + 1}
                             </Badge>
-                            <span>{produto.nome}</span>
+                            {produto.imagem_url && (
+                              <img 
+                                src={produto.imagem_url} 
+                                alt={produto.nome}
+                                className="w-6 h-6 object-cover rounded"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = 'none';
+                                }}
+                              />
+                            )}
+                            <span className="truncate max-w-[120px]">{produto.nome}</span>
                           </div>
                         </TableCell>
                         <TableCell className="p-1 text-xs">

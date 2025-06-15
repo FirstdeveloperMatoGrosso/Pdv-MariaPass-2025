@@ -14,6 +14,7 @@ interface ProdutoMaisVendido {
   nome: string;
   quantidade: number;
   receita: number;
+  imagem_url?: string;
 }
 
 interface PedidoRecente {
@@ -86,23 +87,6 @@ export const useRelatorioDados = (periodo: 'today' | 'week' | 'month') => {
       console.log('Data início:', inicio);
       console.log('Data fim:', fim);
 
-      // Salvar produtos vendidos usando a função SQL
-      try {
-        const { error: errorSalvar } = await supabase.rpc('salvar_produtos_vendidos', {
-          data_inicio: inicio,
-          data_fim: fim,
-          periodo_tipo: periodo === 'today' ? 'dia' : periodo === 'week' ? 'semana' : 'mes'
-        });
-
-        if (errorSalvar) {
-          console.warn('Erro ao salvar produtos vendidos:', errorSalvar);
-        } else {
-          console.log('Produtos vendidos salvos com sucesso!');
-        }
-      } catch (salvarError) {
-        console.warn('Erro ao tentar salvar produtos:', salvarError);
-      }
-
       // Buscar dados do relatório
       const { data: dadosRelatorio, error: errorRelatorio } = await supabase.rpc('calcular_relatorio_vendas', {
         data_inicio: inicio,
@@ -116,71 +100,54 @@ export const useRelatorioDados = (periodo: 'today' | 'week' | 'month') => {
 
       console.log('Dados do relatório:', dadosRelatorio);
 
-      // Buscar produtos mais vendidos da tabela
-      const { data: produtosSalvos, error: errorProdutos } = await supabase
-        .from('produtos_mais_vendidos')
+      // Buscar produtos mais vendidos diretamente das vendas com JOIN na tabela produtos
+      const { data: produtosVendidos, error: errorProdutos } = await supabase
+        .from('vendas_pulseiras')
         .select(`
-          id,
-          nome_produto,
-          quantidade_vendida,
-          receita_gerada,
-          posicao_ranking
+          produto_id,
+          quantidade,
+          valor_total,
+          produtos:produto_id (
+            id,
+            nome,
+            imagem_url
+          )
         `)
-        .order('posicao_ranking', { ascending: true });
+        .gte('data_venda', inicio)
+        .lt('data_venda', fim)
+        .not('produto_id', 'is', null);
 
       if (errorProdutos) {
-        console.warn('Erro ao buscar produtos salvos:', errorProdutos);
-        // Buscar diretamente das vendas como fallback
-        const { data: produtosDiretos, error: errorDiretos } = await supabase
-          .from('vendas_pulseiras')
-          .select(`
-            produto_id,
-            quantidade,
-            valor_total,
-            produtos:produto_id (
-              id,
-              nome
-            )
-          `)
-          .gte('data_venda', inicio)
-          .lt('data_venda', fim)
-          .not('produto_id', 'is', null);
-
-        if (errorDiretos) {
-          console.error('Erro ao buscar produtos diretamente:', errorDiretos);
-          setProdutosMaisVendidos([]);
-        } else {
-          console.log('Produtos encontrados diretamente:', produtosDiretos);
-          // Processar dados diretos
-          const produtosAgrupados = produtosDiretos?.reduce((acc: any, venda: any) => {
-            if (venda.produtos && venda.produtos.id) {
-              const produtoId = venda.produtos.id;
-              if (!acc[produtoId]) {
-                acc[produtoId] = {
-                  id: produtoId,
-                  nome: venda.produtos.nome,
-                  quantidade: 0,
-                  receita: 0
-                };
-              }
-              acc[produtoId].quantidade += Number(venda.quantidade) || 0;
-              acc[produtoId].receita += Number(venda.valor_total) || 0;
-            }
-            return acc;
-          }, {}) || {};
-
-          const produtosArray = Object.values(produtosAgrupados) as ProdutoMaisVendido[];
-          setProdutosMaisVendidos(produtosArray.sort((a: any, b: any) => b.quantidade - a.quantidade));
-        }
+        console.error('Erro ao buscar produtos vendidos:', errorProdutos);
+        setProdutosMaisVendidos([]);
       } else {
-        console.log('Produtos mais vendidos salvos encontrados:', produtosSalvos?.length || 0);
-        const produtosProcessados = produtosSalvos?.map(produto => ({
-          id: produto.id,
-          nome: produto.nome_produto,
-          quantidade: produto.quantidade_vendida,
-          receita: Number(produto.receita_gerada)
-        })) || [];
-        setProdutosMaisVendidos(produtosProcessados);
+        console.log('Produtos vendidos encontrados:', produtosVendidos?.length || 0);
+        console.log('Detalhes dos produtos:', produtosVendidos);
+        
+        // Processar dados para agrupar por produto
+        const produtosAgrupados = produtosVendidos?.reduce((acc: any, venda: any) => {
+          if (venda.produtos && venda.produtos.id) {
+            const produtoId = venda.produtos.id;
+            if (!acc[produtoId]) {
+              acc[produtoId] = {
+                id: produtoId,
+                nome: venda.produtos.nome,
+                imagem_url: venda.produtos.imagem_url,
+                quantidade: 0,
+                receita: 0
+              };
+            }
+            acc[produtoId].quantidade += Number(venda.quantidade) || 0;
+            acc[produtoId].receita += Number(venda.valor_total) || 0;
+          }
+          return acc;
+        }, {}) || {};
+
+        const produtosArray = Object.values(produtosAgrupados) as ProdutoMaisVendido[];
+        const produtosOrdenados = produtosArray.sort((a: any, b: any) => b.quantidade - a.quantidade);
+        
+        console.log('Produtos agrupados e ordenados:', produtosOrdenados);
+        setProdutosMaisVendidos(produtosOrdenados);
       }
 
       // Buscar vendas recentes
