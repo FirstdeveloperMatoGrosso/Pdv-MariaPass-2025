@@ -265,6 +265,7 @@ export type Database = {
           created_at: string
           estoque: number
           id: string
+          imagem_url: string | null
           nome: string
           preco: number
           status: string
@@ -276,6 +277,7 @@ export type Database = {
           created_at?: string
           estoque?: number
           id?: string
+          imagem_url?: string | null
           nome: string
           preco: number
           status?: string
@@ -287,6 +289,7 @@ export type Database = {
           created_at?: string
           estoque?: number
           id?: string
+          imagem_url?: string | null
           nome?: string
           preco?: number
           status?: string
