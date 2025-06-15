@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ShoppingCart, Plus, Minus, ScanBarcode, Package } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
@@ -34,6 +35,7 @@ const Index: React.FC = () => {
   const [showPrintSimulator, setShowPrintSimulator] = useState(false);
   const [currentOrderId, setCurrentOrderId] = useState('');
   const [showBarcodeModal, setShowBarcodeModal] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string>('todas');
 
   // Buscar produtos do Supabase
   const { data: products = [], isLoading, error } = useQuery({
@@ -45,8 +47,7 @@ const Index: React.FC = () => {
         .select('*')
         .eq('status', 'ativo')
         .gt('estoque', 0)
-        .order('nome')
-        .limit(5);
+        .order('nome');
       
       if (error) {
         console.error('Erro ao buscar produtos:', error);
@@ -58,6 +59,30 @@ const Index: React.FC = () => {
       return data as TotemProduct[];
     },
   });
+
+  // Buscar categorias disponíveis
+  const { data: categories = [] } = useQuery({
+    queryKey: ['categorias-totem'],
+    queryFn: async () => {
+      console.log('Buscando categorias...');
+      const { data, error } = await supabase
+        .from('categorias')
+        .select('nome')
+        .order('nome');
+      
+      if (error) {
+        console.error('Erro ao buscar categorias:', error);
+        return [];
+      }
+      
+      return data?.map(cat => cat.nome) || [];
+    },
+  });
+
+  // Filtrar produtos por categoria
+  const filteredProducts = selectedCategory === 'todas' 
+    ? products.slice(0, 12) // Limitar a 12 produtos quando mostrar todos
+    : products.filter(product => product.categoria === selectedCategory);
 
   const addToCart = (product: TotemProduct) => {
     if (product.estoque <= 0) {
@@ -171,8 +196,8 @@ const Index: React.FC = () => {
         <h1 className="text-xl sm:text-2xl font-bold text-green-600 mb-1">MariaPass Totem</h1>
         <p className="text-xs sm:text-sm text-gray-600">Selecione seus produtos e faça o pagamento via QR Code</p>
         
-        {/* Botão Scanner */}
-        <div className="mt-2 sm:mt-3">
+        {/* Controles de Scanner e Categoria */}
+        <div className="mt-2 sm:mt-3 flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4">
           <Button
             onClick={() => setShowBarcodeModal(true)}
             variant="outline"
@@ -182,6 +207,23 @@ const Index: React.FC = () => {
             <ScanBarcode className="w-3 h-3 sm:w-4 sm:h-4 text-blue-600" />
             <span className="text-blue-600 font-medium">Adicionar por Código de Barras</span>
           </Button>
+          
+          <div className="flex items-center space-x-2">
+            <span className="text-xs sm:text-sm text-gray-700 font-medium">Categoria:</span>
+            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+              <SelectTrigger className="w-[140px] sm:w-[160px] h-8 text-xs sm:text-sm">
+                <SelectValue placeholder="Todas" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todas">Todas</SelectItem>
+                {categories.map((category) => (
+                  <SelectItem key={category} value={category}>
+                    {category}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </div>
 
@@ -192,15 +234,20 @@ const Index: React.FC = () => {
         onProductScanned={handleBarcodeProductScanned}
       />
 
-      {products.length === 0 ? (
+      {filteredProducts.length === 0 ? (
         <div className="text-center py-8">
           <Package className="w-8 h-8 sm:w-12 sm:h-12 text-gray-300 mx-auto mb-2" />
-          <p className="text-gray-500 text-sm sm:text-base">Nenhum produto disponível no momento</p>
+          <p className="text-gray-500 text-sm sm:text-base">
+            {selectedCategory === 'todas' 
+              ? 'Nenhum produto disponível no momento'
+              : `Nenhum produto disponível na categoria "${selectedCategory}"`
+            }
+          </p>
         </div>
       ) : (
         /* Grid de Produtos Responsivo */
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-3">
-          {products.map((product) => {
+          {filteredProducts.map((product) => {
             const cartItem = cart.find(item => item.id === product.id);
             const quantity = cartItem?.quantity || 0;
             const availableStock = product.estoque - quantity;
