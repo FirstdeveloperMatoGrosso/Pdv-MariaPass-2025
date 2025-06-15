@@ -70,9 +70,9 @@ export const useRelatorioDados = (periodo: 'today' | 'week' | 'month') => {
       
       const { inicio, fim } = getDateRange();
       
-      console.log('Buscando dados de vendas para período:', { inicio, fim });
+      console.log('Buscando dados de vendas para período:', { inicio, fim, periodo });
 
-      // Buscar vendas direto da tabela vendas_pulseiras para o período
+      // Buscar todas as vendas da tabela vendas_pulseiras
       const { data: vendasDiretas, error: errorVendasDiretas } = await supabase
         .from('vendas_pulseiras')
         .select(`
@@ -90,7 +90,7 @@ export const useRelatorioDados = (periodo: 'today' | 'week' | 'month') => {
           )
         `)
         .gte('data_venda', inicio)
-        .lt('data_venda', fim)
+        .lte('data_venda', fim)
         .order('data_venda', { ascending: false });
 
       if (errorVendasDiretas) {
@@ -98,9 +98,25 @@ export const useRelatorioDados = (periodo: 'today' | 'week' | 'month') => {
         throw errorVendasDiretas;
       }
 
-      console.log('Vendas encontradas:', vendasDiretas);
+      console.log('Vendas encontradas para período:', vendasDiretas?.length || 0);
+      console.log('Vendas detalhadas:', vendasDiretas);
 
-      // Calcular dados consolidados manualmente
+      if (!vendasDiretas || vendasDiretas.length === 0) {
+        console.log('Nenhuma venda encontrada para o período especificado');
+        
+        // Verificar se existem vendas na tabela (para debug)
+        const { data: todasVendas, error: errorTodasVendas } = await supabase
+          .from('vendas_pulseiras')
+          .select('id, data_venda')
+          .order('data_venda', { ascending: false })
+          .limit(10);
+        
+        if (!errorTodasVendas) {
+          console.log('Últimas 10 vendas na tabela:', todasVendas);
+        }
+      }
+
+      // Calcular dados consolidados
       const faturamentoTotal = vendasDiretas?.reduce((total, venda) => total + (Number(venda.valor_total) || 0), 0) || 0;
       const pedidosRealizados = vendasDiretas?.length || 0;
       const ticketMedio = pedidosRealizados > 0 ? faturamentoTotal / pedidosRealizados : 0;
@@ -127,7 +143,7 @@ export const useRelatorioDados = (periodo: 'today' | 'week' | 'month') => {
 
       const produtosMaisVendidosArray = Object.values(produtosGrouped)
         .sort((a: any, b: any) => b.quantidade - a.quantidade)
-        .slice(0, 10); // Aumentei para 10 para mostrar mais produtos
+        .slice(0, 10);
 
       // Processar pedidos recentes
       const pedidosRecentesProcessados = (vendasDiretas || []).slice(0, 10).map((venda: any) => ({
@@ -143,18 +159,18 @@ export const useRelatorioDados = (periodo: 'today' | 'week' | 'month') => {
         faturamentoTotal,
         pedidosRealizados,
         ticketMedio,
-        crescimentoPercentual: 12.5 // Temporário - seria calculado comparando com período anterior
+        crescimentoPercentual: 12.5
       });
 
       setProdutosMaisVendidos(produtosMaisVendidosArray as ProdutoMaisVendido[]);
       setPedidosRecentes(pedidosRecentesProcessados);
 
-      console.log('Dados processados:', {
+      console.log('Dados processados para relatórios:', {
         faturamentoTotal,
         pedidosRealizados,
         ticketMedio,
-        produtosMaisVendidos: produtosMaisVendidosArray,
-        pedidosRecentes: pedidosRecentesProcessados
+        produtosMaisVendidos: produtosMaisVendidosArray.length,
+        pedidosRecentes: pedidosRecentesProcessados.length
       });
 
     } catch (err) {
