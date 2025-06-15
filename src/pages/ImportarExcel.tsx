@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -35,77 +34,124 @@ const ImportarExcel: React.FC = () => {
   const { data: categories = [] } = useQuery({
     queryKey: ['categorias'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('categorias')
-        .select('nome')
-        .order('nome');
-      
-      if (error) {
-        console.error('Erro ao buscar categorias:', error);
+      console.log('🔄 Buscando categorias do Supabase...');
+      try {
+        const { data, error } = await supabase
+          .from('categorias')
+          .select('nome')
+          .order('nome');
+        
+        if (error) {
+          console.error('❌ Erro ao buscar categorias:', error);
+          throw error;
+        }
+        
+        console.log('✅ Categorias encontradas:', data);
+        return data.map(cat => cat.nome);
+      } catch (error) {
+        console.error('❌ Erro na query de categorias:', error);
         throw error;
       }
-      
-      return data.map(cat => cat.nome);
     },
   });
 
   // Mutation para importar produtos
   const importProductsMutation = useMutation({
     mutationFn: async (validProducts: ProductRow[]) => {
-      console.log('Iniciando importação de produtos:', validProducts);
+      console.log('🚀 Iniciando processo de importação...');
+      console.log('📦 Produtos válidos recebidos:', validProducts.length);
+      console.log('📋 Dados dos produtos:', validProducts);
       
       // Verificar se há produtos para importar
       if (!validProducts || validProducts.length === 0) {
-        throw new Error('Nenhum produto válido para importar');
+        const error = 'Nenhum produto válido para importar';
+        console.error('❌', error);
+        throw new Error(error);
       }
 
-      // Preparar dados para inserção
-      const productsToInsert = validProducts.map(product => ({
-        nome: product.nome?.toString().trim() || '',
-        categoria: product.categoria?.toString().trim() || 'Outros',
-        preco: Number(product.preco) || 0,
-        estoque: Number(product.estoque) || 0,
-        codigo_barras: product.codigo_barras?.toString().trim() || null,
-        status: 'ativo'
-      }));
+      try {
+        // Preparar dados para inserção
+        const productsToInsert = validProducts.map((product, index) => {
+          console.log(`🔄 Preparando produto ${index + 1}:`, product);
+          
+          const prepared = {
+            nome: product.nome?.toString().trim() || '',
+            categoria: product.categoria?.toString().trim() || 'Outros',
+            preco: Number(product.preco) || 0,
+            estoque: Number(product.estoque) || 0,
+            codigo_barras: product.codigo_barras?.toString().trim() || null,
+            status: 'ativo'
+          };
+          
+          console.log(`✅ Produto ${index + 1} preparado:`, prepared);
+          return prepared;
+        });
 
-      console.log('Produtos preparados para inserção:', productsToInsert);
+        console.log('📊 Total de produtos preparados:', productsToInsert.length);
+        console.log('🔍 Produtos para inserção:', productsToInsert);
 
-      // Validar dados antes da inserção
-      for (const product of productsToInsert) {
-        if (!product.nome) {
-          throw new Error(`Produto sem nome encontrado`);
+        // Validar dados antes da inserção
+        for (let i = 0; i < productsToInsert.length; i++) {
+          const product = productsToInsert[i];
+          console.log(`🔍 Validando produto ${i + 1}:`, product);
+          
+          if (!product.nome) {
+            const error = `Produto ${i + 1} sem nome encontrado`;
+            console.error('❌', error);
+            throw new Error(error);
+          }
+          if (product.preco <= 0) {
+            const error = `Preço inválido para produto: ${product.nome}`;
+            console.error('❌', error);
+            throw new Error(error);
+          }
+          
+          console.log(`✅ Produto ${i + 1} validado com sucesso`);
         }
-        if (product.preco <= 0) {
-          throw new Error(`Preço inválido para produto: ${product.nome}`);
-        }
-      }
 
-      // Inserir produtos no banco
-      const { data, error } = await supabase
-        .from('produtos')
-        .insert(productsToInsert)
-        .select();
-
-      if (error) {
-        console.error('Erro ao inserir produtos:', error);
+        console.log('💾 Iniciando inserção no banco de dados...');
         
-        // Verificar se é erro de duplicação
-        if (error.code === '23505' && error.message.includes('codigo_barras')) {
-          throw new Error('Erro: Código de barras duplicado. Verifique se algum produto já existe no sistema.');
-        }
-        
-        throw new Error(`Erro ao importar produtos: ${error.message}`);
-      }
+        // Inserir produtos no banco
+        const { data, error } = await supabase
+          .from('produtos')
+          .insert(productsToInsert)
+          .select();
 
-      console.log('Produtos importados com sucesso:', data);
-      return data;
+        if (error) {
+          console.error('❌ Erro na inserção no banco:', error);
+          console.error('❌ Código do erro:', error.code);
+          console.error('❌ Mensagem do erro:', error.message);
+          console.error('❌ Detalhes do erro:', error.details);
+          console.error('❌ Hint do erro:', error.hint);
+          
+          // Verificar se é erro de duplicação
+          if (error.code === '23505' && error.message.includes('codigo_barras')) {
+            throw new Error('Erro: Código de barras duplicado. Verifique se algum produto já existe no sistema.');
+          }
+          
+          throw new Error(`Erro ao importar produtos: ${error.message}`);
+        }
+
+        console.log('✅ Produtos inseridos com sucesso:', data);
+        console.log('📊 Quantidade de produtos inseridos:', data?.length || 0);
+        return data;
+        
+      } catch (error) {
+        console.error('❌ Erro durante o processo de importação:', error);
+        throw error;
+      }
     },
     onSuccess: (data) => {
-      console.log('Importação concluída:', data);
+      console.log('🎉 Importação concluída com sucesso!');
+      console.log('📊 Dados retornados:', data);
+      
       queryClient.invalidateQueries({ queryKey: ['produtos'] });
       queryClient.invalidateQueries({ queryKey: ['estoque'] });
-      toast.success(`${data?.length || 0} produtos importados com sucesso!`);
+      
+      const count = data?.length || 0;
+      toast.success(`${count} produtos importados com sucesso!`);
+      
+      // Limpar estado
       setProducts([]);
       setShowPreview(false);
       setSelectedFile(null);
@@ -114,22 +160,36 @@ const ImportarExcel: React.FC = () => {
       }
     },
     onError: (error: any) => {
-      console.error('Erro na importação:', error);
-      toast.error(error.message || 'Erro ao importar produtos');
+      console.error('💥 Erro na mutation de importação:', error);
+      console.error('💥 Tipo do erro:', typeof error);
+      console.error('💥 Stack trace:', error.stack);
+      
+      const errorMessage = error?.message || 'Erro desconhecido ao importar produtos';
+      toast.error(errorMessage);
     }
   });
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('📁 Arquivo selecionado');
     const file = event.target.files?.[0];
     if (file) {
+      console.log('📄 Dados do arquivo:', {
+        name: file.name,
+        size: file.size,
+        type: file.type
+      });
+      
       const isExcel = file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || 
                      file.type === 'application/vnd.ms-excel';
       const isCsv = file.type === 'text/csv' || file.name.toLowerCase().endsWith('.csv');
       
       if (!isExcel && !isCsv) {
+        console.error('❌ Tipo de arquivo inválido:', file.type);
         toast.error('Por favor, selecione um arquivo Excel (.xlsx, .xls) ou CSV (.csv)');
         return;
       }
+      
+      console.log('✅ Tipo de arquivo válido');
       setSelectedFile(file);
       setShowPreview(false);
       setProducts([]);
@@ -138,15 +198,22 @@ const ImportarExcel: React.FC = () => {
 
   // Função para normalizar categoria
   const normalizeCategory = (category: string): string => {
-    if (!category) return 'Outros';
+    console.log('🏷️ Normalizando categoria:', category);
+    
+    if (!category) {
+      console.log('🏷️ Categoria vazia, retornando "Outros"');
+      return 'Outros';
+    }
     
     const categoryLower = category.toLowerCase().trim();
+    console.log('🏷️ Categoria em lowercase:', categoryLower);
     
     // Verificar se existe categoria exata (case insensitive)
     const exactMatch = categories.find(cat => 
       cat.toLowerCase() === categoryLower
     );
     if (exactMatch) {
+      console.log('✅ Categoria exata encontrada:', exactMatch);
       return exactMatch;
     }
 
@@ -178,20 +245,24 @@ const ImportarExcel: React.FC = () => {
 
     // Verificar mapeamento direto
     if (categoryMap[categoryLower]) {
+      console.log('✅ Categoria mapeada:', categoryMap[categoryLower]);
       return categoryMap[categoryLower];
     }
 
     // Verificar se contém palavras-chave
     for (const [key, value] of Object.entries(categoryMap)) {
       if (categoryLower.includes(key)) {
+        console.log('✅ Categoria encontrada por palavra-chave:', value);
         return value;
       }
     }
 
+    console.log('🏷️ Categoria não encontrada, retornando "Outros"');
     return 'Outros';
   };
 
   const validateProduct = (product: any, index: number): ProductRow => {
+    console.log(`🔍 Validando produto ${index + 1}:`, product);
     const errors: string[] = [];
     
     // Validar nome
@@ -218,7 +289,7 @@ const ImportarExcel: React.FC = () => {
     // Validar código de barras (opcional)
     const codigoBarras = product.codigo_barras?.toString().trim() || '';
 
-    return {
+    const result = {
       nome,
       categoria: normalizedCategory,
       preco,
@@ -226,18 +297,33 @@ const ImportarExcel: React.FC = () => {
       codigo_barras: codigoBarras,
       status: errors.length > 0 ? 'error' : 'valid',
       errors
-    };
+    } as ProductRow;
+    
+    console.log(`${errors.length > 0 ? '❌' : '✅'} Produto ${index + 1} validado:`, result);
+    return result;
   };
 
   const parseCSV = (csvText: string): any[] => {
+    console.log('📄 Iniciando parse do CSV...');
+    console.log('📄 Tamanho do texto CSV:', csvText.length);
+    
     const lines = csvText.split('\n').filter(line => line.trim());
-    if (lines.length < 2) return [];
+    console.log('📄 Linhas encontradas:', lines.length);
+    
+    if (lines.length < 2) {
+      console.error('❌ CSV deve ter pelo menos 2 linhas (cabeçalho + dados)');
+      return [];
+    }
     
     const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim().toLowerCase());
+    console.log('📄 Cabeçalhos encontrados:', headers);
+    
     const products = [];
     
     for (let i = 1; i < lines.length; i++) {
       const values = lines[i].split(',').map(v => v.replace(/"/g, '').trim());
+      console.log(`📄 Linha ${i} valores:`, values);
+      
       const product: any = {};
       
       headers.forEach((header, index) => {
@@ -246,20 +332,28 @@ const ImportarExcel: React.FC = () => {
         }
       });
       
+      console.log(`📄 Produto ${i} parseado:`, product);
       products.push(product);
     }
     
+    console.log('✅ CSV parseado com sucesso. Total de produtos:', products.length);
     return products;
   };
 
   const processFile = async () => {
-    if (!selectedFile) return;
+    if (!selectedFile) {
+      console.error('❌ Nenhum arquivo selecionado');
+      return;
+    }
 
+    console.log('🔄 Iniciando processamento do arquivo...');
     setIsProcessing(true);
     setProgress(0);
 
     try {
+      console.log('📄 Lendo conteúdo do arquivo...');
       const text = await selectedFile.text();
+      console.log('📄 Arquivo lido. Tamanho:', text.length);
       
       // Simular processamento para mostrar progress
       for (let i = 0; i <= 100; i += 10) {
@@ -273,9 +367,10 @@ const ImportarExcel: React.FC = () => {
       const isCsv = selectedFile.type === 'text/csv' || selectedFile.name.toLowerCase().endsWith('.csv');
       
       if (isCsv) {
-        // Processar CSV
+        console.log('📄 Processando como CSV...');
         mockProducts = parseCSV(text);
       } else {
+        console.log('📄 Usando dados de exemplo para Excel...');
         // Para Excel, usar dados de exemplo (implementar parsing real se necessário)
         mockProducts = [
           { nome: 'Coca-Cola 350ml', categoria: 'Bebidas', preco: 5.50, estoque: 100, codigo_barras: '7894900011517' },
@@ -286,18 +381,20 @@ const ImportarExcel: React.FC = () => {
         ];
       }
 
-      console.log('Produtos processados do arquivo:', mockProducts);
+      console.log('📦 Produtos processados do arquivo:', mockProducts);
 
       const validatedProducts = mockProducts.map((product, index) => validateProduct(product, index));
       
-      console.log('Produtos validados:', validatedProducts);
+      console.log('✅ Produtos validados:', validatedProducts);
+      console.log('📊 Produtos válidos:', validatedProducts.filter(p => p.status === 'valid').length);
+      console.log('📊 Produtos com erro:', validatedProducts.filter(p => p.status === 'error').length);
       
       setProducts(validatedProducts);
       setShowPreview(true);
       
       toast.success('Arquivo processado com sucesso!');
     } catch (error) {
-      console.error('Erro ao processar arquivo:', error);
+      console.error('❌ Erro ao processar arquivo:', error);
       toast.error('Erro ao processar arquivo: ' + (error as Error).message);
     } finally {
       setIsProcessing(false);
@@ -305,6 +402,7 @@ const ImportarExcel: React.FC = () => {
     }
   };
 
+  // ... keep existing code (downloadTemplate function)
   const downloadTemplate = () => {
     // Criar um CSV template para download com as categorias disponíveis
     const categoriesText = categories.length > 0 ? categories.join(', ') : 'Bebidas, Salgados, Sanduíches, Doces, Outros';
@@ -327,22 +425,29 @@ const ImportarExcel: React.FC = () => {
   };
 
   const handleImport = () => {
+    console.log('🚀 Iniciando importação...');
     const validProducts = products.filter(p => p.status === 'valid');
+    console.log('📦 Produtos válidos para importação:', validProducts.length);
+    
     if (validProducts.length === 0) {
+      console.error('❌ Nenhum produto válido para importar');
       toast.error('Nenhum produto válido para importar');
       return;
     }
     
-    console.log('Iniciando importação com produtos válidos:', validProducts);
+    console.log('📋 Produtos que serão importados:', validProducts);
     importProductsMutation.mutate(validProducts);
   };
 
   const removeProduct = (index: number) => {
+    console.log('🗑️ Removendo produto do índice:', index);
     setProducts(products.filter((_, i) => i !== index));
   };
 
   const validProductsCount = products.filter(p => p.status === 'valid').length;
   const errorProductsCount = products.filter(p => p.status === 'error').length;
+
+  console.log('📊 Estado atual - Produtos válidos:', validProductsCount, 'Com erro:', errorProductsCount);
 
   return (
     <div className="p-3 space-y-4">
