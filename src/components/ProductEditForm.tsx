@@ -17,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { AspectRatio } from '@/components/ui/aspect-ratio';
 import { Edit, Upload, Link } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -151,7 +152,7 @@ const ProductEditForm: React.FC<ProductEditFormProps> = ({ product, onSuccess })
           <Edit className="w-3 h-3" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-sm">Editar Produto</DialogTitle>
         </DialogHeader>
@@ -232,7 +233,7 @@ const ProductEditForm: React.FC<ProductEditFormProps> = ({ product, onSuccess })
             </Select>
           </div>
 
-          {/* Seção de Imagem */}
+          {/* Seção de Imagem Melhorada */}
           <div className="space-y-2">
             <Label className="text-xs">Imagem do Produto</Label>
             <div className="flex gap-1">
@@ -274,16 +275,22 @@ const ProductEditForm: React.FC<ProductEditFormProps> = ({ product, onSuccess })
               />
             )}
 
+            {/* Preview da Imagem Responsivo */}
             {previewUrl && (
-              <div className="mt-1">
-                <img 
-                  src={previewUrl} 
-                  alt="Preview" 
-                  className="w-full h-20 object-cover rounded-md border"
-                  onError={(e) => {
-                    e.currentTarget.src = '/placeholder.svg';
-                  }}
-                />
+              <div className="w-full">
+                <AspectRatio ratio={4/3} className="bg-muted rounded-md overflow-hidden">
+                  <img 
+                    src={previewUrl} 
+                    alt="Preview do produto" 
+                    className="w-full h-full object-contain bg-white"
+                    onError={(e) => {
+                      e.currentTarget.src = '/placeholder.svg';
+                    }}
+                  />
+                </AspectRatio>
+                <p className="text-xs text-gray-500 mt-1 text-center">
+                  Preview da imagem do produto
+                </p>
               </div>
             )}
           </div>
