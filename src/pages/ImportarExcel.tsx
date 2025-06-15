@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 
 interface ProductRow {
   nome: string;
@@ -30,7 +31,23 @@ const ImportarExcel: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
 
-  const categories = ['Bebidas', 'Salgados', 'Sanduíches', 'Doces', 'Outros'];
+  // Buscar categorias do Supabase
+  const { data: categories = [] } = useQuery({
+    queryKey: ['categorias'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('categorias')
+        .select('nome')
+        .order('nome');
+      
+      if (error) {
+        console.error('Erro ao buscar categorias:', error);
+        throw error;
+      }
+      
+      return data.map(cat => cat.nome);
+    },
+  });
 
   // Mutation para importar produtos
   const importProductsMutation = useMutation({
@@ -84,6 +101,61 @@ const ImportarExcel: React.FC = () => {
     }
   };
 
+  // Função para normalizar categoria
+  const normalizeCategory = (category: string): string => {
+    if (!category) return 'Outros';
+    
+    const categoryLower = category.toLowerCase().trim();
+    
+    // Mapeamento de categorias similares
+    const categoryMap: { [key: string]: string } = {
+      'bebida': 'Bebidas',
+      'bebidas': 'Bebidas',
+      'cerveja': 'Bebidas',
+      'cervejas': 'Bebidas',
+      'refrigerante': 'Bebidas',
+      'refrigerantes': 'Bebidas',
+      'agua': 'Bebidas',
+      'águas': 'Bebidas',
+      'suco': 'Bebidas',
+      'sucos': 'Bebidas',
+      'salgado': 'Salgados',
+      'salgados': 'Salgados',
+      'sanduiche': 'Sanduíches',
+      'sanduíche': 'Sanduíches',
+      'sanduiches': 'Sanduíches',
+      'sanduíches': 'Sanduíches',
+      'hamburguer': 'Sanduíches',
+      'hambúrguer': 'Sanduíches',
+      'doce': 'Doces',
+      'doces': 'Doces',
+      'sobremesa': 'Doces',
+      'sobremesas': 'Doces'
+    };
+
+    // Verificar mapeamento direto
+    if (categoryMap[categoryLower]) {
+      return categoryMap[categoryLower];
+    }
+
+    // Verificar se existe categoria exata (case insensitive)
+    const exactMatch = categories.find(cat => 
+      cat.toLowerCase() === categoryLower
+    );
+    if (exactMatch) {
+      return exactMatch;
+    }
+
+    // Verificar se contém palavras-chave
+    for (const [key, value] of Object.entries(categoryMap)) {
+      if (categoryLower.includes(key)) {
+        return value;
+      }
+    }
+
+    return 'Outros';
+  };
+
   const validateProduct = (product: any, index: number): ProductRow => {
     const errors: string[] = [];
     
@@ -91,9 +163,7 @@ const ImportarExcel: React.FC = () => {
       errors.push('Nome é obrigatório');
     }
     
-    if (!product.categoria || !categories.includes(product.categoria)) {
-      errors.push(`Categoria deve ser uma das: ${categories.join(', ')}`);
-    }
+    const normalizedCategory = normalizeCategory(product.categoria);
     
     if (isNaN(Number(product.preco)) || Number(product.preco) <= 0) {
       errors.push('Preço deve ser um número maior que zero');
@@ -105,7 +175,7 @@ const ImportarExcel: React.FC = () => {
 
     return {
       nome: product.nome || '',
-      categoria: product.categoria || 'Outros',
+      categoria: normalizedCategory,
       preco: Number(product.preco) || 0,
       estoque: Number(product.estoque) || 0,
       codigo_barras: product.codigo_barras || '',
@@ -184,7 +254,8 @@ const ImportarExcel: React.FC = () => {
   };
 
   const downloadTemplate = () => {
-    // Criar um CSV template para download
+    // Criar um CSV template para download com as categorias disponíveis
+    const categoriesText = categories.length > 0 ? categories.join(', ') : 'Bebidas, Salgados, Sanduíches, Doces, Outros';
     const template = `nome,categoria,preco,estoque,codigo_barras
 "Coca-Cola 350ml","Bebidas",5.50,100,"7894900011517"
 "Coxinha de Frango","Salgados",8.00,50,""
@@ -240,11 +311,14 @@ const ImportarExcel: React.FC = () => {
               </p>
               <ul className="text-xs text-gray-500 list-disc list-inside space-y-1">
                 <li><strong>nome:</strong> Nome do produto (obrigatório)</li>
-                <li><strong>categoria:</strong> Bebidas, Salgados, Sanduíches, Doces, Outros</li>
+                <li><strong>categoria:</strong> {categories.length > 0 ? categories.join(', ') : 'Bebidas, Salgados, Sanduíches, Doces, Outros'}</li>
                 <li><strong>preco:</strong> Preço em reais (ex: 5.50)</li>
                 <li><strong>estoque:</strong> Quantidade em estoque (número inteiro)</li>
                 <li><strong>codigo_barras:</strong> Código de barras (opcional)</li>
               </ul>
+              <p className="text-xs text-blue-600 mt-2">
+                💡 O sistema aceita variações de categoria (ex: "cerveja" será automaticamente convertido para "Bebidas")
+              </p>
             </div>
             <Button onClick={downloadTemplate} variant="outline" className="flex items-center gap-2">
               <Download className="w-4 h-4" />
