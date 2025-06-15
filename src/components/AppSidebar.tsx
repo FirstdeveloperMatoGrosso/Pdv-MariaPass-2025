@@ -57,6 +57,10 @@ export function AppSidebar() {
   const isActive = (path: string) => currentPath === path;
   const isCollapsed = state === 'collapsed';
 
+  console.log('Current path:', currentPath);
+  console.log('Sidebar state:', state);
+  console.log('Menu items:', menuItems);
+
   return (
     <Sidebar className={isCollapsed ? 'w-14' : 'w-60'} collapsible="icon">
       <SidebarHeader className="border-b">
