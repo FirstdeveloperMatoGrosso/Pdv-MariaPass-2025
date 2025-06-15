@@ -298,7 +298,7 @@ const Index: React.FC = () => {
 
   // Filtrar produtos por categoria
   const filteredProducts = selectedCategory === 'todas' 
-    ? products.slice(0, 12) // Limitar a 12 produtos quando mostrar todos
+    ? products.slice(0, 20) // Aumentar para 20 produtos quando mostrar todos
     : products.filter(product => product.categoria === selectedCategory);
 
   const addToCart = (product: TotemProduct, customQuantity?: number) => {
@@ -485,24 +485,24 @@ const Index: React.FC = () => {
     <div className="p-2 sm:p-3 space-y-2 sm:space-y-3">
       <AlertContainer />
       
-      <div className="text-center mb-4 sm:mb-6">
-        <h1 className="text-xl sm:text-2xl font-bold text-green-600 mb-1">MariaPass Totem</h1>
+      <div className="text-center mb-3 sm:mb-4">
+        <h1 className="text-lg sm:text-xl font-bold text-green-600 mb-1">MariaPass Totem</h1>
         <p className="text-xs sm:text-sm text-gray-600">Selecione seus produtos e faça o pagamento via QR Code</p>
         
         {/* Controles de Scanner e Categoria */}
-        <div className="mt-2 sm:mt-3 flex flex-col items-center justify-center gap-3">
+        <div className="mt-2 flex flex-col items-center justify-center gap-2">
           <Button
             onClick={() => setShowBarcodeModal(true)}
             variant="outline"
-            size="lg"
-            className="flex items-center space-x-1 bg-blue-50 hover:bg-blue-100 border-blue-200 text-xs sm:text-sm h-8"
+            size="sm"
+            className="flex items-center space-x-1 bg-blue-50 hover:bg-blue-100 border-blue-200 text-xs h-7"
           >
-            <ScanBarcode className="w-3 h-3 sm:w-4 sm:h-4 text-blue-600" />
-            <span className="text-blue-600 font-medium">Adicionar por Código de Barras</span>
+            <ScanBarcode className="w-3 h-3 text-blue-600" />
+            <span className="text-blue-600 font-medium">Código de Barras</span>
           </Button>
           
-          <div className="w-full max-w-md">
-            <span className="block text-xs sm:text-sm text-gray-700 font-medium mb-2">Categorias:</span>
+          <div className="w-full max-w-lg">
+            <span className="block text-xs text-gray-700 font-medium mb-1">Categorias:</span>
             <Carousel className="w-full">
               <CarouselContent className="-ml-1">
                 <CarouselItem className="pl-1 basis-auto">
@@ -510,7 +510,7 @@ const Index: React.FC = () => {
                     variant={selectedCategory === 'todas' ? 'default' : 'outline'}
                     size="sm"
                     onClick={() => setSelectedCategory('todas')}
-                    className="text-xs whitespace-nowrap"
+                    className="text-xs whitespace-nowrap h-7"
                   >
                     Todas
                   </Button>
@@ -521,7 +521,7 @@ const Index: React.FC = () => {
                       variant={selectedCategory === category ? 'default' : 'outline'}
                       size="sm"
                       onClick={() => setSelectedCategory(category)}
-                      className="text-xs whitespace-nowrap"
+                      className="text-xs whitespace-nowrap h-7"
                     >
                       {category}
                     </Button>
@@ -543,9 +543,9 @@ const Index: React.FC = () => {
       />
 
       {filteredProducts.length === 0 ? (
-        <div className="text-center py-8">
-          <Package className="w-8 h-8 sm:w-12 sm:h-12 text-gray-300 mx-auto mb-2" />
-          <p className="text-gray-500 text-sm sm:text-base">
+        <div className="text-center py-6">
+          <Package className="w-6 h-6 sm:w-8 sm:h-8 text-gray-300 mx-auto mb-2" />
+          <p className="text-gray-500 text-xs sm:text-sm">
             {selectedCategory === 'todas' 
               ? 'Nenhum produto disponível no momento'
               : `Nenhum produto disponível na categoria "${selectedCategory}"`
@@ -553,8 +553,8 @@ const Index: React.FC = () => {
           </p>
         </div>
       ) : (
-        /* Grid de Produtos Responsivo */
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-3">
+        /* Grid de Produtos Mais Responsivo e Compacto */
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 2xl:grid-cols-10 gap-1.5 sm:gap-2">
           {filteredProducts.map((product) => {
             const cartItem = cart.find(item => item.id === product.id);
             const quantity = cartItem?.quantity || 0;
@@ -576,49 +576,40 @@ const Index: React.FC = () => {
                       />
                     ) : (
                       <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                        <Package className="w-6 h-6 sm:w-8 sm:h-8 text-gray-400" />
+                        <Package className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
                       </div>
                     )}
                   </div>
                   
-                  <CardHeader className="p-2 sm:p-3 pb-1">
+                  <CardHeader className="p-1.5 pb-1">
                     <div className="flex items-start justify-between gap-1">
                       <div className="flex-1 min-w-0">
-                        <CardTitle className="text-xs sm:text-sm line-clamp-2 leading-tight">{product.nome}</CardTitle>
-                        <Badge variant="outline" className="mt-1 text-[10px] sm:text-xs">{product.categoria}</Badge>
+                        <CardTitle className="text-[10px] sm:text-xs line-clamp-2 leading-tight font-medium">{product.nome}</CardTitle>
+                        <Badge variant="outline" className="mt-0.5 text-[8px] sm:text-[9px] px-1 py-0">{product.categoria}</Badge>
                       </div>
-                      <div className="flex-shrink-0 flex flex-col items-end gap-1">
+                      <div className="flex-shrink-0 flex flex-col items-end gap-0.5">
                         <Badge 
                           variant={availableStock < 10 ? "destructive" : "secondary"}
-                          className="text-[10px] sm:text-xs whitespace-nowrap"
+                          className="text-[8px] sm:text-[9px] whitespace-nowrap px-1 py-0"
                         >
-                          {availableStock} un.
+                          {availableStock}
                         </Badge>
                         {isLowStock && (
                           <div className="flex items-center">
-                            <AlertTriangle className="w-3 h-3 text-orange-500" />
-                            <Badge variant="outline" className="text-[8px] text-orange-600 border-orange-300">
-                              Baixo
-                            </Badge>
+                            <AlertTriangle className="w-2 h-2 text-orange-500" />
                           </div>
                         )}
                       </div>
                     </div>
                     
-                    {product.descricao && (
-                      <p className="text-[10px] sm:text-xs text-gray-600 mt-1 line-clamp-2">
-                        {product.descricao}
-                      </p>
-                    )}
-                    
-                    <p className="text-sm sm:text-base font-bold text-green-600 mt-1">
+                    <p className="text-xs sm:text-sm font-bold text-green-600 mt-0.5">
                       R$ {product.preco.toFixed(2)}
                     </p>
                   </CardHeader>
                   
-                  <CardContent className="pt-0 p-2 sm:p-3">
-                    {/* Input de Quantidade */}
-                    <div className="mb-2">
+                  <CardContent className="pt-0 p-1.5">
+                    {/* Input de Quantidade Compacto */}
+                    <div className="mb-1">
                       <Input
                         type="number"
                         min="1"
@@ -626,7 +617,7 @@ const Index: React.FC = () => {
                         placeholder="Qtd"
                         value={quantityInputs[product.id] || ''}
                         onChange={(e) => handleQuantityInputChange(product.id, e.target.value)}
-                        className="h-7 text-xs text-center"
+                        className="h-6 text-[10px] text-center"
                         disabled={availableStock <= 0}
                       />
                     </div>
@@ -634,42 +625,42 @@ const Index: React.FC = () => {
                     <div className="flex items-center justify-between gap-1">
                       <Button 
                         onClick={() => addToCart(product)}
-                        className="w-8 h-8 sm:w-9 sm:h-9 bg-green-600 hover:bg-green-700 text-white p-0 flex items-center justify-center flex-shrink-0"
+                        className="w-6 h-6 bg-green-600 hover:bg-green-700 text-white p-0 flex items-center justify-center flex-shrink-0"
                         disabled={availableStock <= 0}
                         size="sm"
                       >
                         {availableStock <= 0 ? (
-                          <span className="text-[8px] sm:text-[10px] leading-none text-center px-1">
-                            Sem
+                          <span className="text-[6px] leading-none text-center">
+                            X
                           </span>
                         ) : (
-                          <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
+                          <Plus className="w-2.5 h-2.5" />
                         )}
                       </Button>
                       
                       {quantityInputs[product.id] && (
                         <Button 
                           onClick={() => handleAddWithQuantity(product)}
-                          className="w-8 h-8 sm:w-9 sm:h-9 bg-blue-600 hover:bg-blue-700 text-white p-0 flex items-center justify-center flex-shrink-0"
+                          className="w-6 h-6 bg-blue-600 hover:bg-blue-700 text-white p-0 flex items-center justify-center flex-shrink-0"
                           disabled={availableStock <= 0}
                           size="sm"
                         >
-                          <span className="text-[8px] sm:text-[10px] leading-none text-center px-1">
-                            Add
+                          <span className="text-[6px] leading-none text-center">
+                            +
                           </span>
                         </Button>
                       )}
                       
                       {quantity > 0 && (
                         <>
-                          <Badge variant="secondary" className="text-[10px] sm:text-xs flex-shrink-0">{quantity}</Badge>
+                          <Badge variant="secondary" className="text-[8px] flex-shrink-0 px-1 py-0">{quantity}</Badge>
                           <Button 
                             size="sm" 
                             variant="outline"
                             onClick={() => removeFromCart(product.id)}
-                            className="w-8 h-8 sm:w-9 sm:h-9 p-0 border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700 hover:border-red-400 flex items-center justify-center flex-shrink-0"
+                            className="w-6 h-6 p-0 border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700 hover:border-red-400 flex items-center justify-center flex-shrink-0"
                           >
-                            <Minus className="w-3 h-3 sm:w-4 sm:h-4" />
+                            <Minus className="w-2.5 h-2.5" />
                           </Button>
                         </>
                       )}
@@ -679,11 +670,11 @@ const Index: React.FC = () => {
                 
                 {quantity > 0 && (
                   <Badge 
-                    className="absolute bg-red-500 text-white text-[10px] sm:text-xs min-w-[18px] sm:min-w-[20px] h-4 sm:h-5 flex items-center justify-center rounded-full font-bold shadow-lg border-2 border-white z-50"
+                    className="absolute bg-red-500 text-white text-[8px] min-w-[16px] h-4 flex items-center justify-center rounded-full font-bold shadow-lg border-2 border-white z-50"
                     variant="destructive"
                     style={{ 
-                      top: '8px', 
-                      right: '8px'
+                      top: '4px', 
+                      right: '4px'
                     }}
                   >
                     {quantity}
@@ -695,48 +686,48 @@ const Index: React.FC = () => {
         </div>
       )}
 
-      {/* Carrinho Flutuante Responsivo */}
+      {/* Carrinho Flutuante Mais Compacto */}
       {cart.length > 0 && (
-        <Card className="fixed bottom-2 sm:bottom-4 right-2 sm:right-4 w-64 sm:w-72 shadow-lg border-2 border-green-500 z-40">
-          <CardHeader className="pb-2 p-2 sm:p-3">
-            <CardTitle className="flex items-center justify-between text-sm sm:text-base">
+        <Card className="fixed bottom-2 right-2 w-56 sm:w-64 shadow-lg border-2 border-green-500 z-40">
+          <CardHeader className="pb-1 p-2">
+            <CardTitle className="flex items-center justify-between text-xs sm:text-sm">
               <div className="flex items-center space-x-1">
-                <ShoppingCart className="w-3 h-3 sm:w-4 sm:h-4" />
+                <ShoppingCart className="w-3 h-3" />
                 <span>Carrinho</span>
               </div>
-              <Badge className="text-xs">{getTotalItems()} itens</Badge>
+              <Badge className="text-[10px]">{getTotalItems()} itens</Badge>
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2 p-2 sm:p-3 pt-0">
-            <div className="max-h-24 sm:max-h-32 overflow-y-auto space-y-1">
+          <CardContent className="space-y-1 p-2 pt-0">
+            <div className="max-h-20 sm:max-h-24 overflow-y-auto space-y-1">
               {cart.map((item) => (
-                <div key={item.id} className="flex justify-between items-center text-xs p-1 sm:p-2 bg-gray-50 rounded">
+                <div key={item.id} className="flex justify-between items-center text-[10px] p-1 bg-gray-50 rounded">
                   <div className="flex-1">
-                    <span className="font-medium text-xs">{item.nome}</span>
-                    <div className="text-[10px] sm:text-xs text-gray-500">
+                    <span className="font-medium text-[10px]">{item.nome}</span>
+                    <div className="text-[9px] text-gray-500">
                       {item.quantity}x R$ {item.preco.toFixed(2)}
                     </div>
                   </div>
-                  <span className="font-bold text-green-600 text-xs">
+                  <span className="font-bold text-green-600 text-[10px]">
                     R$ {(item.preco * item.quantity).toFixed(2)}
                   </span>
                 </div>
               ))}
             </div>
             
-            <div className="border-t pt-2">
+            <div className="border-t pt-1">
               <div className="flex justify-between items-center font-bold">
-                <span className="text-sm">Total:</span>
-                <span className="text-green-600 text-sm sm:text-base">R$ {getTotalPrice().toFixed(2)}</span>
+                <span className="text-xs">Total:</span>
+                <span className="text-green-600 text-sm">R$ {getTotalPrice().toFixed(2)}</span>
               </div>
             </div>
             
             <Button 
               onClick={generateOrder}
-              className="w-full text-xs sm:text-sm h-8"
-              size="lg"
+              className="w-full text-[10px] h-7"
+              size="sm"
             >
-              Gerar QR Code para Pagamento
+              Gerar QR Code
             </Button>
           </CardContent>
         </Card>
