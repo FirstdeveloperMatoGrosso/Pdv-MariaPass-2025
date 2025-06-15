@@ -257,7 +257,7 @@ const Index: React.FC = () => {
                     <div className="flex items-center justify-between gap-1">
                       <Button 
                         onClick={() => addToCart(product)}
-                        className="flex-1 text-xs h-8"
+                        className="flex-1 text-xs h-7 bg-green-600 hover:bg-green-700 text-white"
                         disabled={availableStock <= 0}
                         size="sm"
                       >
@@ -271,7 +271,7 @@ const Index: React.FC = () => {
                             size="sm" 
                             variant="outline"
                             onClick={() => removeFromCart(product.id)}
-                            className="h-6 w-6 p-0"
+                            className="h-6 w-6 p-0 border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700 hover:border-red-400"
                           >
                             <Minus className="w-3 h-3" />
                           </Button>
