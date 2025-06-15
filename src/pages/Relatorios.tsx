@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -20,9 +19,11 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import ExportModal from '@/components/ExportModal';
 
 const Relatorios: React.FC = () => {
   const [selectedPeriod, setSelectedPeriod] = useState('today');
+  const [exportModalOpen, setExportModalOpen] = useState(false);
 
   // Dados simulados
   const salesData = {
@@ -49,6 +50,15 @@ const Relatorios: React.FC = () => {
 
   const currentData = salesData[selectedPeriod as keyof typeof salesData];
 
+  const getPeriodLabel = (period: string) => {
+    switch (period) {
+      case 'today': return 'Hoje';
+      case 'week': return 'Esta Semana';
+      case 'month': return 'Este Mês';
+      default: return period;
+    }
+  };
+
   return (
     <div className="p-2 sm:p-3 space-y-2 sm:space-y-3">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
@@ -67,7 +77,11 @@ const Relatorios: React.FC = () => {
             <option value="week">Esta Semana</option>
             <option value="month">Este Mês</option>
           </select>
-          <Button variant="outline" className="flex items-center space-x-1 h-8 text-sm px-2">
+          <Button 
+            variant="outline" 
+            className="flex items-center space-x-1 h-8 text-sm px-2"
+            onClick={() => setExportModalOpen(true)}
+          >
             <Download className="w-3 h-3" />
             <span>Exportar</span>
           </Button>
@@ -202,6 +216,13 @@ const Relatorios: React.FC = () => {
           </CardContent>
         </Card>
       </div>
+
+      <ExportModal
+        open={exportModalOpen}
+        onClose={() => setExportModalOpen(false)}
+        reportData={currentData}
+        period={getPeriodLabel(selectedPeriod)}
+      />
     </div>
   );
 };
