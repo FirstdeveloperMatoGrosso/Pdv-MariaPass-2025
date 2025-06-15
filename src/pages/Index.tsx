@@ -490,7 +490,7 @@ const Index: React.FC = () => {
                       </CarouselItem>)}
                   </CarouselContent>
                   
-                  <CarouselNext className="hidden sm:flex px-px" />
+                  
                 </Carousel>
               </div>
               
