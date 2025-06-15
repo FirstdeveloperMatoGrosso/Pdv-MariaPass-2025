@@ -1,11 +1,9 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { 
-  Plus, 
   Edit, 
   Trash2, 
   Package,
@@ -23,6 +21,7 @@ import {
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import ProductForm from '@/components/ProductForm';
 
 interface Product {
   id: string;
@@ -32,6 +31,7 @@ interface Product {
   categoria: string;
   estoque: number;
   status: string;
+  imagem_url?: string;
   created_at: string;
   updated_at: string;
 }
@@ -165,12 +165,7 @@ const Produtos: React.FC = () => {
           <Package className="w-6 h-6 text-green-600" />
           <h1 className="text-2xl font-bold text-gray-800">Gestão de Produtos</h1>
         </div>
-        <Button 
-          className="flex items-center space-x-2"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Novo Produto</span>
-        </Button>
+        <ProductForm onSuccess={() => queryClient.invalidateQueries({ queryKey: ['produtos'] })} />
       </div>
 
       {/* Filtros */}
@@ -229,6 +224,7 @@ const Produtos: React.FC = () => {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>Imagem</TableHead>
                   <TableHead>Nome</TableHead>
                   <TableHead>Categoria</TableHead>
                   <TableHead>Código</TableHead>
@@ -241,6 +237,22 @@ const Produtos: React.FC = () => {
               <TableBody>
                 {filteredProducts.map((product: Product) => (
                   <TableRow key={product.id}>
+                    <TableCell>
+                      {product.imagem_url ? (
+                        <img 
+                          src={product.imagem_url} 
+                          alt={product.nome}
+                          className="w-12 h-12 object-cover rounded-md border"
+                          onError={(e) => {
+                            e.currentTarget.src = '/placeholder.svg';
+                          }}
+                        />
+                      ) : (
+                        <div className="w-12 h-12 bg-gray-200 rounded-md flex items-center justify-center">
+                          <Package className="w-6 h-6 text-gray-400" />
+                        </div>
+                      )}
+                    </TableCell>
                     <TableCell className="font-medium">{product.nome}</TableCell>
                     <TableCell>
                       <Badge variant="outline">{product.categoria}</Badge>
