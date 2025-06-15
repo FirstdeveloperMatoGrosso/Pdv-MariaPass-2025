@@ -93,8 +93,6 @@ const Index: React.FC = () => {
   const registrarImpressaoMutation = useMutation({
     mutationFn: async (dadosImpressao: {
       pedido_id: string;
-      tipo: string;
-      usuario: string;
       produto_nome: string;
       quantidade: number;
     }) => {
@@ -104,12 +102,12 @@ const Index: React.FC = () => {
         .from('impressoes')
         .insert({
           pedido_id: dadosImpressao.pedido_id,
-          tipo: dadosImpressao.tipo,
+          tipo: 'comprovante',
           impressora: 'Impressora Principal',
           status: 'concluido',
           paginas: 1,
           copias: dadosImpressao.quantidade,
-          usuario: dadosImpressao.usuario,
+          usuario: `Sistema Totem - ${dadosImpressao.produto_nome}`,
           data_impressao: new Date().toISOString()
         })
         .select()
@@ -123,17 +121,19 @@ const Index: React.FC = () => {
       console.log('✅ Impressão registrada com sucesso no histórico:', data);
       return data;
     },
-    onSuccess: (data) => {
+    onSuccess: (data, variables) => {
       console.log('✅ Impressão salva no banco de dados:', data);
+      console.log('📋 Produto associado:', variables.produto_nome);
       // Invalidar cache das impressões para atualizar a página de histórico
       queryClient.invalidateQueries({ queryKey: ['impressoes'] });
     },
-    onError: (error) => {
+    onError: (error, variables) => {
       console.error('❌ Erro ao registrar impressão no histórico:', error);
+      console.error('📋 Dados que falharam:', variables);
       showAlert({
         type: 'error',
         title: 'Erro no Registro de Impressão',
-        message: 'Falha ao registrar impressão no histórico: ' + error.message,
+        message: `Falha ao registrar impressão para ${variables.produto_nome}: ${error.message}`,
         duration: 5000
       });
     }
@@ -261,8 +261,6 @@ const Index: React.FC = () => {
         
         registrarImpressaoMutation.mutate({
           pedido_id: orderId,
-          tipo: 'comprovante',
-          usuario: 'Sistema Totem',
           produto_nome: update.nome,
           quantidade: update.vendido
         });
