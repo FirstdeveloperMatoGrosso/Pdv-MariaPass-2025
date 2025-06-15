@@ -12,6 +12,7 @@ import {
   DialogTrigger 
 } from '@/components/ui/dialog';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Upload, Link } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -45,10 +46,11 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSuccess }) => {
   const [previewUrl, setPreviewUrl] = useState<string>('');
   const queryClient = useQueryClient();
 
-  // Buscar categorias do Supabase
-  const { data: categories = [] } = useQuery({
+  // Buscar categorias do Supabase com refetch automático
+  const { data: categories = [], isLoading: categoriesLoading, refetch: refetchCategories } = useQuery({
     queryKey: ['categorias'],
     queryFn: async () => {
+      console.log('Buscando categorias para o formulário...');
       const { data, error } = await supabase
         .from('categorias')
         .select('*')
@@ -59,8 +61,11 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSuccess }) => {
         throw error;
       }
       
+      console.log('Categorias carregadas no formulário:', data);
       return data as Category[];
     },
+    staleTime: 30000, // Cache por 30 segundos
+    refetchOnWindowFocus: true,
   });
 
   const form = useForm<ProductFormData>({
@@ -156,8 +161,17 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSuccess }) => {
     createProductMutation.mutate(data);
   };
 
+  // Recarregar categorias quando o dialog for aberto
+  const handleDialogChange = (newOpen: boolean) => {
+    setOpen(newOpen);
+    if (newOpen) {
+      console.log('Dialog aberto, recarregando categorias...');
+      refetchCategories();
+    }
+  };
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleDialogChange}>
       <DialogTrigger asChild>
         <Button className="flex items-center space-x-2">
           <Plus className="w-4 h-4" />
@@ -206,18 +220,38 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSuccess }) => {
                 <FormItem>
                   <FormLabel>Categoria *</FormLabel>
                   <FormControl>
-                    <select 
-                      {...field}
-                      className="w-full border rounded-md px-3 py-2"
-                      required
+                    <Select 
+                      value={field.value} 
+                      onValueChange={(value) => {
+                        console.log('Categoria selecionada:', value);
+                        field.onChange(value);
+                      }}
+                      disabled={categoriesLoading}
                     >
-                      <option value="">Selecione uma categoria</option>
-                      {categories.map(category => (
-                        <option key={category.id} value={category.nome}>{category.nome}</option>
-                      ))}
-                    </select>
+                      <SelectTrigger>
+                        <SelectValue placeholder={categoriesLoading ? "Carregando..." : "Selecione uma categoria"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categories.length === 0 && !categoriesLoading ? (
+                          <SelectItem value="no-categories" disabled>
+                            Nenhuma categoria encontrada
+                          </SelectItem>
+                        ) : (
+                          categories.map((category) => (
+                            <SelectItem key={category.id} value={category.nome}>
+                              {category.nome}
+                            </SelectItem>
+                          ))
+                        )}
+                      </SelectContent>
+                    </Select>
                   </FormControl>
                   <FormMessage />
+                  {categories.length === 0 && !categoriesLoading && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Crie uma categoria primeiro usando o botão "Nova Categoria"
+                    </p>
+                  )}
                 </FormItem>
               )}
             />

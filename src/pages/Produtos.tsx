@@ -66,6 +66,8 @@ const Produtos: React.FC = () => {
       console.log('Categorias carregadas:', data);
       return data as Category[];
     },
+    staleTime: 30000, // Cache por 30 segundos
+    refetchOnWindowFocus: true,
   });
 
   // Buscar produtos do Supabase
@@ -155,6 +157,12 @@ const Produtos: React.FC = () => {
     updateStatusMutation.mutate({ id, status: newStatus });
   };
 
+  const handleCategorySuccess = () => {
+    // Invalidar queries relacionadas às categorias quando uma nova categoria for criada
+    queryClient.invalidateQueries({ queryKey: ['categorias'] });
+    queryClient.invalidateQueries({ queryKey: ['produtos'] });
+  };
+
   // Mostrar erro se houver
   if (error) {
     return (
@@ -191,7 +199,7 @@ const Produtos: React.FC = () => {
           <h1 className="text-base sm:text-lg font-bold text-gray-800">Gestão de Produtos</h1>
         </div>
         <div className="flex gap-2">
-          <CategoryForm onSuccess={() => queryClient.invalidateQueries({ queryKey: ['produtos'] })} />
+          <CategoryForm onSuccess={handleCategorySuccess} />
           <ProductForm onSuccess={() => queryClient.invalidateQueries({ queryKey: ['produtos'] })} />
         </div>
       </div>
