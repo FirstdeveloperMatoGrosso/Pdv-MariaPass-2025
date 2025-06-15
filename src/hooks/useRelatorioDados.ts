@@ -81,12 +81,12 @@ export const useRelatorioDados = (periodo: 'today' | 'week' | 'month') => {
       
       const { inicio, fim } = getDateRange();
       
-      console.log('=== BUSCANDO RELATÓRIOS ===');
+      console.log('=== BUSCANDO RELATÓRIOS (ATUALIZADO) ===');
       console.log('Período:', periodo);
       console.log('Data início:', inicio);
       console.log('Data fim:', fim);
 
-      // Buscar todas as vendas da tabela vendas_pulseiras
+      // Buscar todas as vendas com produtos - usando uma consulta mais específica
       const { data: vendasDiretas, error: errorVendasDiretas } = await supabase
         .from('vendas_pulseiras')
         .select(`
@@ -98,13 +98,14 @@ export const useRelatorioDados = (periodo: 'today' | 'week' | 'month') => {
           forma_pagamento,
           numero_autorizacao,
           data_venda,
-          produtos!inner(
+          produtos!vendas_pulseiras_produto_id_fkey(
             id,
             nome
           )
         `)
         .gte('data_venda', inicio)
         .lt('data_venda', fim)
+        .not('produto_id', 'is', null)
         .order('data_venda', { ascending: false });
 
       if (errorVendasDiretas) {
@@ -113,20 +114,26 @@ export const useRelatorioDados = (periodo: 'today' | 'week' | 'month') => {
       }
 
       console.log('Total de vendas encontradas:', vendasDiretas?.length || 0);
+      console.log('Vendas brutas:', vendasDiretas);
       
-      if (vendasDiretas && vendasDiretas.length > 0) {
-        console.log('Primeiras 3 vendas:', vendasDiretas.slice(0, 3));
-      } else {
-        console.log('Nenhuma venda encontrada para o período');
+      // Se não encontrou vendas no período, buscar algumas vendas recentes para debug
+      if (!vendasDiretas || vendasDiretas.length === 0) {
+        console.log('Nenhuma venda encontrada para o período especificado');
         
-        // Debug: buscar todas as vendas para verificar
-        const { data: todasVendas } = await supabase
+        // Debug: buscar vendas mais recentes
+        const { data: vendasRecentes } = await supabase
           .from('vendas_pulseiras')
-          .select('id, data_venda, valor_total')
+          .select(`
+            id, 
+            data_venda, 
+            valor_total,
+            produtos!vendas_pulseiras_produto_id_fkey(nome)
+          `)
+          .not('produto_id', 'is', null)
           .order('data_venda', { ascending: false })
-          .limit(5);
+          .limit(10);
         
-        console.log('Últimas 5 vendas na tabela (qualquer data):', todasVendas);
+        console.log('Últimas 10 vendas na tabela:', vendasRecentes);
       }
 
       // Calcular dados consolidados
@@ -143,10 +150,15 @@ export const useRelatorioDados = (periodo: 'today' | 'week' | 'month') => {
       console.log('- Pedidos realizados:', pedidosRealizados);
       console.log('- Ticket médio:', ticketMedio);
 
-      // Agrupar produtos mais vendidos
+      // Agrupar produtos mais vendidos - com verificação mais robusta
       const produtosGrouped = vendasDiretas?.reduce((acc: any, venda: any) => {
+        if (!venda.produto_id || !venda.produtos) {
+          console.warn('Venda sem produto válido:', venda);
+          return acc;
+        }
+
         const produtoId = venda.produto_id;
-        const nomeProduto = venda.produtos?.nome || 'Produto sem nome';
+        const nomeProduto = venda.produtos?.nome || `Produto ${produtoId}`;
         
         if (!acc[produtoId]) {
           acc[produtoId] = {
@@ -164,23 +176,23 @@ export const useRelatorioDados = (periodo: 'today' | 'week' | 'month') => {
       }, {}) || {};
 
       const produtosMaisVendidosArray = Object.values(produtosGrouped)
-        .sort((a: any, b: any) => b.quantidade - a.quantidade)
-        .slice(0, 10);
+        .sort((a: any, b: any) => b.quantidade - a.quantidade);
 
       console.log('Produtos mais vendidos:', produtosMaisVendidosArray);
 
-      // Processar pedidos recentes
-      const pedidosRecentesProcessados = (vendasDiretas || []).slice(0, 10).map((venda: any) => ({
+      // Processar pedidos recentes com mais detalhes
+      const pedidosRecentesProcessados = (vendasDiretas || []).slice(0, 15).map((venda: any) => ({
         id: venda.id,
-        numeroAutorizacao: venda.numero_autorizacao || `VEN-${venda.id.slice(0, 6)}`,
+        numeroAutorizacao: venda.numero_autorizacao || `VEN-${venda.id.slice(0, 8)}`,
         dataVenda: venda.data_venda,
         quantidade: Number(venda.quantidade) || 1,
         valorTotal: Number(venda.valor_total) || 0,
         formaPagamento: venda.forma_pagamento || 'Pulseira'
       }));
 
-      console.log('Pedidos recentes processados:', pedidosRecentesProcessados.length);
+      console.log('Pedidos recentes processados:', pedidosRecentesProcessados);
 
+      // Atualizar estados
       setDados({
         faturamentoTotal,
         pedidosRealizados,
@@ -191,7 +203,7 @@ export const useRelatorioDados = (periodo: 'today' | 'week' | 'month') => {
       setProdutosMaisVendidos(produtosMaisVendidosArray as ProdutoMaisVendido[]);
       setPedidosRecentes(pedidosRecentesProcessados);
 
-      console.log('=== DADOS FINAIS DEFINIDOS ===');
+      console.log('=== DADOS FINAIS ATUALIZADOS ===');
 
     } catch (err) {
       console.error('Erro ao carregar dados do relatório:', err);
@@ -201,9 +213,34 @@ export const useRelatorioDados = (periodo: 'today' | 'week' | 'month') => {
     }
   };
 
+  // Configurar subscription para atualizações em tempo real
   useEffect(() => {
     console.log('Hook useRelatorioDados iniciado para período:', periodo);
+    
+    // Buscar dados iniciais
     buscarDados();
+
+    // Configurar subscription para mudanças na tabela vendas_pulseiras
+    const channel = supabase
+      .channel('vendas-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'vendas_pulseiras'
+        },
+        (payload) => {
+          console.log('Mudança detectada na tabela vendas_pulseiras:', payload);
+          // Recarregar dados quando houver mudanças
+          setTimeout(() => buscarDados(), 1000); // Small delay to ensure data is committed
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [periodo]);
 
   return {
