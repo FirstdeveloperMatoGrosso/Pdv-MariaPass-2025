@@ -89,6 +89,45 @@ const Index: React.FC = () => {
     },
   });
 
+  // Mutation para registrar impressão no histórico
+  const registrarImpressaoMutation = useMutation({
+    mutationFn: async (dadosImpressao: {
+      pedido_id: string;
+      tipo: string;
+      usuario: string;
+      produto_nome: string;
+      quantidade: number;
+    }) => {
+      console.log('Registrando impressão no histórico:', dadosImpressao);
+      
+      const { data, error } = await supabase
+        .from('impressoes')
+        .insert({
+          pedido_id: dadosImpressao.pedido_id,
+          tipo: dadosImpressao.tipo,
+          impressora: 'Impressora Principal',
+          status: 'concluido',
+          paginas: 1,
+          copias: dadosImpressao.quantidade,
+          usuario: dadosImpressao.usuario,
+          data_impressao: new Date().toISOString()
+        })
+        .select()
+        .single();
+      
+      if (error) {
+        console.error('Erro ao registrar impressão:', error);
+        throw error;
+      }
+      
+      console.log('Impressão registrada com sucesso:', data);
+      return data;
+    },
+    onError: (error) => {
+      console.error('Erro ao registrar impressão no histórico:', error);
+    }
+  });
+
   // Mutation para registrar vendas e atualizar estoque
   const processOrderMutation = useMutation({
     mutationFn: async (cartItems: TotemCartItem[]) => {
@@ -202,10 +241,23 @@ const Index: React.FC = () => {
     onSuccess: ({ salesRecords, stockUpdates }) => {
       console.log('Pedido processado com sucesso:', { salesRecords, stockUpdates });
       
+      // Registrar impressões no histórico para cada produto vendido
+      const orderId = currentOrderId;
+      stockUpdates.forEach(update => {
+        registrarImpressaoMutation.mutate({
+          pedido_id: orderId,
+          tipo: 'comprovante',
+          usuario: 'Sistema Totem',
+          produto_nome: update.nome,
+          quantidade: update.vendido
+        });
+      });
+      
       // Invalidar cache para atualizar a lista de produtos
       queryClient.invalidateQueries({ queryKey: ['produtos-totem'] });
       queryClient.invalidateQueries({ queryKey: ['categorias-produtos-ativos'] });
       queryClient.invalidateQueries({ queryKey: ['estoque'] });
+      queryClient.invalidateQueries({ queryKey: ['impressoes'] });
       
       const totalProdutos = stockUpdates.length;
       const totalVendas = salesRecords.length;
