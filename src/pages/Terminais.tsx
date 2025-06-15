@@ -100,13 +100,13 @@ const Terminais: React.FC = () => {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'online':
-        return <Badge className="bg-green-100 text-green-800 border-green-200"><CheckCircle className="w-3 h-3 mr-1" />Online</Badge>;
+        return <Badge className="bg-green-100 text-green-800 border-green-200 text-xs"><CheckCircle className="w-2 h-2 mr-1" />Online</Badge>;
       case 'offline':
-        return <Badge variant="destructive" className="bg-red-100 text-red-800 border-red-200"><WifiOff className="w-3 h-3 mr-1" />Offline</Badge>;
+        return <Badge variant="destructive" className="bg-red-100 text-red-800 border-red-200 text-xs"><WifiOff className="w-2 h-2 mr-1" />Offline</Badge>;
       case 'manutencao':
-        return <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200"><AlertTriangle className="w-3 h-3 mr-1" />Manutenção</Badge>;
+        return <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200 text-xs"><AlertTriangle className="w-2 h-2 mr-1" />Manutenção</Badge>;
       default:
-        return <Badge variant="outline">{status}</Badge>;
+        return <Badge variant="outline" className="text-xs">{status}</Badge>;
     }
   };
 
@@ -133,11 +133,11 @@ const Terminais: React.FC = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
-        <div className="text-center space-y-4">
-          <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-600 border-t-transparent mx-auto"></div>
-          <div className="space-y-2">
-            <h3 className="text-lg font-semibold text-gray-800">Carregando terminais</h3>
-            <p className="text-gray-600">Aguarde enquanto buscamos os dados...</p>
+        <div className="text-center space-y-3">
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent mx-auto"></div>
+          <div className="space-y-1">
+            <h3 className="text-base font-semibold text-gray-800">Carregando terminais</h3>
+            <p className="text-sm text-gray-600">Aguarde enquanto buscamos os dados...</p>
           </div>
         </div>
       </div>
@@ -146,126 +146,126 @@ const Terminais: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
-      <div className="p-4 sm:p-6 lg:p-8 space-y-6">
+      <div className="p-3 sm:p-4 lg:p-5 space-y-4">
         {/* Header */}
-        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-          <div className="flex items-center space-x-3">
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+          <div className="flex items-center space-x-2">
             <div className="p-2 bg-blue-100 rounded-lg">
-              <Monitor className="w-6 h-6 text-blue-600" />
+              <Monitor className="w-5 h-5 text-blue-600" />
             </div>
             <div>
-              <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Controle de Terminais</h1>
-              <p className="text-gray-600 mt-1">Monitore e gerencie todos os terminais da rede</p>
+              <h1 className="text-xl lg:text-2xl font-bold text-gray-900">Controle de Terminais</h1>
+              <p className="text-sm text-gray-600 mt-0.5">Monitore e gerencie todos os terminais da rede</p>
             </div>
           </div>
           <Button 
-            className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 shadow-sm"
+            className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 shadow-sm text-sm"
             onClick={() => refetch()}
-            size="lg"
+            size="sm"
           >
-            <RefreshCw className="w-4 h-4" />
+            <RefreshCw className="w-3 h-3" />
             <span>Atualizar Status</span>
           </Button>
         </div>
 
-        {/* Estatísticas Melhoradas */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        {/* Estatísticas Compactas */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
           <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200 shadow-sm">
-            <CardContent className="p-4">
+            <CardContent className="p-3">
               <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <p className="text-sm font-medium text-green-700">Online</p>
-                  <p className="text-2xl font-bold text-green-900">{onlineTerminals}</p>
+                <div className="space-y-0.5">
+                  <p className="text-xs font-medium text-green-700">Online</p>
+                  <p className="text-lg font-bold text-green-900">{onlineTerminals}</p>
                 </div>
-                <div className="p-2 bg-green-200 rounded-lg">
-                  <CheckCircle className="w-5 h-5 text-green-700" />
+                <div className="p-1.5 bg-green-200 rounded-lg">
+                  <CheckCircle className="w-4 h-4 text-green-700" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
           <Card className="bg-gradient-to-br from-red-50 to-red-100 border-red-200 shadow-sm">
-            <CardContent className="p-4">
+            <CardContent className="p-3">
               <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <p className="text-sm font-medium text-red-700">Offline</p>
-                  <p className="text-2xl font-bold text-red-900">{offlineTerminals}</p>
+                <div className="space-y-0.5">
+                  <p className="text-xs font-medium text-red-700">Offline</p>
+                  <p className="text-lg font-bold text-red-900">{offlineTerminals}</p>
                 </div>
-                <div className="p-2 bg-red-200 rounded-lg">
-                  <WifiOff className="w-5 h-5 text-red-700" />
+                <div className="p-1.5 bg-red-200 rounded-lg">
+                  <WifiOff className="w-4 h-4 text-red-700" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
           <Card className="bg-gradient-to-br from-yellow-50 to-yellow-100 border-yellow-200 shadow-sm">
-            <CardContent className="p-4">
+            <CardContent className="p-3">
               <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <p className="text-sm font-medium text-yellow-700">Manutenção</p>
-                  <p className="text-2xl font-bold text-yellow-900">{maintenanceTerminals}</p>
+                <div className="space-y-0.5">
+                  <p className="text-xs font-medium text-yellow-700">Manutenção</p>
+                  <p className="text-lg font-bold text-yellow-900">{maintenanceTerminals}</p>
                 </div>
-                <div className="p-2 bg-yellow-200 rounded-lg">
-                  <AlertTriangle className="w-5 h-5 text-yellow-700" />
+                <div className="p-1.5 bg-yellow-200 rounded-lg">
+                  <AlertTriangle className="w-4 h-4 text-yellow-700" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
           <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 shadow-sm">
-            <CardContent className="p-4">
+            <CardContent className="p-3">
               <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <p className="text-sm font-medium text-blue-700">Vendas Hoje</p>
-                  <p className="text-2xl font-bold text-blue-900">{totalSalesToday}</p>
+                <div className="space-y-0.5">
+                  <p className="text-xs font-medium text-blue-700">Vendas Hoje</p>
+                  <p className="text-lg font-bold text-blue-900">{totalSalesToday}</p>
                 </div>
-                <div className="p-2 bg-blue-200 rounded-lg">
-                  <TrendingUp className="w-5 h-5 text-blue-700" />
+                <div className="p-1.5 bg-blue-200 rounded-lg">
+                  <TrendingUp className="w-4 h-4 text-blue-700" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
           <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200 shadow-sm">
-            <CardContent className="p-4">
+            <CardContent className="p-3">
               <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <p className="text-sm font-medium text-purple-700">Uptime</p>
-                  <p className="text-2xl font-bold text-purple-900">{uptime}%</p>
+                <div className="space-y-0.5">
+                  <p className="text-xs font-medium text-purple-700">Uptime</p>
+                  <p className="text-lg font-bold text-purple-900">{uptime}%</p>
                 </div>
-                <div className="p-2 bg-purple-200 rounded-lg">
-                  <Activity className="w-5 h-5 text-purple-700" />
+                <div className="p-1.5 bg-purple-200 rounded-lg">
+                  <Activity className="w-4 h-4 text-purple-700" />
                 </div>
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Alertas Melhorados */}
+        {/* Alertas Compactos */}
         {offlineTerminals > 0 && (
           <Card className="border-red-200 bg-gradient-to-r from-red-50 to-orange-50 shadow-sm">
-            <CardHeader className="pb-4">
-              <CardTitle className="text-red-800 flex items-center text-lg">
-                <AlertTriangle className="w-5 h-5 mr-2" />
+            <CardHeader className="pb-3">
+              <CardTitle className="text-red-800 flex items-center text-base">
+                <AlertTriangle className="w-4 h-4 mr-2" />
                 Atenção: {offlineTerminals} {offlineTerminals === 1 ? 'Terminal Offline' : 'Terminais Offline'}
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-2">
               {terminals.filter((t: any) => t.status === 'offline').map((terminal: any) => (
-                <div key={terminal.id} className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 bg-white rounded-lg border border-red-100 shadow-sm gap-3">
-                  <div className="flex items-center space-x-3">
-                    <div className="p-2 bg-red-100 rounded-lg">
-                      <Monitor className="w-4 h-4 text-red-600" />
+                <div key={terminal.id} className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-3 bg-white rounded-lg border border-red-100 shadow-sm gap-2">
+                  <div className="flex items-center space-x-2">
+                    <div className="p-1.5 bg-red-100 rounded-lg">
+                      <Monitor className="w-3 h-3 text-red-600" />
                     </div>
                     <div>
-                      <span className="font-semibold text-gray-900">{terminal.nome}</span>
-                      <div className="flex items-center text-sm text-gray-600 mt-1">
-                        <MapPin className="w-3 h-3 mr-1" />
+                      <span className="font-semibold text-gray-900 text-sm">{terminal.nome}</span>
+                      <div className="flex items-center text-xs text-gray-600 mt-0.5">
+                        <MapPin className="w-2 h-2 mr-1" />
                         {terminal.localizacao}
                       </div>
                     </div>
                   </div>
-                  <Badge variant="destructive" className="bg-red-100 text-red-800 border-red-200">
+                  <Badge variant="destructive" className="bg-red-100 text-red-800 border-red-200 text-xs">
                     Offline desde {new Date(terminal.ultima_conexao).toLocaleString('pt-BR')}
                   </Badge>
                 </div>
@@ -274,35 +274,35 @@ const Terminais: React.FC = () => {
           </Card>
         )}
 
-        {/* Filtros */}
+        {/* Filtros Compactos */}
         <Card className="shadow-sm border-gray-200">
-          <CardHeader className="pb-4">
-            <CardTitle className="flex items-center text-lg font-semibold text-gray-800">
-              <Filter className="w-5 h-5 mr-2 text-gray-600" />
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center text-base font-semibold text-gray-800">
+              <Filter className="w-4 h-4 mr-2 text-gray-600" />
               Filtros de Pesquisa
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-0">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-3 h-3" />
               <Input
                 placeholder="Buscar por nome, localização ou IP..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 h-11 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                className="pl-9 h-9 border-gray-300 focus:border-blue-500 focus:ring-blue-500 text-sm"
               />
             </div>
           </CardContent>
         </Card>
 
-        {/* Lista de Terminais */}
+        {/* Lista de Terminais Compacta */}
         <Card className="shadow-sm border-gray-200">
-          <CardHeader className="pb-4">
+          <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-xl font-semibold text-gray-800">
+              <CardTitle className="text-lg font-semibold text-gray-800">
                 Terminais Cadastrados
               </CardTitle>
-              <Badge variant="outline" className="text-sm px-3 py-1">
+              <Badge variant="outline" className="text-xs px-2 py-1">
                 {filteredTerminals.length} {filteredTerminals.length === 1 ? 'terminal' : 'terminais'}
               </Badge>
             </div>
@@ -312,66 +312,66 @@ const Terminais: React.FC = () => {
               <Table>
                 <TableHeader className="bg-gray-50">
                   <TableRow>
-                    <TableHead className="font-semibold text-gray-700 min-w-[140px]">Terminal</TableHead>
-                    <TableHead className="font-semibold text-gray-700 hidden sm:table-cell">Localização</TableHead>
-                    <TableHead className="font-semibold text-gray-700 hidden md:table-cell">IP</TableHead>
-                    <TableHead className="font-semibold text-gray-700">Status</TableHead>
-                    <TableHead className="font-semibold text-gray-700 hidden lg:table-cell">Última Conexão</TableHead>
-                    <TableHead className="font-semibold text-gray-700 hidden md:table-cell">Versão</TableHead>
-                    <TableHead className="font-semibold text-gray-700 hidden lg:table-cell">Uptime</TableHead>
-                    <TableHead className="font-semibold text-gray-700 hidden sm:table-cell text-center">Vendas Hoje</TableHead>
-                    <TableHead className="font-semibold text-gray-700 text-center">Ações</TableHead>
+                    <TableHead className="font-semibold text-gray-700 min-w-[120px] text-xs h-10">Terminal</TableHead>
+                    <TableHead className="font-semibold text-gray-700 hidden sm:table-cell text-xs h-10">Localização</TableHead>
+                    <TableHead className="font-semibold text-gray-700 hidden md:table-cell text-xs h-10">IP</TableHead>
+                    <TableHead className="font-semibold text-gray-700 text-xs h-10">Status</TableHead>
+                    <TableHead className="font-semibold text-gray-700 hidden lg:table-cell text-xs h-10">Última Conexão</TableHead>
+                    <TableHead className="font-semibold text-gray-700 hidden md:table-cell text-xs h-10">Versão</TableHead>
+                    <TableHead className="font-semibold text-gray-700 hidden lg:table-cell text-xs h-10">Uptime</TableHead>
+                    <TableHead className="font-semibold text-gray-700 hidden sm:table-cell text-center text-xs h-10">Vendas Hoje</TableHead>
+                    <TableHead className="font-semibold text-gray-700 text-center text-xs h-10">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredTerminals.map((terminal: any) => (
-                    <TableRow key={terminal.id} className="hover:bg-gray-50 transition-colors">
-                      <TableCell className="font-medium">
-                        <div className="space-y-1">
-                          <div className="font-semibold text-gray-900">{terminal.nome}</div>
+                    <TableRow key={terminal.id} className="hover:bg-gray-50 transition-colors h-12">
+                      <TableCell className="font-medium py-2">
+                        <div className="space-y-0.5">
+                          <div className="font-semibold text-gray-900 text-sm">{terminal.nome}</div>
                           <div className="text-xs text-gray-500 sm:hidden flex items-center">
-                            <MapPin className="w-3 h-3 mr-1" />
+                            <MapPin className="w-2 h-2 mr-1" />
                             {terminal.localizacao}
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell className="hidden sm:table-cell">
-                        <div className="flex items-center text-sm text-gray-600">
-                          <MapPin className="w-3 h-3 mr-1 text-gray-400" />
+                      <TableCell className="hidden sm:table-cell py-2">
+                        <div className="flex items-center text-xs text-gray-600">
+                          <MapPin className="w-2 h-2 mr-1 text-gray-400" />
                           {terminal.localizacao}
                         </div>
                       </TableCell>
-                      <TableCell className="hidden md:table-cell">
-                        <code className="bg-gray-100 px-2 py-1 rounded text-xs font-mono border">
+                      <TableCell className="hidden md:table-cell py-2">
+                        <code className="bg-gray-100 px-1.5 py-0.5 rounded text-xs font-mono border">
                           {terminal.endereco_ip}
                         </code>
                       </TableCell>
-                      <TableCell>{getStatusBadge(terminal.status)}</TableCell>
-                      <TableCell className="hidden lg:table-cell text-sm text-gray-600">
+                      <TableCell className="py-2">{getStatusBadge(terminal.status)}</TableCell>
+                      <TableCell className="hidden lg:table-cell text-xs text-gray-600 py-2">
                         {new Date(terminal.ultima_conexao).toLocaleString('pt-BR')}
                       </TableCell>
-                      <TableCell className="hidden md:table-cell">
-                        <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                      <TableCell className="hidden md:table-cell py-2">
+                        <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200 px-1.5 py-0.5">
                           v{terminal.versao}
                         </Badge>
                       </TableCell>
-                      <TableCell className="hidden lg:table-cell text-sm text-gray-600">{terminal.tempo_atividade}</TableCell>
-                      <TableCell className="hidden sm:table-cell text-center">
-                        <Badge variant="outline" className="font-semibold text-green-700 bg-green-50 border-green-200">
+                      <TableCell className="hidden lg:table-cell text-xs text-gray-600 py-2">{terminal.tempo_atividade}</TableCell>
+                      <TableCell className="hidden sm:table-cell text-center py-2">
+                        <Badge variant="outline" className="font-semibold text-green-700 bg-green-50 border-green-200 text-xs px-1.5 py-0.5">
                           {terminal.vendas_hoje}
                         </Badge>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="py-2">
                         <div className="flex flex-wrap gap-1 justify-center">
                           {terminal.status === 'offline' && (
                             <Button
                               size="sm"
-                              className="bg-green-600 hover:bg-green-700 h-8 w-8 p-0"
+                              className="bg-green-600 hover:bg-green-700 h-6 w-6 p-0"
                               onClick={() => updateTerminalStatus(terminal.id, 'online')}
                               disabled={updateStatusMutation.isPending}
                               title="Ativar terminal"
                             >
-                              <Power className="w-3 h-3" />
+                              <Power className="w-2.5 h-2.5" />
                             </Button>
                           )}
                           {terminal.status === 'online' && (
@@ -379,20 +379,20 @@ const Terminais: React.FC = () => {
                               size="sm"
                               variant="outline"
                               onClick={() => restartTerminal(terminal.id)}
-                              className="h-8 w-8 p-0 border-blue-200 text-blue-700 hover:bg-blue-50"
+                              className="h-6 w-6 p-0 border-blue-200 text-blue-700 hover:bg-blue-50"
                               title="Reiniciar terminal"
                             >
-                              <RefreshCw className="w-3 h-3" />
+                              <RefreshCw className="w-2.5 h-2.5" />
                             </Button>
                           )}
                           <Button
                             size="sm"
                             variant="outline"
                             onClick={() => updateTerminalStatus(terminal.id, 'manutencao')}
-                            className="h-8 w-8 p-0 border-yellow-200 text-yellow-700 hover:bg-yellow-50"
+                            className="h-6 w-6 p-0 border-yellow-200 text-yellow-700 hover:bg-yellow-50"
                             title="Colocar em manutenção"
                           >
-                            <Settings className="w-3 h-3" />
+                            <Settings className="w-2.5 h-2.5" />
                           </Button>
                         </div>
                       </TableCell>
@@ -400,11 +400,11 @@ const Terminais: React.FC = () => {
                   ))}
                   {filteredTerminals.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={9} className="text-center py-8">
+                      <TableCell colSpan={9} className="text-center py-6">
                         <div className="space-y-2">
-                          <Monitor className="w-8 h-8 text-gray-400 mx-auto" />
-                          <p className="text-gray-500">Nenhum terminal encontrado</p>
-                          <p className="text-sm text-gray-400">Tente ajustar os filtros de pesquisa</p>
+                          <Monitor className="w-6 h-6 text-gray-400 mx-auto" />
+                          <p className="text-gray-500 text-sm">Nenhum terminal encontrado</p>
+                          <p className="text-xs text-gray-400">Tente ajustar os filtros de pesquisa</p>
                         </div>
                       </TableCell>
                     </TableRow>
