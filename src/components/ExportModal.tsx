@@ -51,7 +51,11 @@ const ExportModal: React.FC<ExportModalProps> = ({ open, onClose, reportData, pe
     try {
       const pdf = generateReportPDF(companyData, {
         period,
-        salesData: reportData,
+        salesData: {
+          total: reportData?.faturamentoTotal || 0,
+          orders: reportData?.pedidosRealizados || 0,
+          avgTicket: reportData?.ticketMedio || 0
+        },
         topProducts: [
           { name: 'Suco Natural Laranja', quantity: 45, revenue: 450.00 },
           { name: 'Sanduíche Natural Frango', quantity: 28, revenue: 420.00 },
