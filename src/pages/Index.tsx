@@ -254,10 +254,10 @@ const Index: React.FC = () => {
                   </CardHeader>
                   
                   <CardContent className="pt-0 p-3">
-                    <div className="flex items-center justify-between gap-1">
+                    <div className="flex items-center justify-between gap-2">
                       <Button 
                         onClick={() => addToCart(product)}
-                        className="flex-1 text-xs h-7 bg-green-600 hover:bg-green-700 text-white"
+                        className="flex-1 text-xs h-6 bg-green-600 hover:bg-green-700 text-white px-2"
                         disabled={availableStock <= 0}
                         size="sm"
                       >
