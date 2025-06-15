@@ -70,85 +70,89 @@ export const useRelatorioDados = (periodo: 'today' | 'week' | 'month') => {
       
       const { inicio, fim } = getDateRange();
       
-      // Buscar dados consolidados de vendas
-      const { data: dadosVendas, error: errorVendas } = await supabase
-        .rpc('calcular_relatorio_vendas', {
-          data_inicio: inicio,
-          data_fim: fim
-        });
+      console.log('Buscando dados de vendas para período:', { inicio, fim });
 
-      if (errorVendas) {
-        console.error('Erro ao buscar dados de vendas:', errorVendas);
-        throw errorVendas;
-      }
-
-      // Buscar produtos mais vendidos
-      const { data: produtosVendidos, error: errorProdutos } = await supabase
-        .rpc('obter_produtos_mais_vendidos', {
-          data_inicio: inicio,
-          data_fim: fim,
-          limite: 5
-        });
-
-      if (errorProdutos) {
-        console.error('Erro ao buscar produtos mais vendidos:', errorProdutos);
-        throw errorProdutos;
-      }
-
-      // Buscar pedidos recentes
-      const { data: pedidos, error: errorPedidos } = await supabase
+      // Buscar vendas direto da tabela vendas_pulseiras para o período
+      const { data: vendasDiretas, error: errorVendasDiretas } = await supabase
         .from('vendas_pulseiras')
         .select(`
           id,
+          produto_id,
+          quantidade,
+          valor_unitario,
+          valor_total,
+          forma_pagamento,
           numero_autorizacao,
           data_venda,
-          quantidade,
-          valor_total,
-          forma_pagamento
+          produtos!inner(nome)
         `)
         .gte('data_venda', inicio)
         .lte('data_venda', fim)
-        .order('data_venda', { ascending: false })
-        .limit(5);
+        .order('data_venda', { ascending: false });
 
-      if (errorPedidos) {
-        console.error('Erro ao buscar pedidos recentes:', errorPedidos);
-        throw errorPedidos;
+      if (errorVendasDiretas) {
+        console.error('Erro ao buscar vendas diretas:', errorVendasDiretas);
+        throw errorVendasDiretas;
       }
 
-      // Processar dados
-      const dadosProcessados = dadosVendas?.[0] || {
-        faturamento_total: 0,
-        pedidos_realizados: 0,
-        ticket_medio: 0
-      };
+      console.log('Vendas encontradas:', vendasDiretas);
+
+      // Calcular dados consolidados manualmente
+      const faturamentoTotal = vendasDiretas?.reduce((total, venda) => total + (Number(venda.valor_total) || 0), 0) || 0;
+      const pedidosRealizados = vendasDiretas?.length || 0;
+      const ticketMedio = pedidosRealizados > 0 ? faturamentoTotal / pedidosRealizados : 0;
+
+      // Agrupar produtos mais vendidos
+      const produtosGrouped = vendasDiretas?.reduce((acc: any, venda: any) => {
+        const produtoId = venda.produto_id;
+        const nomeProduto = venda.produtos?.nome || 'Produto sem nome';
+        
+        if (!acc[produtoId]) {
+          acc[produtoId] = {
+            id: produtoId,
+            nome: nomeProduto,
+            quantidade: 0,
+            receita: 0
+          };
+        }
+        
+        acc[produtoId].quantidade += Number(venda.quantidade) || 0;
+        acc[produtoId].receita += Number(venda.valor_total) || 0;
+        
+        return acc;
+      }, {}) || {};
+
+      const produtosMaisVendidosArray = Object.values(produtosGrouped)
+        .sort((a: any, b: any) => b.quantidade - a.quantidade)
+        .slice(0, 5);
+
+      // Processar pedidos recentes
+      const pedidosRecentesProcessados = (vendasDiretas || []).slice(0, 5).map((venda: any) => ({
+        id: venda.id,
+        numeroAutorizacao: venda.numero_autorizacao || `VEN-${venda.id.slice(0, 6)}`,
+        dataVenda: venda.data_venda,
+        quantidade: Number(venda.quantidade) || 1,
+        valorTotal: Number(venda.valor_total) || 0,
+        formaPagamento: venda.forma_pagamento || 'Pulseira'
+      }));
 
       setDados({
-        faturamentoTotal: Number(dadosProcessados.faturamento_total) || 0,
-        pedidosRealizados: Number(dadosProcessados.pedidos_realizados) || 0,
-        ticketMedio: Number(dadosProcessados.ticket_medio) || 0,
+        faturamentoTotal,
+        pedidosRealizados,
+        ticketMedio,
         crescimentoPercentual: 12.5 // Temporário - seria calculado comparando com período anterior
       });
 
-      setProdutosMaisVendidos(
-        (produtosVendidos || []).map((p: any) => ({
-          id: p.produto_id,
-          nome: p.nome_produto,
-          quantidade: Number(p.quantidade_vendida) || 0,
-          receita: Number(p.receita_gerada) || 0
-        }))
-      );
+      setProdutosMaisVendidos(produtosMaisVendidosArray as ProdutoMaisVendido[]);
+      setPedidosRecentes(pedidosRecentesProcessados);
 
-      setPedidosRecentes(
-        (pedidos || []).map((p: any) => ({
-          id: p.id,
-          numeroAutorizacao: p.numero_autorizacao || `VEN-${p.id.slice(0, 6)}`,
-          dataVenda: p.data_venda,
-          quantidade: p.quantidade || 1,
-          valorTotal: Number(p.valor_total) || 0,
-          formaPagamento: p.forma_pagamento || 'Pulseira'
-        }))
-      );
+      console.log('Dados processados:', {
+        faturamentoTotal,
+        pedidosRealizados,
+        ticketMedio,
+        produtosMaisVendidos: produtosMaisVendidosArray,
+        pedidosRecentes: pedidosRecentesProcessados
+      });
 
     } catch (err) {
       console.error('Erro ao carregar dados do relatório:', err);
