@@ -1,14 +1,9 @@
-import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useState, useEffect } from 'react';
+import { Plus, Search, Edit, Trash2, Package, AlertCircle, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Trash2, 
-  Package,
-  Search,
-  Filter
-} from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -17,332 +12,316 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { toast } from 'sonner';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { ProductForm } from '@/components/ProductForm';
+import { ProductEditForm } from '@/components/ProductEditForm';
+import { CancelamentoModal } from '@/components/CancelamentoModal';
 import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import ProductForm from '@/components/ProductForm';
-import ProductEditForm from '@/components/ProductEditForm';
-import CategoryForm from '@/components/CategoryForm';
+import { toast } from 'sonner';
 
-interface Product {
+interface Produto {
   id: string;
   nome: string;
-  preco: number;
-  codigo_barras: string;
   categoria: string;
+  preco: number;
   estoque: number;
   status: string;
+  codigo_barras?: string;
   imagem_url?: string;
   created_at: string;
   updated_at: string;
 }
 
-interface Category {
-  id: string;
-  nome: string;
-  descricao: string;
-}
-
-const Produtos: React.FC = () => {
+const Produtos = () => {
+  const [produtos, setProdutos] = useState<Produto[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  const queryClient = useQueryClient();
+  const [showForm, setShowForm] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<Produto | null>(null);
+  const [deleteProduct, setDeleteProduct] = useState<Produto | null>(null);
+  const [cancelamentoProduct, setCancelamentoProduct] = useState<Produto | null>(null);
 
-  // Buscar categorias do Supabase
-  const { data: categories = [] } = useQuery({
-    queryKey: ['categorias'],
-    queryFn: async () => {
-      console.log('Buscando categorias do Supabase...');
-      const { data, error } = await supabase
-        .from('categorias')
-        .select('*')
-        .order('nome');
-      
-      if (error) {
-        console.error('Erro ao buscar categorias:', error);
-        throw error;
-      }
-      
-      console.log('Categorias carregadas:', data);
-      return data as Category[];
-    },
-    staleTime: 30000, // Cache por 30 segundos
-    refetchOnWindowFocus: true,
-  });
+  useEffect(() => {
+    fetchProdutos();
+  }, []);
 
-  // Buscar produtos do Supabase
-  const { data: products = [], isLoading, error } = useQuery({
-    queryKey: ['produtos'],
-    queryFn: async () => {
-      console.log('Buscando produtos do Supabase...');
+  const fetchProdutos = async () => {
+    try {
+      setLoading(true);
       const { data, error } = await supabase
         .from('produtos')
         .select('*')
-        .order('nome');
-      
+        .order('created_at', { ascending: false });
+
       if (error) {
         console.error('Erro ao buscar produtos:', error);
-        toast.error('Erro ao carregar produtos: ' + error.message);
-        throw error;
+        toast.error('Erro ao carregar produtos.');
+        return;
       }
-      
-      console.log('Produtos carregados:', data);
-      return data as Product[];
-    },
-  });
 
-  // Mutation para deletar produto
-  const deleteProductMutation = useMutation({
-    mutationFn: async (id: string) => {
-      console.log('Deletando produto:', id);
-      const { error } = await supabase
-        .from('produtos')
-        .delete()
-        .eq('id', id);
-      
-      if (error) {
-        console.error('Erro ao deletar produto:', error);
-        throw error;
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['produtos'] });
-      toast.success('Produto removido com sucesso!');
-    },
-    onError: (error: any) => {
-      console.error('Erro ao deletar produto:', error);
-      toast.error('Erro ao remover produto: ' + error.message);
-    },
-  });
-
-  // Mutation para atualizar status do produto
-  const updateStatusMutation = useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: string }) => {
-      console.log('Atualizando status do produto:', id, status);
-      const { error } = await supabase
-        .from('produtos')
-        .update({ status, updated_at: new Date().toISOString() })
-        .eq('id', id);
-      
-      if (error) {
-        console.error('Erro ao atualizar status:', error);
-        throw error;
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['produtos'] });
-      toast.success('Status do produto atualizado!');
-    },
-    onError: (error: any) => {
-      console.error('Erro ao atualizar status:', error);
-      toast.error('Erro ao atualizar status: ' + error.message);
-    },
-  });
-
-  const filteredProducts = products.filter((product: Product) => {
-    const matchesSearch = product.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (product.codigo_barras && product.codigo_barras.includes(searchTerm));
-    const matchesCategory = selectedCategory === 'all' || product.categoria === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
-
-  const handleDeleteProduct = (id: string) => {
-    if (window.confirm('Tem certeza que deseja excluir este produto?')) {
-      deleteProductMutation.mutate(id);
+      setProdutos(data || []);
+    } catch (error) {
+      console.error('Erro ao buscar produtos:', error);
+      toast.error('Erro ao carregar produtos.');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const toggleProductStatus = (id: string, currentStatus: string) => {
-    const newStatus = currentStatus === 'ativo' ? 'inativo' : 'ativo';
-    updateStatusMutation.mutate({ id, status: newStatus });
+  const handleDelete = async () => {
+    if (!deleteProduct) return;
+
+    try {
+      const { error } = await supabase
+        .from('produtos')
+        .delete()
+        .eq('id', deleteProduct.id);
+
+      if (error) {
+        console.error('Erro ao deletar produto:', error);
+        toast.error('Erro ao deletar produto.');
+        return;
+      }
+
+      setProdutos(produtos.filter(p => p.id !== deleteProduct.id));
+      setDeleteProduct(null);
+      toast.success('Produto deletado com sucesso!');
+    } catch (error) {
+      console.error('Erro ao deletar produto:', error);
+      toast.error('Erro ao deletar produto.');
+    }
   };
 
-  const handleCategorySuccess = () => {
-    // Invalidar queries relacionadas às categorias quando uma nova categoria for criada
-    queryClient.invalidateQueries({ queryKey: ['categorias'] });
-    queryClient.invalidateQueries({ queryKey: ['produtos'] });
+  const filteredProducts = produtos.filter(produto =>
+    produto.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    produto.categoria.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (produto.codigo_barras && produto.codigo_barras.includes(searchTerm))
+  );
+
+  const getStatusBadge = (status: string) => {
+    return status === 'ativo' ? (
+      <Badge className="bg-green-100 text-green-800">Ativo</Badge>
+    ) : (
+      <Badge variant="secondary">Inativo</Badge>
+    );
   };
 
-  // Mostrar erro se houver
-  if (error) {
-    return (
-      <div className="p-2 sm:p-3 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-red-600 text-sm">Erro ao carregar produtos: {error.message}</p>
-          <Button 
-            onClick={() => queryClient.invalidateQueries({ queryKey: ['produtos'] })}
-            className="mt-2"
-          >
-            Tentar Novamente
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  if (isLoading) {
-    return (
-      <div className="p-2 sm:p-3 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-green-600 mx-auto"></div>
-          <p className="mt-2 text-sm text-gray-600">Carregando produtos...</p>
-        </div>
-      </div>
-    );
-  }
+  const getStockBadge = (estoque: number) => {
+    if (estoque === 0) {
+      return <Badge variant="destructive">Sem estoque</Badge>;
+    } else if (estoque <= 5) {
+      return <Badge className="bg-yellow-100 text-yellow-800">Estoque baixo</Badge>;
+    }
+    return <Badge className="bg-blue-100 text-blue-800">Em estoque</Badge>;
+  };
 
   return (
-    <div className="p-1 sm:p-2 space-y-1 sm:space-y-2">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1">
-        <div className="flex items-center space-x-1">
-          <Package className="w-4 h-4 text-green-600" />
-          <h1 className="text-base sm:text-lg font-bold text-gray-800">Gestão de Produtos</h1>
+    <div className="container mx-auto p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-2">
+          <Package className="w-6 h-6" />
+          <h1 className="text-2xl font-bold">Produtos</h1>
         </div>
-        <div className="flex gap-2">
-          <CategoryForm onSuccess={handleCategorySuccess} />
-          <ProductForm onSuccess={() => queryClient.invalidateQueries({ queryKey: ['produtos'] })} />
-        </div>
+        <Button onClick={() => setShowForm(true)}>
+          <Plus className="w-4 h-4 mr-2" />
+          Novo Produto
+        </Button>
       </div>
 
-      {/* Filtros */}
+      {/* Estatísticas */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+        <Card>
+          <CardHeader>
+            <CardTitle>Total de Produtos</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{produtos.length}</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Produtos Ativos</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {produtos.filter(p => p.status === 'ativo').length}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Produtos Inativos</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {produtos.filter(p => p.status === 'inativo').length}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       <Card>
-        <CardContent className="p-1 sm:p-2">
-          <div className="flex flex-col gap-1">
-            <div className="relative">
-              <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 w-3 h-3" />
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>Lista de Produtos</CardTitle>
+            <div className="relative w-72">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <Input
-                placeholder="Buscar por nome ou código de barras..."
+                placeholder="Buscar por nome, categoria ou código..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-7 h-7 text-xs"
+                className="pl-10"
               />
             </div>
-            <div className="flex items-center space-x-1">
-              <Filter className="w-3 h-3 text-gray-500" />
-              <select 
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                className="border rounded-md px-2 py-1 text-xs flex-1 h-7"
-              >
-                <option value="all">Todas as categorias</option>
-                {categories.map(category => (
-                  <option key={category.id} value={category.nome}>{category.nome}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Tabela de Produtos */}
-      <Card>
-        <CardHeader className="p-1 sm:p-2">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
-            <CardTitle className="text-xs sm:text-sm font-semibold text-gray-800">
-              Produtos Cadastrados
-            </CardTitle>
-            <Badge variant="outline" className="text-xs px-1 py-0 w-fit">
-              {filteredProducts.length} {filteredProducts.length === 1 ? 'produto' : 'produtos'}
-            </Badge>
           </div>
         </CardHeader>
-        <CardContent className="p-0">
-          {filteredProducts.length === 0 ? (
-            <div className="text-center py-4">
-              <p className="text-gray-500 text-xs">
-                {products.length === 0 
-                  ? 'Nenhum produto encontrado no banco de dados.'
-                  : 'Nenhum produto encontrado com os filtros aplicados.'
-                }
-              </p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nome</TableHead>
+                  <TableHead>Categoria</TableHead>
+                  <TableHead>Preço</TableHead>
+                  <TableHead>Estoque</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Código</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {loading ? (
                   <TableRow>
-                    <TableHead className="h-6 text-xs">Imagem</TableHead>
-                    <TableHead className="h-6 text-xs">Nome</TableHead>
-                    <TableHead className="hidden sm:table-cell h-6 text-xs">Categoria</TableHead>
-                    <TableHead className="h-6 text-xs">Preço</TableHead>
-                    <TableHead className="hidden lg:table-cell h-6 text-xs">Estoque</TableHead>
-                    <TableHead className="hidden sm:table-cell h-6 text-xs">Status</TableHead>
-                    <TableHead className="h-6 text-xs">Ações</TableHead>
+                    <TableCell colSpan={7} className="text-center py-8">
+                      <div className="flex items-center justify-center space-x-2">
+                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                        <span>Carregando produtos...</span>
+                      </div>
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredProducts.map((product: Product) => (
-                    <TableRow key={product.id}>
-                      <TableCell className="p-1">
-                        {product.imagem_url ? (
-                          <img 
-                            src={product.imagem_url} 
-                            alt={product.nome}
-                            className="w-6 h-6 sm:w-8 sm:h-8 object-cover rounded-md border"
-                            onError={(e) => {
-                              e.currentTarget.src = '/placeholder.svg';
-                            }}
-                          />
-                        ) : (
-                          <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gray-200 rounded-md flex items-center justify-center">
-                            <Package className="w-3 h-3 text-gray-400" />
-                          </div>
-                        )}
-                      </TableCell>
-                      <TableCell className="font-medium p-1">
+                ) : filteredProducts.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                      {searchTerm ? 'Nenhum produto encontrado com os critérios de busca.' : 'Nenhum produto cadastrado.'}
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredProducts.map((produto) => (
+                    <TableRow key={produto.id}>
+                      <TableCell>
                         <div>
-                          <div className="text-xs font-semibold">{product.nome}</div>
-                          <div className="text-xs text-gray-500 sm:hidden">
-                            {product.categoria} - R$ {product.preco.toFixed(2)}
-                          </div>
+                          <div className="font-medium">{produto.nome}</div>
+                          {produto.imagem_url && (
+                            <div className="text-xs text-gray-500">Com imagem</div>
+                          )}
                         </div>
                       </TableCell>
-                      <TableCell className="hidden sm:table-cell p-1">
-                        <Badge variant="outline" className="text-xs">{product.categoria}</Badge>
+                      <TableCell>{produto.categoria}</TableCell>
+                      <TableCell>R$ {produto.preco.toFixed(2)}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center space-x-2">
+                          <span>{produto.estoque}</span>
+                          {getStockBadge(produto.estoque)}
+                        </div>
                       </TableCell>
-                      <TableCell className="p-1 text-xs font-semibold">R$ {product.preco.toFixed(2)}</TableCell>
-                      <TableCell className="hidden lg:table-cell p-1">
-                        <Badge 
-                          variant={product.estoque < 10 ? "destructive" : "secondary"}
-                          className="text-xs"
-                        >
-                          {product.estoque} un.
-                        </Badge>
+                      <TableCell>{getStatusBadge(produto.status)}</TableCell>
+                      <TableCell>
+                        <code className="text-xs bg-gray-100 px-2 py-1 rounded">
+                          {produto.codigo_barras || 'N/A'}
+                        </code>
                       </TableCell>
-                      <TableCell className="hidden sm:table-cell p-1">
-                        <Badge 
-                          variant={product.status === 'ativo' ? "default" : "secondary"}
-                          className="cursor-pointer text-xs"
-                          onClick={() => toggleProductStatus(product.id, product.status)}
-                        >
-                          {product.status === 'ativo' ? 'Ativo' : 'Inativo'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="p-1">
-                        <div className="flex space-x-1">
-                          <ProductEditForm 
-                            product={product}
-                            onSuccess={() => queryClient.invalidateQueries({ queryKey: ['produtos'] })}
-                          />
-                          <Button 
-                            size="sm" 
-                            variant="destructive"
-                            onClick={() => handleDeleteProduct(product.id)}
-                            disabled={deleteProductMutation.isPending}
-                            className="h-6 w-6 p-0"
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end space-x-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setEditingProduct(produto)}
                           >
-                            <Trash2 className="w-3 h-3" />
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCancelamentoProduct(produto)}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <XCircle className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setDeleteProduct(produto)}
+                            className="text-red-600 hover:text-red-700"
+                          >
+                            <Trash2 className="w-4 h-4" />
                           </Button>
                         </div>
                       </TableCell>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
+
+      <ProductForm
+        open={showForm}
+        onClose={() => setShowForm(false)}
+        onProductCreated={() => {
+          setShowForm(false);
+          fetchProdutos();
+        }}
+      />
+
+      <ProductEditForm
+        open={!!editingProduct}
+        onClose={() => setEditingProduct(null)}
+        product={editingProduct}
+        onProductUpdated={() => {
+          setEditingProduct(null);
+          fetchProdutos();
+        }}
+      />
+
+      <AlertDialog open={!!deleteProduct} onOpenChange={() => setDeleteProduct(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Você tem certeza que deseja deletar o produto "
+              {deleteProduct?.nome}"? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setDeleteProduct(null)}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete}>
+              Deletar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Cancelamento Modal */}
+      <CancelamentoModal
+        isOpen={!!cancelamentoProduct}
+        onClose={() => setCancelamentoProduct(null)}
+        produto={cancelamentoProduct}
+      />
     </div>
   );
 };
