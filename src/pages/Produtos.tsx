@@ -22,6 +22,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import ProductForm from '@/components/ProductForm';
 import ProductEditForm from '@/components/ProductEditForm';
+import CategoryForm from '@/components/CategoryForm';
 
 interface Product {
   id: string;
@@ -165,7 +166,10 @@ const Produtos: React.FC = () => {
           <Package className="w-4 h-4 text-green-600" />
           <h1 className="text-base sm:text-lg font-bold text-gray-800">Gestão de Produtos</h1>
         </div>
-        <ProductForm onSuccess={() => queryClient.invalidateQueries({ queryKey: ['produtos'] })} />
+        <div className="flex gap-2">
+          <CategoryForm onSuccess={() => queryClient.invalidateQueries({ queryKey: ['produtos'] })} />
+          <ProductForm onSuccess={() => queryClient.invalidateQueries({ queryKey: ['produtos'] })} />
+        </div>
       </div>
 
       {/* Filtros */}
