@@ -84,10 +84,13 @@ export const useRelatorioDados = (periodo: 'today' | 'week' | 'month') => {
           forma_pagamento,
           numero_autorizacao,
           data_venda,
-          produtos!inner(nome)
+          produtos!inner(
+            id,
+            nome
+          )
         `)
         .gte('data_venda', inicio)
-        .lte('data_venda', fim)
+        .lt('data_venda', fim)
         .order('data_venda', { ascending: false });
 
       if (errorVendasDiretas) {
@@ -124,10 +127,10 @@ export const useRelatorioDados = (periodo: 'today' | 'week' | 'month') => {
 
       const produtosMaisVendidosArray = Object.values(produtosGrouped)
         .sort((a: any, b: any) => b.quantidade - a.quantidade)
-        .slice(0, 5);
+        .slice(0, 10); // Aumentei para 10 para mostrar mais produtos
 
       // Processar pedidos recentes
-      const pedidosRecentesProcessados = (vendasDiretas || []).slice(0, 5).map((venda: any) => ({
+      const pedidosRecentesProcessados = (vendasDiretas || []).slice(0, 10).map((venda: any) => ({
         id: venda.id,
         numeroAutorizacao: venda.numero_autorizacao || `VEN-${venda.id.slice(0, 6)}`,
         dataVenda: venda.data_venda,
