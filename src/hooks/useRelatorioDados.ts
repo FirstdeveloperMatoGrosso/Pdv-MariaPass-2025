@@ -1,4 +1,5 @@
 
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -161,17 +162,24 @@ export const useRelatorioDados = (periodo: 'today' | 'week' | 'month') => {
 
       console.log('TODOS os produtos vendidos agrupados:', produtosVendidosArray);
 
-      // Processar pedidos recentes
-      const pedidosRecentesProcessados = (vendasProdutos || []).slice(0, 15).map((venda: any) => ({
+      // Processar pedidos recentes - APENAS vendas com débito de pulseira
+      const vendasComDebitoPulseira = vendasProdutos?.filter((venda: any) => 
+        venda.forma_pagamento === 'debito_pulseira' || venda.forma_pagamento === 'Débito Pulseira'
+      ) || [];
+
+      console.log('Vendas com débito de pulseira encontradas:', vendasComDebitoPulseira.length);
+      console.log('Vendas filtradas:', vendasComDebitoPulseira);
+
+      const pedidosRecentesProcessados = vendasComDebitoPulseira.slice(0, 15).map((venda: any) => ({
         id: venda.id,
-        numeroAutorizacao: venda.numero_autorizacao || `PROD-${venda.id.slice(0, 8)}`,
+        numeroAutorizacao: venda.numero_autorizacao || `PULS-${venda.id.slice(0, 8)}`,
         dataVenda: venda.data_venda,
         quantidade: Number(venda.quantidade) || 1,
         valorTotal: Number(venda.valor_total) || 0,
-        formaPagamento: venda.forma_pagamento || 'Pulseira'
+        formaPagamento: 'Débito Pulseira'
       }));
 
-      console.log('Pedidos recentes processados:', pedidosRecentesProcessados);
+      console.log('Pedidos recentes de pulseira processados:', pedidosRecentesProcessados);
 
       // Atualizar estados
       setDados({
@@ -186,6 +194,7 @@ export const useRelatorioDados = (periodo: 'today' | 'week' | 'month') => {
 
       console.log('=== DADOS FINAIS ATUALIZADOS ===');
       console.log('Total de produtos diferentes vendidos:', produtosVendidosArray.length);
+      console.log('Total de vendas recentes com pulseira:', pedidosRecentesProcessados.length);
 
     } catch (err) {
       console.error('Erro ao carregar dados do relatório:', err);
@@ -234,3 +243,4 @@ export const useRelatorioDados = (periodo: 'today' | 'week' | 'month') => {
     refetch: buscarDados
   };
 };
+
