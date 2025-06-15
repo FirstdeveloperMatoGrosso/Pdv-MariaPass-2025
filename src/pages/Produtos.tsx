@@ -129,22 +129,22 @@ const Produtos = () => {
   };
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="container mx-auto p-4 lg:p-6 space-y-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center space-x-2">
           <Package className="w-6 h-6" />
           <h1 className="text-2xl font-bold">Produtos</h1>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
           <CategoryForm onSuccess={handleCategorySuccess} />
           <ProductForm onSuccess={fetchProdutos} />
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <Card>
-          <CardHeader>
-            <CardTitle>Total de Produtos</CardTitle>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Total de Produtos</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{produtos.length}</div>
@@ -152,8 +152,8 @@ const Produtos = () => {
         </Card>
 
         <Card>
-          <CardHeader>
-            <CardTitle>Produtos Ativos</CardTitle>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Produtos Ativos</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
@@ -163,8 +163,8 @@ const Produtos = () => {
         </Card>
 
         <Card>
-          <CardHeader>
-            <CardTitle>Produtos Inativos</CardTitle>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Produtos Inativos</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
@@ -176,9 +176,9 @@ const Produtos = () => {
 
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
             <CardTitle>Lista de Produtos</CardTitle>
-            <div className="relative w-72">
+            <div className="relative w-full lg:w-72">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <Input
                 placeholder="Buscar por nome, categoria ou código..."
@@ -189,24 +189,25 @@ const Produtos = () => {
             </div>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Nome</TableHead>
-                  <TableHead>Categoria</TableHead>
-                  <TableHead>Preço</TableHead>
-                  <TableHead>Estoque</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Código</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
+                  <TableHead className="w-16">Imagem</TableHead>
+                  <TableHead className="min-w-[150px]">Nome</TableHead>
+                  <TableHead className="min-w-[120px]">Categoria</TableHead>
+                  <TableHead className="min-w-[100px]">Preço</TableHead>
+                  <TableHead className="min-w-[120px]">Estoque</TableHead>
+                  <TableHead className="min-w-[100px]">Status</TableHead>
+                  <TableHead className="min-w-[120px]">Código</TableHead>
+                  <TableHead className="text-right min-w-[150px]">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8">
+                    <TableCell colSpan={8} className="text-center py-8">
                       <div className="flex items-center justify-center space-x-2">
                         <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
                         <span>Carregando produtos...</span>
@@ -215,41 +216,57 @@ const Produtos = () => {
                   </TableRow>
                 ) : filteredProducts.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                    <TableCell colSpan={8} className="text-center py-8 text-gray-500">
                       {searchTerm ? 'Nenhum produto encontrado com os critérios de busca.' : 'Nenhum produto cadastrado.'}
                     </TableCell>
                   </TableRow>
                 ) : (
                   filteredProducts.map((produto) => (
                     <TableRow key={produto.id}>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">{produto.nome}</div>
-                          {produto.imagem_url && (
-                            <div className="text-xs text-gray-500">Com imagem</div>
+                      <TableCell className="p-2">
+                        <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
+                          {produto.imagem_url ? (
+                            <img
+                              src={produto.imagem_url}
+                              alt={produto.nome}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                                e.currentTarget.nextElementSibling.style.display = 'flex';
+                              }}
+                            />
+                          ) : (
+                            <Package className="w-6 h-6 text-gray-400" />
                           )}
+                          <div className="w-full h-full items-center justify-center hidden">
+                            <Package className="w-6 h-6 text-gray-400" />
+                          </div>
                         </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="font-medium">{produto.nome}</div>
                       </TableCell>
                       <TableCell>{produto.categoria}</TableCell>
                       <TableCell>R$ {produto.preco.toFixed(2)}</TableCell>
                       <TableCell>
-                        <div className="flex items-center space-x-2">
-                          <span>{produto.estoque}</span>
+                        <div className="flex flex-col space-y-1">
+                          <span className="text-sm font-medium">{produto.estoque}</span>
                           {getStockBadge(produto.estoque)}
                         </div>
                       </TableCell>
                       <TableCell>{getStatusBadge(produto.status)}</TableCell>
                       <TableCell>
-                        <code className="text-xs bg-gray-100 px-2 py-1 rounded">
+                        <code className="text-xs bg-gray-100 px-2 py-1 rounded block max-w-[100px] truncate">
                           {produto.codigo_barras || 'N/A'}
                         </code>
                       </TableCell>
                       <TableCell className="text-right">
-                        <div className="flex items-center justify-end space-x-2">
+                        <div className="flex items-center justify-end space-x-1">
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => setEditingProduct(produto)}
+                            className="p-2"
                           >
                             <Edit className="w-4 h-4" />
                           </Button>
@@ -257,7 +274,7 @@ const Produtos = () => {
                             variant="outline"
                             size="sm"
                             onClick={() => setCancelamentoProduct(produto)}
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50 p-2"
                           >
                             <XCircle className="w-4 h-4" />
                           </Button>
@@ -265,7 +282,7 @@ const Produtos = () => {
                             variant="outline"
                             size="sm"
                             onClick={() => setDeleteProduct(produto)}
-                            className="text-red-600 hover:text-red-700"
+                            className="text-red-600 hover:text-red-700 p-2"
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>
