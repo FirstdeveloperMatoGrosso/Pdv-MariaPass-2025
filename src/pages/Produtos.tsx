@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Plus, Search, Edit, Trash2, Package, AlertCircle, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -22,8 +23,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { ProductForm } from '@/components/ProductForm';
-import { ProductEditForm } from '@/components/ProductEditForm';
+import ProductForm from '@/components/ProductForm';
+import ProductEditForm from '@/components/ProductEditForm';
 import { CancelamentoModal } from '@/components/CancelamentoModal';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
