@@ -14,13 +14,16 @@ import {
   WifiOff
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useSystemConfig } from '@/hooks/useSystemConfig';
 
 interface PaymentProvider {
   id: string;
   name: string;
   logo: string;
   status: 'connected' | 'disconnected' | 'error';
-  apiKey: string;
+  apiKey?: string;
+  email?: string;
+  token?: string;
   webhookUrl: string;
   fees: {
     debit: number;
@@ -30,6 +33,8 @@ interface PaymentProvider {
 }
 
 const Pagamentos: React.FC = () => {
+  const { configs, updateConfig, getConfigValue } = useSystemConfig('pagseguro');
+  
   const [providers, setProviders] = useState<PaymentProvider[]>([
     {
       id: 'stone',
@@ -63,13 +68,19 @@ const Pagamentos: React.FC = () => {
       name: 'PagSeguro',
       logo: '🟡',
       status: 'disconnected',
-      apiKey: '',
-      webhookUrl: '',
-      fees: { debit: 2.79, credit: 4.99, pix: 1.99 }
+      email: getConfigValue('email') || '',
+      token: getConfigValue('token') || '',
+      webhookUrl: getConfigValue('webhook_url') || '/webhook/pagseguro',
+      fees: { 
+        debit: 2.79, 
+        credit: 4.99, 
+        pix: parseFloat(getConfigValue('taxa_pix')) || 1.99 
+      }
     }
   ]);
 
   const [editingProvider, setEditingProvider] = useState<string | null>(null);
+  const [formData, setFormData] = useState<any>({});
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -94,7 +105,6 @@ const Pagamentos: React.FC = () => {
   };
 
   const handleTestConnection = (providerId: string) => {
-    // Simular teste de conexão
     toast.info(`Testando conexão com ${providers.find(p => p.id === providerId)?.name}...`);
     
     setTimeout(() => {
@@ -107,12 +117,67 @@ const Pagamentos: React.FC = () => {
     }, 2000);
   };
 
-  const handleSaveProvider = (providerId: string, data: Partial<PaymentProvider>) => {
-    setProviders(prev => prev.map(p => 
-      p.id === providerId ? { ...p, ...data } : p
-    ));
+  const handleSaveProvider = async (providerId: string) => {
+    if (providerId === 'pagseguro') {
+      // Salvar configurações específicas do PagSeguro
+      try {
+        if (formData.email) {
+          await updateConfig('email', formData.email, 'pagseguro');
+        }
+        if (formData.token) {
+          await updateConfig('token', formData.token, 'pagseguro');
+        }
+        if (formData.webhookUrl) {
+          await updateConfig('webhook_url', formData.webhookUrl, 'pagseguro');
+        }
+        if (formData.taxaDebit) {
+          await updateConfig('taxa_debito', formData.taxaDebit, 'pagseguro');
+        }
+        if (formData.taxaCredit) {
+          await updateConfig('taxa_credito', formData.taxaCredit, 'pagseguro');
+        }
+        if (formData.taxaPix) {
+          await updateConfig('taxa_pix', formData.taxaPix, 'pagseguro');
+        }
+        
+        // Atualizar o estado local
+        setProviders(prev => prev.map(p => 
+          p.id === providerId ? { 
+            ...p, 
+            email: formData.email || p.email,
+            token: formData.token || p.token,
+            webhookUrl: formData.webhookUrl || p.webhookUrl,
+            status: (formData.email && formData.token) ? 'connected' : 'disconnected'
+          } : p
+        ));
+        
+        toast.success('Configurações do PagSeguro salvas com sucesso!');
+      } catch (error) {
+        toast.error('Erro ao salvar configurações do PagSeguro');
+      }
+    } else {
+      // Lógica para outros provedores
+      setProviders(prev => prev.map(p => 
+        p.id === providerId ? { ...p, ...formData } : p
+      ));
+      toast.success('Configurações salvas com sucesso!');
+    }
+    
     setEditingProvider(null);
-    toast.success('Configurações salvas com sucesso!');
+    setFormData({});
+  };
+
+  const startEditing = (provider: PaymentProvider) => {
+    setEditingProvider(provider.id);
+    setFormData({
+      email: provider.email || '',
+      token: provider.token || '',
+      apiKey: provider.apiKey || '',
+      webhookUrl: provider.webhookUrl || '',
+      taxaDebit: provider.fees.debit,
+      taxaCredit: provider.fees.credit,
+      taxaPix: provider.fees.pix
+    });
   };
 
   return (
@@ -175,7 +240,7 @@ const Pagamentos: React.FC = () => {
                   <Button 
                     variant="outline" 
                     size="sm"
-                    onClick={() => setEditingProvider(provider.id)}
+                    onClick={() => startEditing(provider)}
                     className="h-8 w-8 p-0"
                   >
                     <Settings className="w-3 h-3" />
@@ -186,30 +251,60 @@ const Pagamentos: React.FC = () => {
             <CardContent className="p-2 sm:p-3 pt-0">
               {editingProvider === provider.id ? (
                 <div className="space-y-2">
-                  <div>
-                    <label className="block text-xs font-medium mb-1">API Key</label>
-                    <Input 
-                      type="password"
-                      defaultValue={provider.apiKey}
-                      placeholder="Insira a API Key"
-                      className="h-8 text-sm"
-                    />
-                  </div>
+                  {provider.id === 'pagseguro' ? (
+                    <>
+                      <div>
+                        <label className="block text-xs font-medium mb-1">Email</label>
+                        <Input 
+                          type="email"
+                          value={formData.email}
+                          onChange={(e) => setFormData({...formData, email: e.target.value})}
+                          placeholder="Insira o email da conta PagSeguro"
+                          className="h-8 text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium mb-1">Token</label>
+                        <Input 
+                          type="password"
+                          value={formData.token}
+                          onChange={(e) => setFormData({...formData, token: e.target.value})}
+                          placeholder="Insira o token do PagSeguro"
+                          className="h-8 text-sm"
+                        />
+                      </div>
+                    </>
+                  ) : (
+                    <div>
+                      <label className="block text-xs font-medium mb-1">API Key</label>
+                      <Input 
+                        type="password"
+                        value={formData.apiKey}
+                        onChange={(e) => setFormData({...formData, apiKey: e.target.value})}
+                        placeholder="Insira a API Key"
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                  )}
+                  
                   <div>
                     <label className="block text-xs font-medium mb-1">Webhook URL</label>
                     <Input 
-                      defaultValue={provider.webhookUrl}
+                      value={formData.webhookUrl}
+                      onChange={(e) => setFormData({...formData, webhookUrl: e.target.value})}
                       placeholder="URL do webhook para notificações"
                       className="h-8 text-sm"
                     />
                   </div>
+                  
                   <div className="grid grid-cols-3 gap-2">
                     <div>
                       <label className="block text-xs font-medium mb-1">Taxa Débito (%)</label>
                       <Input 
                         type="number" 
                         step="0.01"
-                        defaultValue={provider.fees.debit}
+                        value={formData.taxaDebit}
+                        onChange={(e) => setFormData({...formData, taxaDebit: parseFloat(e.target.value)})}
                         className="h-8 text-sm"
                       />
                     </div>
@@ -218,7 +313,8 @@ const Pagamentos: React.FC = () => {
                       <Input 
                         type="number" 
                         step="0.01"
-                        defaultValue={provider.fees.credit}
+                        value={formData.taxaCredit}
+                        onChange={(e) => setFormData({...formData, taxaCredit: parseFloat(e.target.value)})}
                         className="h-8 text-sm"
                       />
                     </div>
@@ -227,13 +323,15 @@ const Pagamentos: React.FC = () => {
                       <Input 
                         type="number" 
                         step="0.01"
-                        defaultValue={provider.fees.pix}
+                        value={formData.taxaPix}
+                        onChange={(e) => setFormData({...formData, taxaPix: parseFloat(e.target.value)})}
                         className="h-8 text-sm"
                       />
                     </div>
                   </div>
+                  
                   <div className="flex space-x-1">
-                    <Button onClick={() => handleSaveProvider(provider.id, {})} className="h-8 text-xs px-3">
+                    <Button onClick={() => handleSaveProvider(provider.id)} className="h-8 text-xs px-3">
                       Salvar
                     </Button>
                     <Button 
@@ -248,12 +346,29 @@ const Pagamentos: React.FC = () => {
               ) : (
                 <div className="space-y-2">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    <div>
-                      <span className="text-xs text-gray-500">API Key:</span>
-                      <code className="block bg-gray-100 px-1 py-1 rounded text-xs mt-1">
-                        {provider.apiKey || 'Não configurado'}
-                      </code>
-                    </div>
+                    {provider.id === 'pagseguro' ? (
+                      <>
+                        <div>
+                          <span className="text-xs text-gray-500">Email:</span>
+                          <code className="block bg-gray-100 px-1 py-1 rounded text-xs mt-1">
+                            {provider.email || 'Não configurado'}
+                          </code>
+                        </div>
+                        <div>
+                          <span className="text-xs text-gray-500">Token:</span>
+                          <code className="block bg-gray-100 px-1 py-1 rounded text-xs mt-1">
+                            {provider.token ? '***' + provider.token.slice(-4) : 'Não configurado'}
+                          </code>
+                        </div>
+                      </>
+                    ) : (
+                      <div>
+                        <span className="text-xs text-gray-500">API Key:</span>
+                        <code className="block bg-gray-100 px-1 py-1 rounded text-xs mt-1">
+                          {provider.apiKey || 'Não configurado'}
+                        </code>
+                      </div>
+                    )}
                     <div>
                       <span className="text-xs text-gray-500">Webhook:</span>
                       <code className="block bg-gray-100 px-1 py-1 rounded text-xs mt-1">
