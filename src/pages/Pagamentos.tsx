@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -26,6 +25,8 @@ interface PaymentProvider {
   token?: string;
   partnerId?: string;
   accountId?: string;
+  accessToken?: string;
+  publicKey?: string;
   webhookUrl: string;
   fees: {
     debit: number;
@@ -71,7 +72,8 @@ const Pagamentos: React.FC = () => {
       name: 'Mercado Pago',
       logo: '🔷',
       status: 'error',
-      apiKey: getConfigValue('mercadopago_api_key') || '',
+      accessToken: getConfigValue('mercadopago_access_token') || 'TEST-b21df7c9-ef74-4456-8d3c-5fa0f18f7a57',
+      publicKey: getConfigValue('mercadopago_public_key') || 'TEST-1704643784638997-011115-f0ba7ec90b0e308bc814bccccade81ea-514833890',
       webhookUrl: getConfigValue('mercadopago_webhook_url') || '/webhook/mercadopago',
       fees: { 
         debit: parseFloat(getConfigValue('mercadopago_taxa_debito')) || 2.39, 
@@ -180,8 +182,27 @@ const Pagamentos: React.FC = () => {
         if (formData.taxaPix !== undefined) {
           savePromises.push(updateConfig('pagarme_taxa_pix', formData.taxaPix.toString(), 'pagamento'));
         }
+      } else if (providerId === 'mercadopago') {
+        if (formData.accessToken !== undefined && formData.accessToken !== '') {
+          savePromises.push(updateConfig('mercadopago_access_token', formData.accessToken, 'pagamento'));
+        }
+        if (formData.publicKey !== undefined && formData.publicKey !== '') {
+          savePromises.push(updateConfig('mercadopago_public_key', formData.publicKey, 'pagamento'));
+        }
+        if (formData.webhookUrl !== undefined) {
+          savePromises.push(updateConfig('mercadopago_webhook_url', formData.webhookUrl, 'pagamento'));
+        }
+        if (formData.taxaDebit !== undefined) {
+          savePromises.push(updateConfig('mercadopago_taxa_debito', formData.taxaDebit.toString(), 'pagamento'));
+        }
+        if (formData.taxaCredit !== undefined) {
+          savePromises.push(updateConfig('mercadopago_taxa_credito', formData.taxaCredit.toString(), 'pagamento'));
+        }
+        if (formData.taxaPix !== undefined) {
+          savePromises.push(updateConfig('mercadopago_taxa_pix', formData.taxaPix.toString(), 'pagamento'));
+        }
       } else {
-        // Para Stone e Mercado Pago
+        // Para Stone
         if (formData.apiKey !== undefined && formData.apiKey !== '') {
           savePromises.push(updateConfig(`${providerId}_api_key`, formData.apiKey, 'pagamento'));
         }
@@ -210,8 +231,10 @@ const Pagamentos: React.FC = () => {
           apiKey: formData.apiKey || p.apiKey,
           partnerId: formData.partnerId || p.partnerId,
           accountId: formData.accountId || p.accountId,
+          accessToken: formData.accessToken || p.accessToken,
+          publicKey: formData.publicKey || p.publicKey,
           webhookUrl: formData.webhookUrl || p.webhookUrl,
-          status: (formData.email || formData.token || formData.apiKey) ? 'connected' : 'disconnected',
+          status: (formData.email || formData.token || formData.apiKey || formData.accessToken) ? 'connected' : 'disconnected',
           fees: {
             debit: formData.taxaDebit || p.fees.debit,
             credit: formData.taxaCredit || p.fees.credit,
@@ -239,6 +262,8 @@ const Pagamentos: React.FC = () => {
       apiKey: provider.apiKey || '',
       partnerId: provider.partnerId || '',
       accountId: provider.accountId || '',
+      accessToken: provider.accessToken || '',
+      publicKey: provider.publicKey || '',
       webhookUrl: provider.webhookUrl || '',
       taxaDebit: provider.fees.debit,
       taxaCredit: provider.fees.credit,
@@ -371,6 +396,28 @@ const Pagamentos: React.FC = () => {
                         />
                       </div>
                     </>
+                  ) : provider.id === 'mercadopago' ? (
+                    <>
+                      <div>
+                        <label className="block text-xs font-medium mb-1">Access Token</label>
+                        <Input 
+                          type="password"
+                          value={formData.accessToken}
+                          onChange={(e) => setFormData({...formData, accessToken: e.target.value})}
+                          placeholder="TEST-b21df7c9-ef74-4456-8d3c-5fa0f18f7a57"
+                          className="h-8 text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium mb-1">Public Key</label>
+                        <Input 
+                          value={formData.publicKey}
+                          onChange={(e) => setFormData({...formData, publicKey: e.target.value})}
+                          placeholder="TEST-1704643784638997-011115-f0ba7ec90b0e308bc814bccccade81ea-514833890"
+                          className="h-8 text-sm"
+                        />
+                      </div>
+                    </>
                   ) : (
                     <div>
                       <label className="block text-xs font-medium mb-1">API Key</label>
@@ -476,6 +523,21 @@ const Pagamentos: React.FC = () => {
                           <span className="text-xs text-gray-500">Account ID:</span>
                           <code className="block bg-gray-100 px-1 py-1 rounded text-xs mt-1">
                             {provider.accountId || 'Não configurado'}
+                          </code>
+                        </div>
+                      </>
+                    ) : provider.id === 'mercadopago' ? (
+                      <>
+                        <div>
+                          <span className="text-xs text-gray-500">Access Token:</span>
+                          <code className="block bg-gray-100 px-1 py-1 rounded text-xs mt-1">
+                            {provider.accessToken ? '***' + provider.accessToken.slice(-4) : 'Não configurado'}
+                          </code>
+                        </div>
+                        <div>
+                          <span className="text-xs text-gray-500">Public Key:</span>
+                          <code className="block bg-gray-100 px-1 py-1 rounded text-xs mt-1">
+                            {provider.publicKey ? '***' + provider.publicKey.slice(-4) : 'Não configurado'}
                           </code>
                         </div>
                       </>

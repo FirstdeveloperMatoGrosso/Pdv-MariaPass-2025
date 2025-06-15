@@ -1,4 +1,5 @@
 
+
 -- Inserir configurações para todos os provedores de pagamento
 
 -- PagSeguro
@@ -27,7 +28,8 @@ INSERT INTO configuracoes_sistema (categoria, chave, valor, descricao) VALUES
 ('pagamento', 'stone_taxa_pix', '0.99', 'Taxa PIX da Stone (%)'),
 
 -- Mercado Pago
-('pagamento', 'mercadopago_api_key', '""', 'API Key do Mercado Pago'),
+('pagamento', 'mercadopago_access_token', '"TEST-b21df7c9-ef74-4456-8d3c-5fa0f18f7a57"', 'Access Token do Mercado Pago (teste)'),
+('pagamento', 'mercadopago_public_key', '"TEST-1704643784638997-011115-f0ba7ec90b0e308bc814bccccade81ea-514833890"', 'Public Key do Mercado Pago (teste)'),
 ('pagamento', 'mercadopago_webhook_url', '"/webhook/mercadopago"', 'URL para receber notificações do Mercado Pago'),
 ('pagamento', 'mercadopago_taxa_debito', '2.39', 'Taxa de débito do Mercado Pago (%)'),
 ('pagamento', 'mercadopago_taxa_credito', '4.39', 'Taxa de crédito do Mercado Pago (%)'),
@@ -35,3 +37,4 @@ INSERT INTO configuracoes_sistema (categoria, chave, valor, descricao) VALUES
 
 -- Remover configurações antigas do PagSeguro se existirem
 DELETE FROM configuracoes_sistema WHERE categoria = 'pagseguro';
+
