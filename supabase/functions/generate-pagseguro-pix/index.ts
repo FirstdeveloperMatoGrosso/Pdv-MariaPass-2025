@@ -13,30 +13,40 @@ serve(async (req) => {
   }
 
   try {
+    console.log('🚀 Iniciando geração de PIX PagSeguro...')
+    
     const { valor, recargaId, description } = await req.json()
+    console.log('📋 Dados recebidos:', { valor, recargaId, description })
     
     // Buscar credenciais das variáveis de ambiente
     const pagseguroEmail = Deno.env.get('PAGSEGURO_EMAIL')
     const pagseguroToken = Deno.env.get('PAGSEGURO_TOKEN')
     const isSandbox = Deno.env.get('PAGSEGURO_SANDBOX') === 'true'
     
-    console.log('🔑 Usando credenciais PagSeguro - Email:', pagseguroEmail, 'Sandbox:', isSandbox)
+    console.log('🔑 Credenciais encontradas:', { 
+      email: pagseguroEmail ? 'Configurado' : 'NÃO CONFIGURADO',  
+      token: pagseguroToken ? 'Configurado' : 'NÃO CONFIGURADO',
+      sandbox: isSandbox 
+    })
     
     if (!pagseguroEmail || !pagseguroToken) {
-      throw new Error('Credenciais PagSeguro não configuradas nas Edge Functions')
+      console.error('❌ ERRO: Credenciais PagSeguro não configuradas!')
+      throw new Error('Credenciais PagSeguro não configuradas nas Edge Functions. Verifique PAGSEGURO_EMAIL e PAGSEGURO_TOKEN.')
     }
     
     const baseUrl = isSandbox 
       ? 'https://ws.sandbox.pagseguro.uol.com.br'
       : 'https://ws.pagseguro.uol.com.br'
     
+    console.log('🌐 URL Base PagSeguro:', baseUrl)
+    
     const expiresAt = new Date()
     expiresAt.setMinutes(expiresAt.getMinutes() + 15)
     
     // Payload para PagSeguro PIX
     const pixPayload = {
-      reference_id: `recarga_${recargaId}`,
-      description: description,
+      reference_id: `totem_${recargaId}`,
+      description: description || `Compra no Totem - R$ ${valor.toFixed(2)}`,
       amount: {
         value: Math.round(valor * 100), // PagSeguro trabalha com centavos
         currency: 'BRL'
@@ -65,9 +75,20 @@ serve(async (req) => {
       body: JSON.stringify(pixPayload)
     })
     
+    console.log('📡 Status da resposta PagSeguro:', response.status)
+    
     if (!response.ok) {
       const errorText = await response.text()
       console.error('❌ Erro PagSeguro:', response.status, errorText)
+      
+      // Tentar parsear erro JSON se possível
+      try {
+        const errorJson = JSON.parse(errorText)
+        console.error('🔍 Detalhes do erro:', errorJson)
+      } catch (e) {
+        console.error('🔍 Erro em texto puro:', errorText)
+      }
+      
       throw new Error(`Erro PagSeguro: ${response.status} - ${errorText}`)
     }
     
@@ -79,8 +100,12 @@ serve(async (req) => {
     const qrImage = pagseguroResponse.qr_codes?.[0]?.links?.[0]?.href
     
     if (!qrCode) {
+      console.error('❌ QR Code não encontrado na resposta:', pagseguroResponse)
       throw new Error('QR Code não encontrado na resposta do PagSeguro')
     }
+    
+    console.log('🎯 PIX gerado com sucesso!')
+    console.log('📱 QR Code:', qrCode.substring(0, 50) + '...')
     
     return new Response(
       JSON.stringify({
@@ -97,8 +122,13 @@ serve(async (req) => {
     )
   } catch (error) {
     console.error('❌ Erro na Edge Function:', error)
+    console.error('📋 Stack trace:', error.stack)
+    
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message,
+        details: 'Verifique os logs da Edge Function para mais detalhes'
+      }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 400,

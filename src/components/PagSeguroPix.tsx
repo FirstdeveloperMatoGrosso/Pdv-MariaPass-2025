@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,7 +8,8 @@ import {
   Clock,
   CheckCircle,
   X,
-  RefreshCw
+  RefreshCw,
+  AlertTriangle
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -29,28 +29,46 @@ const PagSeguroPix: React.FC<PagSeguroPixProps> = ({
 }) => {
   const [pixData, setPixData] = useState<any>(null);
   const [timeLeft, setTimeLeft] = useState(0);
-  const [status, setStatus] = useState<'generating' | 'waiting' | 'expired' | 'paid'>('generating');
+  const [status, setStatus] = useState<'generating' | 'waiting' | 'expired' | 'paid' | 'error'>('generating');
+  const [errorMessage, setErrorMessage] = useState<string>('');
 
   const generatePagSeguroPix = async () => {
     try {
       console.log('🏦 Gerando PIX PagBank para valor:', valor);
+      setStatus('generating');
+      setErrorMessage('');
       
       // Chamar Edge Function para gerar PIX PagSeguro
       const { data, error } = await supabase.functions.invoke('generate-pagseguro-pix', {
         body: {
           valor: valor,
           recargaId: recargaId,
-          description: `Recarga de pulseira - R$ ${valor.toFixed(2)}`
+          description: `Compra no Totem MariaPass - R$ ${valor.toFixed(2)}`
         }
       });
 
       if (error) {
         console.error('❌ Erro na Edge Function:', error);
-        throw new Error(error.message || 'Erro ao gerar PIX PagSeguro');
+        setErrorMessage(error.message || 'Erro ao conectar com a Edge Function');
+        setStatus('error');
+        toast.error('Erro ao gerar PIX PagSeguro: ' + (error.message || 'Falha na conexão'));
+        return;
       }
 
       if (!data) {
-        throw new Error('Resposta vazia da Edge Function');
+        console.error('❌ Resposta vazia da Edge Function');
+        setErrorMessage('Resposta vazia do servidor');
+        setStatus('error');
+        toast.error('Erro: Resposta vazia da Edge Function');
+        return;
+      }
+
+      if (data.error) {
+        console.error('❌ Erro retornado pela Edge Function:', data.error);
+        setErrorMessage(data.error);
+        setStatus('error');
+        toast.error('Erro PagSeguro: ' + data.error);
+        return;
       }
 
       console.log('✅ PIX PagSeguro gerado:', data);
@@ -72,7 +90,13 @@ const PagSeguroPix: React.FC<PagSeguroPixProps> = ({
         .select()
         .single();
       
-      if (transacaoError) throw transacaoError;
+      if (transacaoError) {
+        console.error('❌ Erro ao salvar transação:', transacaoError);
+        setErrorMessage('Erro ao salvar transação no banco de dados');
+        setStatus('error');
+        toast.error('Erro ao salvar transação: ' + transacaoError.message);
+        return;
+      }
       
       setPixData({
         ...transacaoData,
@@ -87,8 +111,9 @@ const PagSeguroPix: React.FC<PagSeguroPixProps> = ({
       
     } catch (error) {
       console.error('❌ Erro ao gerar PIX PagSeguro:', error);
-      toast.error('Erro ao gerar PIX PagSeguro: ' + error.message);
-      setStatus('expired');
+      setErrorMessage(error.message || 'Erro desconhecido');
+      setStatus('error');
+      toast.error('Erro inesperado: ' + error.message);
     }
   };
 
@@ -167,6 +192,8 @@ const PagSeguroPix: React.FC<PagSeguroPixProps> = ({
         return { color: 'bg-red-100 text-red-800', text: 'Expirado' };
       case 'paid':
         return { color: 'bg-green-100 text-green-800', text: 'Pago via PagSeguro' };
+      case 'error':
+        return { color: 'bg-red-100 text-red-800', text: 'Erro na Geração' };
       default:
         return { color: 'bg-gray-100 text-gray-800', text: 'Desconhecido' };
     }
@@ -193,6 +220,32 @@ const PagSeguroPix: React.FC<PagSeguroPixProps> = ({
             <p className="text-2xl font-bold text-gray-800">R$ {valor.toFixed(2)}</p>
             <Badge className={statusInfo.color}>{statusInfo.text}</Badge>
           </div>
+
+          {status === 'error' && (
+            <div className="space-y-3">
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                <div className="flex items-center space-x-2 text-red-700 mb-2">
+                  <AlertTriangle className="w-4 h-4" />
+                  <span className="font-medium">Erro ao Gerar PIX</span>
+                </div>
+                <p className="text-sm text-red-600">{errorMessage}</p>
+              </div>
+              <Button 
+                onClick={generatePagSeguroPix}
+                className="w-full bg-orange-600 hover:bg-orange-700"
+              >
+                <RefreshCw className="w-4 h-4 mr-1" />
+                Tentar Novamente
+              </Button>
+            </div>
+          )}
+
+          {status === 'generating' && (
+            <div className="space-y-3">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600 mx-auto"></div>
+              <p className="text-sm text-gray-600">Conectando com PagSeguro...</p>
+            </div>
+          )}
 
           {status === 'waiting' && (
             <>
@@ -250,7 +303,7 @@ const PagSeguroPix: React.FC<PagSeguroPixProps> = ({
             <div className="space-y-3">
               <CheckCircle className="w-16 h-16 text-green-600 mx-auto" />
               <p className="text-green-600 font-semibold">Pagamento Confirmado via PagSeguro!</p>
-              <p className="text-sm text-gray-600">Processando recarga...</p>
+              <p className="text-sm text-gray-600">Processando compra...</p>
             </div>
           )}
         </div>
