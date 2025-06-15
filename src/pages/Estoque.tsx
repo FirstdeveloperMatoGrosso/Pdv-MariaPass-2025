@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Archive, AlertTriangle, TrendingUp, TrendingDown, Search, Filter, RefreshCw, Plus, Minus, Edit } from 'lucide-react';
+import { Archive, AlertTriangle, TrendingUp, TrendingDown, Search, Filter, RefreshCw, Plus, Minus, Edit, Check, X } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -143,6 +143,21 @@ const Estoque: React.FC = () => {
       novoEstoque
     });
   };
+  const startEditingEstoque = (id: string, currentEstoque: number) => {
+    setEditingEstoque(prev => ({
+      ...prev,
+      [id]: currentEstoque
+    }));
+  };
+
+  const cancelEditingEstoque = (id: string) => {
+    setEditingEstoque(prev => {
+      const newState = { ...prev };
+      delete newState[id];
+      return newState;
+    });
+  };
+
   const setEstoqueValue = (id: string, value: number) => {
     setEditingEstoque(prev => ({
       ...prev,
@@ -380,13 +395,45 @@ const Estoque: React.FC = () => {
                           {item.codigo_barras || 'N/A'}
                         </code>
                       </TableCell>
-                      <TableCell className="p-2 px-[36px]">
-                        {isEditing ? <div className="flex items-center space-x-1 px-[11px] mx-0">
-                            <Input type="number" min="0" value={editingEstoque[item.id]} onChange={e => setEstoqueValue(item.id, parseInt(e.target.value) || 0)} className="w-12 h-6 text-xs" />
-                            <Button size="sm" onClick={() => updateEstoqueFromInput(item.id)} className="h-6 px-1 text-xs">
-                              ✓
-                            </Button>
-                          </div> : <span className="text-sm font-semibold">{item.estoque} un.</span>}
+                      <TableCell className="p-2">
+                        {isEditing ? (
+                          <div className="flex flex-col gap-1 min-w-[120px]">
+                            <div className="text-xs text-gray-600 mb-1">
+                              Estoque atual: <span className="font-semibold">{item.estoque}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Input
+                                type="number"
+                                min="0"
+                                value={editingEstoque[item.id]}
+                                onChange={(e) => setEstoqueValue(item.id, parseInt(e.target.value) || 0)}
+                                className="w-16 h-7 text-xs text-center"
+                                placeholder="0"
+                              />
+                              <Button
+                                size="sm"
+                                onClick={() => updateEstoqueFromInput(item.id)}
+                                className="h-7 w-7 p-0 bg-green-600 hover:bg-green-700"
+                                disabled={updateEstoqueMutation.isPending}
+                              >
+                                <Check className="w-3 h-3" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => cancelEditingEstoque(item.id)}
+                                className="h-7 w-7 p-0"
+                              >
+                                <X className="w-3 h-3" />
+                              </Button>
+                            </div>
+                            <div className="text-xs text-blue-600">
+                              Novo valor: <span className="font-semibold">{editingEstoque[item.id] || 0}</span>
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="text-sm font-semibold">{item.estoque} un.</span>
+                        )}
                       </TableCell>
                       <TableCell className="hidden sm:table-cell p-2">
                         <Badge variant={status.variant} className="text-xs">
@@ -397,17 +444,39 @@ const Estoque: React.FC = () => {
                       <TableCell className="hidden lg:table-cell p-2 text-xs">R$ {(item.estoque * item.preco).toFixed(2)}</TableCell>
                       <TableCell className="p-2">
                         <div className="flex flex-wrap gap-1">
-                          {!isEditing && <>
-                              <Button size="sm" variant="outline" onClick={() => adjustEstoque(item.id, item.estoque, -1)} disabled={item.estoque === 0 || updateEstoqueMutation.isPending} className="h-6 w-6 p-0">
+                          {!isEditing && (
+                            <>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => adjustEstoque(item.id, item.estoque, -1)}
+                                disabled={item.estoque === 0 || updateEstoqueMutation.isPending}
+                                className="h-6 w-6 p-0"
+                                title="Diminuir 1"
+                              >
                                 <Minus className="w-2 h-2" />
                               </Button>
-                              <Button size="sm" variant="outline" onClick={() => adjustEstoque(item.id, item.estoque, 1)} disabled={updateEstoqueMutation.isPending} className="h-6 w-6 p-0">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => adjustEstoque(item.id, item.estoque, 1)}
+                                disabled={updateEstoqueMutation.isPending}
+                                className="h-6 w-6 p-0"
+                                title="Aumentar 1"
+                              >
                                 <Plus className="w-2 h-2" />
                               </Button>
-                              <Button size="sm" variant="outline" onClick={() => setEstoqueValue(item.id, item.estoque)} className="h-6 w-6 p-0">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => startEditingEstoque(item.id, item.estoque)}
+                                className="h-6 w-6 p-0"
+                                title="Editar quantidade"
+                              >
                                 <Edit className="w-2 h-2" />
                               </Button>
-                            </>}
+                            </>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>;
