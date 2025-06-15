@@ -14,7 +14,7 @@ import Relatorios from "./pages/Relatorios";
 import Pagamentos from "./pages/Pagamentos";
 import Cancelamentos from "./pages/Cancelamentos";
 import Estoque from "./pages/Estoque";
-import Impressoes from "./pages/Impressoes";
+import ImpressoesVendas from "./pages/ImpressoesVendas";
 import Terminais from "./pages/Terminais";
 import ControleAcesso from "./pages/ControleAcesso";
 import Vouchers from "./pages/Vouchers";
@@ -61,7 +61,7 @@ const App = () => {
                     <Route path="/pagamentos" element={<Pagamentos />} />
                     <Route path="/cancelamentos" element={<Cancelamentos />} />
                     <Route path="/estoque" element={<Estoque />} />
-                    <Route path="/impressoes" element={<Impressoes />} />
+                    <Route path="/impressoes" element={<ImpressoesVendas />} />
                     <Route path="/terminais" element={<Terminais />} />
                     <Route path="/acesso" element={<ControleAcesso />} />
                     <Route path="/vouchers" element={<Vouchers />} />
