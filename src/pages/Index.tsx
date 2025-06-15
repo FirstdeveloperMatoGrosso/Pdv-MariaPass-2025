@@ -287,8 +287,8 @@ const Index: React.FC = () => {
                     className="absolute bg-red-500 text-white text-xs min-w-[24px] h-6 flex items-center justify-center rounded-full font-bold shadow-lg border-2 border-white z-50"
                     variant="destructive"
                     style={{ 
-                      top: '-12px', 
-                      right: '-12px'
+                      top: '60%', 
+                      right: '-8px'
                     }}
                   >
                     {quantity}
