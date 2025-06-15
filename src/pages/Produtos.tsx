@@ -24,6 +24,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import ProductForm from '@/components/ProductForm';
 import ProductEditForm from '@/components/ProductEditForm';
+import CategoryForm from '@/components/CategoryForm';
 import { CancelamentoModal } from '@/components/CancelamentoModal';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -123,6 +124,10 @@ const Produtos = () => {
     return <Badge className="bg-blue-100 text-blue-800">Em estoque</Badge>;
   };
 
+  const handleCategorySuccess = () => {
+    fetchProdutos();
+  };
+
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -130,7 +135,10 @@ const Produtos = () => {
           <Package className="w-6 h-6" />
           <h1 className="text-2xl font-bold">Produtos</h1>
         </div>
-        <ProductForm onSuccess={fetchProdutos} />
+        <div className="flex gap-2">
+          <CategoryForm onSuccess={handleCategorySuccess} />
+          <ProductForm onSuccess={fetchProdutos} />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
