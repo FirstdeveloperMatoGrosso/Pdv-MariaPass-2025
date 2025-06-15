@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -81,13 +80,13 @@ export const useRelatorioDados = (periodo: 'today' | 'week' | 'month') => {
       
       const { inicio, fim } = getDateRange();
       
-      console.log('=== BUSCANDO RELATÓRIOS (ATUALIZADO) ===');
+      console.log('=== BUSCANDO RELATÓRIOS DE PRODUTOS VENDIDOS ===');
       console.log('Período:', periodo);
       console.log('Data início:', inicio);
       console.log('Data fim:', fim);
 
-      // Buscar todas as vendas com produtos - usando uma consulta mais específica
-      const { data: vendasDiretas, error: errorVendasDiretas } = await supabase
+      // Buscar APENAS vendas de produtos (com produto_id válido)
+      const { data: vendasProdutos, error: errorVendasProdutos } = await supabase
         .from('vendas_pulseiras')
         .select(`
           id,
@@ -108,57 +107,38 @@ export const useRelatorioDados = (periodo: 'today' | 'week' | 'month') => {
         .not('produto_id', 'is', null)
         .order('data_venda', { ascending: false });
 
-      if (errorVendasDiretas) {
-        console.error('Erro ao buscar vendas diretas:', errorVendasDiretas);
-        throw errorVendasDiretas;
+      if (errorVendasProdutos) {
+        console.error('Erro ao buscar vendas de produtos:', errorVendasProdutos);
+        throw errorVendasProdutos;
       }
 
-      console.log('Total de vendas encontradas:', vendasDiretas?.length || 0);
-      console.log('Vendas brutas:', vendasDiretas);
+      console.log('Total de vendas de produtos encontradas:', vendasProdutos?.length || 0);
+      console.log('Vendas de produtos brutas:', vendasProdutos);
       
-      // Se não encontrou vendas no período, buscar algumas vendas recentes para debug
-      if (!vendasDiretas || vendasDiretas.length === 0) {
-        console.log('Nenhuma venda encontrada para o período especificado');
-        
-        // Debug: buscar vendas mais recentes
-        const { data: vendasRecentes } = await supabase
-          .from('vendas_pulseiras')
-          .select(`
-            id, 
-            data_venda, 
-            valor_total,
-            produtos!vendas_pulseiras_produto_id_fkey(nome)
-          `)
-          .not('produto_id', 'is', null)
-          .order('data_venda', { ascending: false })
-          .limit(10);
-        
-        console.log('Últimas 10 vendas na tabela:', vendasRecentes);
-      }
-
-      // Calcular dados consolidados
-      const faturamentoTotal = vendasDiretas?.reduce((total, venda) => {
+      // Calcular dados consolidados APENAS das vendas de produtos
+      const faturamentoTotal = vendasProdutos?.reduce((total, venda) => {
         const valor = Number(venda.valor_total) || 0;
         return total + valor;
       }, 0) || 0;
       
-      const pedidosRealizados = vendasDiretas?.length || 0;
+      const pedidosRealizados = vendasProdutos?.length || 0;
       const ticketMedio = pedidosRealizados > 0 ? faturamentoTotal / pedidosRealizados : 0;
 
-      console.log('Dados calculados:');
+      console.log('Dados calculados (PRODUTOS):');
       console.log('- Faturamento total:', faturamentoTotal);
       console.log('- Pedidos realizados:', pedidosRealizados);
       console.log('- Ticket médio:', ticketMedio);
 
-      // Agrupar produtos mais vendidos - com verificação mais robusta
-      const produtosGrouped = vendasDiretas?.reduce((acc: any, venda: any) => {
-        if (!venda.produto_id || !venda.produtos) {
-          console.warn('Venda sem produto válido:', venda);
+      // Agrupar produtos mais vendidos - verificando se tem produto válido
+      const produtosGrouped = vendasProdutos?.reduce((acc: any, venda: any) => {
+        // Verificar se a venda tem produto_id e dados do produto
+        if (!venda.produto_id || !venda.produtos || !venda.produtos.nome) {
+          console.warn('Venda sem produto válido ignorada:', venda);
           return acc;
         }
 
         const produtoId = venda.produto_id;
-        const nomeProduto = venda.produtos?.nome || `Produto ${produtoId}`;
+        const nomeProduto = venda.produtos.nome;
         
         if (!acc[produtoId]) {
           acc[produtoId] = {
@@ -178,19 +158,19 @@ export const useRelatorioDados = (periodo: 'today' | 'week' | 'month') => {
       const produtosMaisVendidosArray = Object.values(produtosGrouped)
         .sort((a: any, b: any) => b.quantidade - a.quantidade);
 
-      console.log('Produtos mais vendidos:', produtosMaisVendidosArray);
+      console.log('Produtos mais vendidos (AGRUPADOS):', produtosMaisVendidosArray);
 
-      // Processar pedidos recentes com mais detalhes
-      const pedidosRecentesProcessados = (vendasDiretas || []).slice(0, 15).map((venda: any) => ({
+      // Processar pedidos recentes (vendas de produtos)
+      const pedidosRecentesProcessados = (vendasProdutos || []).slice(0, 15).map((venda: any) => ({
         id: venda.id,
-        numeroAutorizacao: venda.numero_autorizacao || `VEN-${venda.id.slice(0, 8)}`,
+        numeroAutorizacao: venda.numero_autorizacao || `PROD-${venda.id.slice(0, 8)}`,
         dataVenda: venda.data_venda,
         quantidade: Number(venda.quantidade) || 1,
         valorTotal: Number(venda.valor_total) || 0,
         formaPagamento: venda.forma_pagamento || 'Pulseira'
       }));
 
-      console.log('Pedidos recentes processados:', pedidosRecentesProcessados);
+      console.log('Pedidos recentes de produtos:', pedidosRecentesProcessados);
 
       // Atualizar estados
       setDados({
@@ -203,10 +183,11 @@ export const useRelatorioDados = (periodo: 'today' | 'week' | 'month') => {
       setProdutosMaisVendidos(produtosMaisVendidosArray as ProdutoMaisVendido[]);
       setPedidosRecentes(pedidosRecentesProcessados);
 
-      console.log('=== DADOS FINAIS ATUALIZADOS ===');
+      console.log('=== DADOS FINAIS DE PRODUTOS ATUALIZADOS ===');
+      console.log('Total produtos diferentes:', produtosMaisVendidosArray.length);
 
     } catch (err) {
-      console.error('Erro ao carregar dados do relatório:', err);
+      console.error('Erro ao carregar dados do relatório de produtos:', err);
       setError(err instanceof Error ? err.message : 'Erro desconhecido');
     } finally {
       setLoading(false);
