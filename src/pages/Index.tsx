@@ -11,6 +11,8 @@ import { supabase } from '@/integrations/supabase/client';
 import QRCodeGenerator from '../components/QRCodeGenerator';
 import PrintSimulator from '../components/PrintSimulator';
 import BarcodeModal from '../components/BarcodeModal';
+import AlertContainer from '../components/AlertContainer';
+import { useSystemAlert } from '@/hooks/useSystemAlert';
 
 interface TotemProduct {
   id: string;
@@ -31,6 +33,7 @@ interface TotemCartItem extends TotemProduct {
 const Index: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { showAlert } = useSystemAlert();
   const [cart, setCart] = useState<TotemCartItem[]>([]);
   const [showQRCode, setShowQRCode] = useState(false);
   const [showPrintSimulator, setShowPrintSimulator] = useState(false);
@@ -133,20 +136,28 @@ const Index: React.FC = () => {
         
         // Verificar se o estoque está baixo (5 unidades ou menos)
         if (newStock <= 5 && newStock > 0) {
-          toast.error(`⚠️ ALERTA: Produto "${item.nome}" está com estoque baixo (${newStock} unidades restantes)!`, {
+          showAlert({
+            type: 'warning',
+            title: '⚠️ ALERTA DE ESTOQUE BAIXO',
+            message: `Produto "${item.nome}" está com estoque baixo (${newStock} unidades restantes)!`,
             duration: 8000,
-            action: {
+            actions: [{
               label: 'Reabastecer',
-              onClick: () => navigate('/estoque')
-            }
+              onClick: () => navigate('/estoque'),
+              variant: 'default'
+            }]
           });
         } else if (newStock === 0) {
-          toast.error(`🚨 PRODUTO ESGOTADO: "${item.nome}" não possui mais estoque disponível!`, {
+          showAlert({
+            type: 'error',
+            title: '🚨 PRODUTO ESGOTADO',
+            message: `"${item.nome}" não possui mais estoque disponível!`,
             duration: 10000,
-            action: {
+            actions: [{
               label: 'Gerenciar Estoque',
-              onClick: () => navigate('/estoque')
-            }
+              onClick: () => navigate('/estoque'),
+              variant: 'destructive'
+            }]
           });
         }
       }
@@ -164,13 +175,21 @@ const Index: React.FC = () => {
       const totalProdutos = updates.length;
       const resumo = updates.map(u => `${u.nome}: ${u.vendido} vendido(s), restam ${u.novoEstoque}`).join('\n');
       
-      toast.success(`✅ Estoque atualizado com sucesso!\n\n${resumo}`, {
+      showAlert({
+        type: 'success',
+        title: '✅ Estoque Atualizado',
+        message: `Estoque atualizado com sucesso!\n\n${resumo}`,
         duration: 6000
       });
     },
     onError: (error: Error) => {
       console.error('Erro ao atualizar estoque:', error);
-      toast.error(`❌ Erro ao atualizar estoque: ${error.message}`);
+      showAlert({
+        type: 'error',
+        title: '❌ Erro ao Atualizar Estoque',
+        message: error.message,
+        duration: 8000
+      });
     }
   });
 
@@ -181,7 +200,12 @@ const Index: React.FC = () => {
 
   const addToCart = (product: TotemProduct) => {
     if (product.estoque <= 0) {
-      toast.error('Produto sem estoque disponível!');
+      showAlert({
+        type: 'error',
+        title: 'Produto Indisponível',
+        message: 'Produto sem estoque disponível!',
+        duration: 3000
+      });
       return;
     }
 
@@ -189,7 +213,12 @@ const Index: React.FC = () => {
       const existingItem = prevCart.find(item => item.id === product.id);
       if (existingItem) {
         if (existingItem.quantity >= product.estoque) {
-          toast.error('Estoque insuficiente para este produto!');
+          showAlert({
+            type: 'warning',
+            title: 'Estoque Insuficiente',
+            message: 'Estoque insuficiente para este produto!',
+            duration: 3000
+          });
           return prevCart;
         }
         return prevCart.map(item =>
@@ -223,7 +252,12 @@ const Index: React.FC = () => {
 
   const generateOrder = () => {
     if (cart.length === 0) {
-      toast.error('Adicione itens ao carrinho primeiro!');
+      showAlert({
+        type: 'warning',
+        title: 'Carrinho Vazio',
+        message: 'Adicione itens ao carrinho primeiro!',
+        duration: 3000
+      });
       return;
     }
 
@@ -236,14 +270,24 @@ const Index: React.FC = () => {
     }
     
     if (stockErrors.length > 0) {
-      toast.error(`Estoque insuficiente:\n${stockErrors.join('\n')}`);
+      showAlert({
+        type: 'error',
+        title: 'Estoque Insuficiente',
+        message: `Estoque insuficiente:\n${stockErrors.join('\n')}`,
+        duration: 6000
+      });
       return;
     }
 
     const orderId = `PED-${Date.now()}`;
     setCurrentOrderId(orderId);
     setShowQRCode(true);
-    toast.success('Pedido gerado! Apresente o QR Code para pagamento.');
+    showAlert({
+      type: 'success',
+      title: 'Pedido Gerado',
+      message: 'Pedido gerado! Apresente o QR Code para pagamento.',
+      duration: 3000
+    });
   };
 
   const handleQRCodeClose = () => {
@@ -264,7 +308,12 @@ const Index: React.FC = () => {
     // Limpar carrinho e order ID
     setCart([]);
     setCurrentOrderId('');
-    toast.success('🎉 Venda finalizada com sucesso!');
+    showAlert({
+      type: 'success',
+      title: '🎉 Venda Finalizada',
+      message: 'Venda finalizada com sucesso!',
+      duration: 3000
+    });
   };
 
   const handleBarcodeProductScanned = (product: any) => {
@@ -309,6 +358,8 @@ const Index: React.FC = () => {
 
   return (
     <div className="p-2 sm:p-3 space-y-2 sm:space-y-3">
+      <AlertContainer />
+      
       <div className="text-center mb-4 sm:mb-6">
         <h1 className="text-xl sm:text-2xl font-bold text-green-600 mb-1">MariaPass Totem</h1>
         <p className="text-xs sm:text-sm text-gray-600">Selecione seus produtos e faça o pagamento via QR Code</p>
