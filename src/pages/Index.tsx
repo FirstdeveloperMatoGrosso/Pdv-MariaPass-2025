@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { ShoppingCart, Plus, Minus, ScanBarcode, Package, AlertTriangle } from 'lucide-react';
@@ -40,6 +41,7 @@ const Index: React.FC = () => {
   const [currentOrderId, setCurrentOrderId] = useState('');
   const [showBarcodeModal, setShowBarcodeModal] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('todas');
+  const [quantityInputs, setQuantityInputs] = useState<{[key: string]: string}>({});
 
   // Buscar produtos do Supabase
   const { data: products = [], isLoading, error } = useQuery({
@@ -232,7 +234,7 @@ const Index: React.FC = () => {
     ? products.slice(0, 12) // Limitar a 12 produtos quando mostrar todos
     : products.filter(product => product.categoria === selectedCategory);
 
-  const addToCart = (product: TotemProduct) => {
+  const addToCart = (product: TotemProduct, customQuantity?: number) => {
     if (product.estoque <= 0) {
       showAlert({
         type: 'error',
@@ -243,10 +245,13 @@ const Index: React.FC = () => {
       return;
     }
 
+    const quantityToAdd = customQuantity || 1;
+
     setCart(prevCart => {
       const existingItem = prevCart.find(item => item.id === product.id);
       if (existingItem) {
-        if (existingItem.quantity >= product.estoque) {
+        const newQuantity = existingItem.quantity + quantityToAdd;
+        if (newQuantity > product.estoque) {
           showAlert({
             type: 'warning',
             title: 'Estoque Insuficiente',
@@ -257,13 +262,38 @@ const Index: React.FC = () => {
         }
         return prevCart.map(item =>
           item.id === product.id 
-            ? { ...item, quantity: item.quantity + 1 }
+            ? { ...item, quantity: newQuantity }
             : item
         );
       } else {
-        return [...prevCart, { ...product, quantity: 1 }];
+        if (quantityToAdd > product.estoque) {
+          showAlert({
+            type: 'warning',
+            title: 'Estoque Insuficiente',
+            message: 'Estoque insuficiente para este produto!',
+            duration: 3000
+          });
+          return prevCart;
+        }
+        return [...prevCart, { ...product, quantity: quantityToAdd }];
       }
     });
+
+    // Limpar o input de quantidade após adicionar
+    setQuantityInputs(prev => ({ ...prev, [product.id]: '' }));
+  };
+
+  const handleQuantityInputChange = (productId: string, value: string) => {
+    setQuantityInputs(prev => ({ ...prev, [productId]: value }));
+  };
+
+  const handleAddWithQuantity = (product: TotemProduct) => {
+    const inputQuantity = quantityInputs[product.id];
+    const quantity = inputQuantity ? parseInt(inputQuantity) : 1;
+    
+    if (quantity > 0) {
+      addToCart(product, quantity);
+    }
   };
 
   const removeFromCart = (productId: string) => {
@@ -520,6 +550,20 @@ const Index: React.FC = () => {
                   </CardHeader>
                   
                   <CardContent className="pt-0 p-2 sm:p-3">
+                    {/* Input de Quantidade */}
+                    <div className="mb-2">
+                      <Input
+                        type="number"
+                        min="1"
+                        max={availableStock}
+                        placeholder="Qtd"
+                        value={quantityInputs[product.id] || ''}
+                        onChange={(e) => handleQuantityInputChange(product.id, e.target.value)}
+                        className="h-7 text-xs text-center"
+                        disabled={availableStock <= 0}
+                      />
+                    </div>
+                    
                     <div className="flex items-center justify-between gap-1">
                       <Button 
                         onClick={() => addToCart(product)}
@@ -535,6 +579,19 @@ const Index: React.FC = () => {
                           <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
                         )}
                       </Button>
+                      
+                      {quantityInputs[product.id] && (
+                        <Button 
+                          onClick={() => handleAddWithQuantity(product)}
+                          className="w-8 h-8 sm:w-9 sm:h-9 bg-blue-600 hover:bg-blue-700 text-white p-0 flex items-center justify-center flex-shrink-0"
+                          disabled={availableStock <= 0}
+                          size="sm"
+                        >
+                          <span className="text-[8px] sm:text-[10px] leading-none text-center px-1">
+                            Add
+                          </span>
+                        </Button>
+                      )}
                       
                       {quantity > 0 && (
                         <>

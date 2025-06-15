@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { 
   Dialog, 
   DialogContent, 
@@ -27,6 +28,8 @@ interface ProductFormData {
   estoque: number;
   descricao: string;
   imagem_url?: string;
+  tipo_venda: string;
+  unidades_por_caixa?: number;
 }
 
 interface ProductFormProps {
@@ -77,8 +80,12 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSuccess }) => {
       estoque: 0,
       descricao: '',
       imagem_url: '',
+      tipo_venda: 'unidade',
+      unidades_por_caixa: undefined,
     },
   });
+
+  const tipoVenda = form.watch('tipo_venda');
 
   const createProductMutation = useMutation({
     mutationFn: async (productData: ProductFormData) => {
@@ -117,7 +124,9 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSuccess }) => {
           categoria: productData.categoria,
           estoque: productData.estoque,
           descricao: productData.descricao,
-          imagem_url: finalImageUrl
+          imagem_url: finalImageUrl,
+          tipo_venda: productData.tipo_venda,
+          unidades_por_caixa: productData.unidades_por_caixa
         }]);
       
       if (error) {
@@ -258,10 +267,64 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSuccess }) => {
 
             <FormField
               control={form.control}
+              name="tipo_venda"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Tipo de Venda *</FormLabel>
+                  <FormControl>
+                    <RadioGroup
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      className="flex gap-4"
+                    >
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="unidade" id="unidade" />
+                        <Label htmlFor="unidade">Unidade</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="caixa" id="caixa" />
+                        <Label htmlFor="caixa">Caixa</Label>
+                      </div>
+                    </RadioGroup>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {tipoVenda === 'caixa' && (
+              <FormField
+                control={form.control}
+                name="unidades_por_caixa"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Unidades por Caixa *</FormLabel>
+                    <FormControl>
+                      <Input 
+                        {...field} 
+                        type="number"
+                        min="1"
+                        placeholder="Ex: 12"
+                        onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                        required={tipoVenda === 'caixa'}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+
+            <FormField
+              control={form.control}
               name="preco"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Preço (R$) *</FormLabel>
+                  <FormLabel>
+                    Preço (R$) *
+                    {tipoVenda === 'caixa' && ' - Por Caixa'}
+                    {tipoVenda === 'unidade' && ' - Por Unidade'}
+                  </FormLabel>
                   <FormControl>
                     <Input 
                       {...field} 
@@ -283,7 +346,11 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSuccess }) => {
               name="estoque"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Quantidade em Estoque *</FormLabel>
+                  <FormLabel>
+                    Quantidade em Estoque *
+                    {tipoVenda === 'caixa' && ' - Caixas'}
+                    {tipoVenda === 'unidade' && ' - Unidades'}
+                  </FormLabel>
                   <FormControl>
                     <Input 
                       {...field} 
@@ -293,20 +360,6 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSuccess }) => {
                       onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
                       required
                     />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="codigo_barras"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Código de Barras (opcional)</FormLabel>
-                  <FormControl>
-                    <Input {...field} placeholder="Digite o código de barras" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
