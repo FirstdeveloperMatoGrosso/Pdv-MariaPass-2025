@@ -82,7 +82,7 @@ const CategoryForm: React.FC<CategoryFormProps> = ({ onSuccess }) => {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="flex items-center space-x-2 text-zinc-100 bg-zinc-950 hover:bg-zinc-800">
+        <Button className="flex items-center space-x-2">
           <Plus className="w-4 h-4" />
           <span>Nova Categoria</span>
         </Button>
