@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -52,21 +53,24 @@ interface PrintJob {
   paginas: number;
   copias: number;
   usuario: string;
+  created_at: string;
 }
 
 const Impressoes: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPrinter, setSelectedPrinter] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('all');
-  const [selectedJob, setSelectedJob] = useState<any>(null);
+  const [selectedJob, setSelectedJob] = useState<PrintJob | null>(null);
   const queryClient = useQueryClient();
 
   const printers = ['Impressora Principal', 'Impressora Vouchers', 'Impressora Backup'];
 
   // Buscar impressões do Supabase
-  const { data: printJobs = [], isLoading } = useQuery({
+  const { data: printJobs = [], isLoading, error, refetch } = useQuery({
     queryKey: ['impressoes'],
     queryFn: async () => {
+      console.log('Buscando impressões realizadas...');
+      
       const { data, error } = await supabase
         .from('impressoes')
         .select('*')
@@ -77,6 +81,7 @@ const Impressoes: React.FC = () => {
         throw error;
       }
       
+      console.log('Impressões encontradas:', data?.length || 0);
       return data || [];
     },
   });
@@ -84,6 +89,8 @@ const Impressoes: React.FC = () => {
   // Mutation para reenviar impressão
   const retryPrintMutation = useMutation({
     mutationFn: async (id: string) => {
+      console.log('Reenviando impressão:', id);
+      
       const { error } = await supabase
         .from('impressoes')
         .update({ 
@@ -145,9 +152,9 @@ const Impressoes: React.FC = () => {
     },
   });
 
-  const filteredJobs = printJobs.filter((job: any) => {
+  const filteredJobs = printJobs.filter((job: PrintJob) => {
     const matchesSearch = job.pedido_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         job.usuario.toLowerCase().includes(searchTerm.toLowerCase());
+                         job.usuario?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesPrinter = selectedPrinter === 'all' || job.impressora === selectedPrinter;
     const matchesStatus = selectedStatus === 'all' || job.status === selectedStatus;
     return matchesSearch && matchesPrinter && matchesStatus;
@@ -204,10 +211,23 @@ const Impressoes: React.FC = () => {
   };
 
   const totalJobs = printJobs.length;
-  const completedJobs = printJobs.filter((j: any) => j.status === 'concluido').length;
-  const failedJobs = printJobs.filter((j: any) => j.status === 'falhou').length;
-  const pendingJobs = printJobs.filter((j: any) => j.status === 'pendente').length;
+  const completedJobs = printJobs.filter((j: PrintJob) => j.status === 'concluido').length;
+  const failedJobs = printJobs.filter((j: PrintJob) => j.status === 'falhou').length;
+  const pendingJobs = printJobs.filter((j: PrintJob) => j.status === 'pendente').length;
   const successRate = totalJobs > 0 ? ((completedJobs / totalJobs) * 100).toFixed(1) : '0';
+
+  if (error) {
+    return (
+      <div className="min-h-screen p-4 flex items-center justify-center">
+        <Card className="w-full max-w-md">
+          <CardContent className="p-6 text-center">
+            <p className="text-red-600 mb-4">Erro ao carregar impressões: {error.message}</p>
+            <Button onClick={() => refetch()}>Tentar Novamente</Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -374,7 +394,7 @@ const Impressoes: React.FC = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredJobs.map((job: any) => (
+                {filteredJobs.map((job: PrintJob) => (
                   <TableRow key={job.id}>
                     <TableCell className="font-medium p-1">
                       <div>
