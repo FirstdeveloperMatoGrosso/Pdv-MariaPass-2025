@@ -9,6 +9,7 @@ import { AppSidebar } from "./components/AppSidebar";
 import Index from "./pages/Index";
 import Produtos from "./pages/Produtos";
 import ImportarExcel from "./pages/ImportarExcel";
+import Vendas from "./pages/Vendas";
 import Relatorios from "./pages/Relatorios";
 import Pagamentos from "./pages/Pagamentos";
 import Cancelamentos from "./pages/Cancelamentos";
@@ -51,6 +52,7 @@ const App = () => {
                 <main className="flex-1">
                   <Routes>
                     <Route path="/" element={<Index />} />
+                    <Route path="/vendas" element={<Vendas />} />
                     <Route path="/produtos" element={<Produtos />} />
                     <Route path="/importar-excel" element={<ImportarExcel />} />
                     <Route path="/relatorios" element={<Relatorios />} />

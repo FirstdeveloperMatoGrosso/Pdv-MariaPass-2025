@@ -28,11 +28,13 @@ import {
   Lock,
   Ticket,
   Watch,
-  FileSpreadsheet
+  FileSpreadsheet,
+  ShoppingCart
 } from 'lucide-react';
 
 const menuItems = [
   { title: 'Início', url: '/', icon: Home },
+  { title: 'Vendas', url: '/vendas', icon: ShoppingCart },
   { title: 'Produtos', url: '/produtos', icon: Package },
   { title: 'Importar Excel', url: '/importar-excel', icon: FileSpreadsheet },
   { title: 'Relatórios', url: '/relatorios', icon: BarChart3 },
