@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,7 +10,8 @@ import {
   CheckCircle,
   X,
   RefreshCw,
-  AlertTriangle
+  AlertTriangle,
+  Info
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -19,31 +21,44 @@ interface PagSeguroPixProps {
   recargaId: string;
   onPaymentSuccess: () => void;
   onCancel: () => void;
+  customerInfo?: {
+    items?: any[];
+  };
 }
 
 const PagSeguroPix: React.FC<PagSeguroPixProps> = ({ 
   valor, 
   recargaId, 
   onPaymentSuccess, 
-  onCancel 
+  onCancel,
+  customerInfo 
 }) => {
   const [pixData, setPixData] = useState<any>(null);
   const [timeLeft, setTimeLeft] = useState(0);
   const [status, setStatus] = useState<'generating' | 'waiting' | 'expired' | 'paid' | 'error'>('generating');
   const [errorMessage, setErrorMessage] = useState<string>('');
+  const [showMetadata, setShowMetadata] = useState(false);
 
   const generatePagSeguroPix = async () => {
     try {
       console.log('🏦 Gerando PIX PagBank para valor:', valor);
+      console.log('📋 Info do pedido:', { recargaId, customerInfo });
+      
       setStatus('generating');
       setErrorMessage('');
       
-      // Chamar Edge Function para gerar PIX PagSeguro
+      // Chamar Edge Function para gerar PIX PagSeguro com metadados
       const { data, error } = await supabase.functions.invoke('generate-pagseguro-pix', {
         body: {
           valor: valor,
           recargaId: recargaId,
-          description: `Compra no Totem MariaPass - R$ ${valor.toFixed(2)}`
+          description: `Compra no Totem MariaPass - R$ ${valor.toFixed(2)} - Pedido: ${recargaId}`,
+          customerInfo: {
+            ...customerInfo,
+            order_id: recargaId,
+            total_amount: valor,
+            timestamp: new Date().toISOString()
+          }
         }
       });
 
@@ -71,12 +86,9 @@ const PagSeguroPix: React.FC<PagSeguroPixProps> = ({
         return;
       }
 
-      console.log('✅ PIX PagSeguro gerado:', data);
+      console.log('✅ PIX PagSeguro gerado com metadados:', data);
       
-      // Salvar transação no banco
-      const expiresAt = new Date();
-      expiresAt.setMinutes(expiresAt.getMinutes() + 15);
-      
+      // Salvar transação no banco com metadados
       const { data: transacaoData, error: transacaoError } = await supabase
         .from('transacoes_pix')
         .insert({
@@ -84,8 +96,10 @@ const PagSeguroPix: React.FC<PagSeguroPixProps> = ({
           qr_code: data.qr_code,
           chave_pix: 'pagseguro_pix',
           valor: valor,
-          expira_em: expiresAt.toISOString(),
-          status: 'aguardando'
+          expira_em: data.expires_at,
+          status: 'aguardando',
+          metadata: JSON.stringify(data.metadata || {}),
+          order_info: JSON.stringify(data.order_info || {})
         })
         .select()
         .single();
@@ -101,10 +115,17 @@ const PagSeguroPix: React.FC<PagSeguroPixProps> = ({
       setPixData({
         ...transacaoData,
         pagseguro_id: data.pagseguro_id,
-        qr_image: data.qr_image
+        qr_image: data.qr_image,
+        metadata: data.metadata,
+        order_info: data.order_info
       });
       
-      setTimeLeft(15 * 60); // 15 minutos
+      // Calcular tempo restante baseado nos metadados
+      const expiryTime = new Date(data.expires_at).getTime();
+      const currentTime = Date.now();
+      const remainingSeconds = Math.max(0, Math.floor((expiryTime - currentTime) / 1000));
+      
+      setTimeLeft(remainingSeconds);
       setStatus('waiting');
       
       toast.success('PIX PagSeguro gerado com sucesso!');
@@ -209,9 +230,21 @@ const PagSeguroPix: React.FC<PagSeguroPixProps> = ({
             <QrCode className="w-5 h-5 text-orange-600" />
             <span>PIX PagSeguro</span>
           </CardTitle>
-          <Button variant="ghost" size="sm" onClick={onCancel}>
-            <X className="w-4 h-4" />
-          </Button>
+          <div className="flex items-center space-x-2">
+            {pixData?.metadata && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setShowMetadata(!showMetadata)}
+                className="h-6 w-6 p-0"
+              >
+                <Info className="w-3 h-3" />
+              </Button>
+            )}
+            <Button variant="ghost" size="sm" onClick={onCancel}>
+              <X className="w-4 h-4" />
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="p-3 pt-0">
@@ -219,7 +252,27 @@ const PagSeguroPix: React.FC<PagSeguroPixProps> = ({
           <div>
             <p className="text-2xl font-bold text-gray-800">R$ {valor.toFixed(2)}</p>
             <Badge className={statusInfo.color}>{statusInfo.text}</Badge>
+            {pixData?.metadata && (
+              <div className="mt-1">
+                <Badge variant="outline" className="text-xs">
+                  ID: {pixData.metadata.order_id}
+                </Badge>
+              </div>
+            )}
           </div>
+
+          {showMetadata && pixData?.metadata && (
+            <div className="bg-gray-50 p-2 rounded-lg text-left">
+              <h4 className="text-xs font-semibold mb-2">Metadados do Pedido:</h4>
+              <div className="space-y-1 text-xs">
+                <p><strong>ID:</strong> {pixData.metadata.order_id}</p>
+                <p><strong>Criado:</strong> {new Date(pixData.metadata.created_at).toLocaleString()}</p>
+                <p><strong>Expira:</strong> {new Date(pixData.metadata.expires_at).toLocaleString()}</p>
+                <p><strong>Sessão:</strong> {pixData.metadata.session_id}</p>
+                <p><strong>Método:</strong> {pixData.metadata.payment_method}</p>
+              </div>
+            </div>
+          )}
 
           {status === 'error' && (
             <div className="space-y-3">
@@ -244,6 +297,7 @@ const PagSeguroPix: React.FC<PagSeguroPixProps> = ({
             <div className="space-y-3">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600 mx-auto"></div>
               <p className="text-sm text-gray-600">Conectando com PagSeguro...</p>
+              <p className="text-xs text-gray-500">Gerando PIX com metadados completos...</p>
             </div>
           )}
 
@@ -304,6 +358,11 @@ const PagSeguroPix: React.FC<PagSeguroPixProps> = ({
               <CheckCircle className="w-16 h-16 text-green-600 mx-auto" />
               <p className="text-green-600 font-semibold">Pagamento Confirmado via PagSeguro!</p>
               <p className="text-sm text-gray-600">Processando compra...</p>
+              {pixData?.metadata && (
+                <p className="text-xs text-gray-500">
+                  Pedido {pixData.metadata.order_id} processado com sucesso
+                </p>
+              )}
             </div>
           )}
         </div>
