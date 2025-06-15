@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -19,6 +20,12 @@ import {
 import { toast } from 'sonner';
 import ScannerConfig from '../components/ScannerConfig';
 import BarcodeScanner from '../components/BarcodeScanner';
+import PrintConfig from '../components/config/PrintConfig';
+import NetworkConfig from '../components/config/NetworkConfig';
+import BackupConfig from '../components/config/BackupConfig';
+import SecurityConfig from '../components/config/SecurityConfig';
+import NotificationConfig from '../components/config/NotificationConfig';
+import InterfaceConfig from '../components/config/InterfaceConfig';
 
 interface Product {
   id: string;
@@ -91,11 +98,11 @@ const Configuracoes: React.FC = () => {
   const TabIcon = tabs.find(tab => tab.id === activeTab)?.icon || Settings;
 
   return (
-    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+    <div className="p-3 sm:p-4 space-y-3 sm:space-y-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div className="flex items-center space-x-2">
-          <Settings className="w-6 h-6 text-gray-600" />
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-800">Configurações do Sistema</h1>
+          <Settings className="w-5 h-5 text-gray-600" />
+          <h1 className="text-lg sm:text-xl font-bold text-gray-800">Configurações do Sistema</h1>
         </div>
         <Button 
           onClick={handleSaveConfig}
@@ -106,11 +113,11 @@ const Configuracoes: React.FC = () => {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-3 sm:gap-4">
         {/* Sidebar de Navegação */}
         <Card className="lg:col-span-1">
-          <CardHeader className="p-3 sm:p-6">
-            <CardTitle className="text-lg">Categorias</CardTitle>
+          <CardHeader className="p-3">
+            <CardTitle className="text-base">Categorias</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
             <div className="space-y-1">
@@ -120,12 +127,12 @@ const Configuracoes: React.FC = () => {
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`w-full flex items-center space-x-3 px-3 sm:px-6 py-3 text-left hover:bg-gray-50 transition-colors ${
+                    className={`w-full flex items-center space-x-2 px-3 py-2 text-left hover:bg-gray-50 transition-colors text-sm ${
                       activeTab === tab.id ? 'bg-blue-50 border-r-2 border-blue-600 text-blue-600' : 'text-gray-700'
                     }`}
                   >
                     <Icon className="w-4 h-4" />
-                    <span className="text-sm sm:text-base">{tab.label}</span>
+                    <span>{tab.label}</span>
                   </button>
                 );
               })}
@@ -134,31 +141,31 @@ const Configuracoes: React.FC = () => {
         </Card>
 
         {/* Conteúdo Principal */}
-        <div className="lg:col-span-3 space-y-4 sm:space-y-6">
+        <div className="lg:col-span-3 space-y-3 sm:space-y-4">
           {/* Configurações Gerais */}
           {activeTab === 'geral' && (
             <Card>
-              <CardHeader className="p-3 sm:p-6">
-                <CardTitle className="flex items-center space-x-2">
-                  <Settings className="w-5 h-5" />
+              <CardHeader className="p-3">
+                <CardTitle className="flex items-center space-x-2 text-base">
+                  <Settings className="w-4 h-4" />
                   <span>Configurações Gerais</span>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="p-3 sm:p-6 pt-0 space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <CardContent className="p-3 space-y-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-sm font-medium mb-2">Nome da Empresa</label>
+                    <label className="block text-sm font-medium mb-1">Nome da Empresa</label>
                     <Input
                       value={config.nomeEmpresa}
                       onChange={(e) => setConfig(prev => ({ ...prev, nomeEmpresa: e.target.value }))}
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-2">Moeda</label>
+                    <label className="block text-sm font-medium mb-1">Moeda</label>
                     <select 
                       value={config.moeda}
                       onChange={(e) => setConfig(prev => ({ ...prev, moeda: e.target.value }))}
-                      className="w-full border rounded-md px-3 py-2"
+                      className="w-full border rounded-md px-3 py-2 text-sm"
                     >
                       <option value="BRL">Real (BRL)</option>
                       <option value="USD">Dólar (USD)</option>
@@ -166,11 +173,11 @@ const Configuracoes: React.FC = () => {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-2">Fuso Horário</label>
+                    <label className="block text-sm font-medium mb-1">Fuso Horário</label>
                     <select 
                       value={config.timezone}
                       onChange={(e) => setConfig(prev => ({ ...prev, timezone: e.target.value }))}
-                      className="w-full border rounded-md px-3 py-2"
+                      className="w-full border rounded-md px-3 py-2 text-sm"
                     >
                       <option value="America/Sao_Paulo">São Paulo (UTC-3)</option>
                       <option value="America/Manaus">Manaus (UTC-4)</option>
@@ -178,7 +185,7 @@ const Configuracoes: React.FC = () => {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-2">Limite Mínimo de Estoque</label>
+                    <label className="block text-sm font-medium mb-1">Limite Mínimo de Estoque</label>
                     <Input
                       type="number"
                       value={config.limiteEstoque}
@@ -186,33 +193,33 @@ const Configuracoes: React.FC = () => {
                     />
                   </div>
                 </div>
-                <div className="space-y-3">
+                <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <span>Habilitar Notificações</span>
+                    <span className="text-sm">Habilitar Notificações</span>
                     <button
                       onClick={() => setConfig(prev => ({ ...prev, notificacoes: !prev.notificacoes }))}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                      className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors text-xs ${
                         config.notificacoes ? 'bg-blue-600' : 'bg-gray-200'
                       }`}
                     >
                       <span
-                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                          config.notificacoes ? 'translate-x-6' : 'translate-x-1'
+                        className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
+                          config.notificacoes ? 'translate-x-5' : 'translate-x-1'
                         }`}
                       />
                     </button>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span>Backup Automático</span>
+                    <span className="text-sm">Backup Automático</span>
                     <button
                       onClick={() => setConfig(prev => ({ ...prev, autoBackup: !prev.autoBackup }))}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                      className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors text-xs ${
                         config.autoBackup ? 'bg-blue-600' : 'bg-gray-200'
                       }`}
                     >
                       <span
-                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                          config.autoBackup ? 'translate-x-6' : 'translate-x-1'
+                        className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
+                          config.autoBackup ? 'translate-x-5' : 'translate-x-1'
                         }`}
                       />
                     </button>
@@ -225,14 +232,14 @@ const Configuracoes: React.FC = () => {
           {/* Scanner */}
           {activeTab === 'scanner' && (
             <Card>
-              <CardHeader className="p-3 sm:p-6">
-                <CardTitle className="flex items-center space-x-2">
-                  <Monitor className="w-5 h-5" />
+              <CardHeader className="p-3">
+                <CardTitle className="flex items-center space-x-2 text-base">
+                  <Monitor className="w-4 h-4" />
                   <span>Scanner de Código de Barras</span>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="p-3 sm:p-6 pt-0">
-                <div className="space-y-6">
+              <CardContent className="p-3">
+                <div className="space-y-4">
                   <ScannerConfig 
                     config={scannerConfig}
                     onConfigChange={handleScannerConfigChange}
@@ -243,39 +250,57 @@ const Configuracoes: React.FC = () => {
             </Card>
           )}
 
+          {/* Impressão */}
+          {activeTab === 'impressao' && <PrintConfig />}
+
+          {/* Rede */}
+          {activeTab === 'rede' && <NetworkConfig />}
+
+          {/* Backup */}
+          {activeTab === 'backup' && <BackupConfig />}
+
+          {/* Segurança */}
+          {activeTab === 'seguranca' && <SecurityConfig />}
+
+          {/* Notificações */}
+          {activeTab === 'notificacoes' && <NotificationConfig />}
+
+          {/* Interface */}
+          {activeTab === 'interface' && <InterfaceConfig />}
+
           {/* Status do Sistema */}
           <Card>
-            <CardHeader className="p-3 sm:p-6">
-              <CardTitle className="flex items-center space-x-2">
-                <TabIcon className="w-5 h-5" />
+            <CardHeader className="p-3">
+              <CardTitle className="flex items-center space-x-2 text-base">
+                <TabIcon className="w-4 h-4" />
                 <span>Status do Sistema</span>
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-3 sm:p-6 pt-0">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <span className="text-sm font-medium">Banco de Dados</span>
-                  <Badge className="bg-green-600">Conectado</Badge>
+            <CardContent className="p-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                <div className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                  <span className="text-xs font-medium">Banco de Dados</span>
+                  <Badge className="bg-green-600 text-xs">Conectado</Badge>
                 </div>
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <span className="text-sm font-medium">Sistema de Backup</span>
-                  <Badge className="bg-green-600">Ativo</Badge>
+                <div className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                  <span className="text-xs font-medium">Sistema de Backup</span>
+                  <Badge className="bg-green-600 text-xs">Ativo</Badge>
                 </div>
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <span className="text-sm font-medium">Scanner</span>
-                  <Badge variant="secondary">Configurado</Badge>
+                <div className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                  <span className="text-xs font-medium">Scanner</span>
+                  <Badge variant="secondary" className="text-xs">Configurado</Badge>
                 </div>
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <span className="text-sm font-medium">Impressoras</span>
-                  <Badge className="bg-blue-600">3 Ativas</Badge>
+                <div className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                  <span className="text-xs font-medium">Impressoras</span>
+                  <Badge className="bg-blue-600 text-xs">3 Ativas</Badge>
                 </div>
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <span className="text-sm font-medium">Terminais</span>
-                  <Badge className="bg-green-600">2 Online</Badge>
+                <div className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                  <span className="text-xs font-medium">Terminais</span>
+                  <Badge className="bg-green-600 text-xs">2 Online</Badge>
                 </div>
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <span className="text-sm font-medium">Última Atualização</span>
-                  <Badge variant="outline">Hoje</Badge>
+                <div className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                  <span className="text-xs font-medium">Última Atualização</span>
+                  <Badge variant="outline" className="text-xs">Hoje</Badge>
                 </div>
               </div>
             </CardContent>

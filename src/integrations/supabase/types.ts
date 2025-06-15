@@ -53,6 +53,36 @@ export type Database = {
           },
         ]
       }
+      configuracoes_sistema: {
+        Row: {
+          categoria: string
+          chave: string
+          created_at: string
+          descricao: string | null
+          id: string
+          updated_at: string
+          valor: Json
+        }
+        Insert: {
+          categoria: string
+          chave: string
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          updated_at?: string
+          valor: Json
+        }
+        Update: {
+          categoria?: string
+          chave?: string
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          updated_at?: string
+          valor?: Json
+        }
+        Relationships: []
+      }
       controle_acesso: {
         Row: {
           acao: string
