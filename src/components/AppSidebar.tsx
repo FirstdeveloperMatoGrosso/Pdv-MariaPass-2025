@@ -41,7 +41,7 @@ const menuItems = [
   { title: 'Pagamentos', url: '/pagamentos', icon: CreditCard },
   { title: 'Cancelamentos', url: '/cancelamentos', icon: XCircle },
   { title: 'Estoque', url: '/estoque', icon: Archive },
-  { title: 'Impressões', url: '/impressoes', icon: Printer },
+  { title: 'Impressões de Vendas', url: '/impressoes', icon: Printer },
   { title: 'Terminais', url: '/terminais', icon: Monitor },
   { title: 'Controle de Acesso', url: '/acesso', icon: Lock },
   { title: 'Vouchers', url: '/vouchers', icon: Ticket },
