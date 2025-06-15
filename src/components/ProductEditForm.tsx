@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Edit } from 'lucide-react';
+import { Edit, Upload, Link } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -40,6 +40,9 @@ interface ProductEditFormProps {
 
 const ProductEditForm: React.FC<ProductEditFormProps> = ({ product, onSuccess }) => {
   const [open, setOpen] = useState(false);
+  const [imageType, setImageType] = useState<'url' | 'upload'>('url');
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string>(product.imagem_url || '');
   const [formData, setFormData] = useState({
     nome: product.nome,
     preco: product.preco,
@@ -47,6 +50,7 @@ const ProductEditForm: React.FC<ProductEditFormProps> = ({ product, onSuccess })
     categoria: product.categoria,
     estoque: product.estoque,
     status: product.status,
+    imagem_url: product.imagem_url || '',
   });
 
   const queryClient = useQueryClient();
@@ -56,10 +60,36 @@ const ProductEditForm: React.FC<ProductEditFormProps> = ({ product, onSuccess })
   const updateProductMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
       console.log('Atualizando produto:', product.id, data);
+      
+      let finalImageUrl = data.imagem_url;
+
+      // Se foi feito upload de arquivo, fazer upload para o Supabase Storage
+      if (uploadedFile && imageType === 'upload') {
+        const fileExt = uploadedFile.name.split('.').pop();
+        const fileName = `${Date.now()}.${fileExt}`;
+        
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('produtos')
+          .upload(fileName, uploadedFile);
+
+        if (uploadError) {
+          console.error('Erro no upload:', uploadError);
+          throw new Error('Erro ao fazer upload da imagem: ' + uploadError.message);
+        }
+
+        // Obter URL pública da imagem
+        const { data: { publicUrl } } = supabase.storage
+          .from('produtos')
+          .getPublicUrl(fileName);
+        
+        finalImageUrl = publicUrl;
+      }
+
       const { error } = await supabase
         .from('produtos')
         .update({
           ...data,
+          imagem_url: finalImageUrl,
           updated_at: new Date().toISOString()
         })
         .eq('id', product.id);
@@ -99,6 +129,21 @@ const ProductEditForm: React.FC<ProductEditFormProps> = ({ product, onSuccess })
     }));
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setUploadedFile(file);
+      const url = URL.createObjectURL(file);
+      setPreviewUrl(url);
+    }
+  };
+
+  const handleUrlChange = (url: string) => {
+    handleInputChange('imagem_url', url);
+    setPreviewUrl(url);
+    setUploadedFile(null);
+  };
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -106,7 +151,7 @@ const ProductEditForm: React.FC<ProductEditFormProps> = ({ product, onSuccess })
           <Edit className="w-3 h-3" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-sm">Editar Produto</DialogTitle>
         </DialogHeader>
@@ -185,6 +230,62 @@ const ProductEditForm: React.FC<ProductEditFormProps> = ({ product, onSuccess })
                 <SelectItem value="inativo">Inativo</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          {/* Seção de Imagem */}
+          <div className="space-y-2">
+            <Label className="text-xs">Imagem do Produto</Label>
+            <div className="flex gap-1">
+              <Button
+                type="button"
+                variant={imageType === 'url' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setImageType('url')}
+                className="h-6 text-xs px-2"
+              >
+                <Link className="w-3 h-3 mr-1" />
+                URL
+              </Button>
+              <Button
+                type="button"
+                variant={imageType === 'upload' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setImageType('upload')}
+                className="h-6 text-xs px-2"
+              >
+                <Upload className="w-3 h-3 mr-1" />
+                Upload
+              </Button>
+            </div>
+
+            {imageType === 'url' ? (
+              <Input
+                placeholder="Cole a URL da imagem aqui"
+                value={formData.imagem_url}
+                onChange={(e) => handleUrlChange(e.target.value)}
+                className="h-7 text-xs"
+              />
+            ) : (
+              <Input
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+                className="h-7 text-xs"
+              />
+            )}
+
+            {previewUrl && (
+              <div className="mt-1">
+                <img 
+                  src={previewUrl} 
+                  alt="Preview" 
+                  className="w-full h-20 object-cover rounded-md border"
+                  onError={(e) => {
+                    e.currentTarget.src = '/placeholder.svg';
+                  }}
+                />
+              </div>
+            )}
           </div>
 
           <div className="flex justify-end space-x-2 pt-2">
