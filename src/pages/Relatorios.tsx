@@ -296,6 +296,87 @@ const Relatorios: React.FC = () => {
         />
       )}
 
+      {/* Lista Completa de Produtos Vendidos */}
+      <Card>
+        <CardHeader className="p-2 sm:p-3">
+          <CardTitle className="text-sm sm:text-base">Todos os Produtos Vendidos</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          {loading ? (
+            <div className="p-4 text-center">
+              <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2" />
+              <p className="text-sm text-gray-500">Carregando produtos...</p>
+            </div>
+          ) : produtosMaisVendidos.length === 0 ? (
+            <div className="p-4 text-center">
+              <Package className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+              <p className="text-sm text-gray-500">Nenhum produto vendido no período</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="h-8 text-xs">Produto</TableHead>
+                    <TableHead className="h-8 text-xs">Quantidade</TableHead>
+                    <TableHead className="h-8 text-xs">Preço Médio</TableHead>
+                    <TableHead className="h-8 text-xs">Receita Total</TableHead>
+                    <TableHead className="h-8 text-xs">Participação</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {produtosMaisVendidos.map((produto, index) => {
+                    const precoMedio = produto.quantidade > 0 ? produto.receita / produto.quantidade : 0;
+                    const receitaTotal = dados?.faturamentoTotal || 0;
+                    const participacao = receitaTotal > 0 ? (produto.receita / receitaTotal) * 100 : 0;
+                    
+                    return (
+                      <TableRow key={produto.id}>
+                        <TableCell className="font-medium p-2 text-xs">
+                          <div className="flex items-center space-x-2">
+                            <Badge 
+                              variant="outline" 
+                              className="text-xs px-1 py-0"
+                            >
+                              #{index + 1}
+                            </Badge>
+                            <span>{produto.nome}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="p-2 text-xs">
+                          <Badge variant="secondary" className="text-xs">
+                            {produto.quantidade}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="p-2 text-xs text-blue-600">
+                          {formatCurrency(precoMedio)}
+                        </TableCell>
+                        <TableCell className="text-green-600 font-bold p-2 text-xs">
+                          {formatCurrency(produto.receita)}
+                        </TableCell>
+                        <TableCell className="p-2 text-xs">
+                          <div className="flex items-center space-x-1">
+                            <div className="w-12 bg-gray-200 rounded-full h-2">
+                              <div 
+                                className="bg-green-600 h-2 rounded-full"
+                                style={{ width: `${Math.min(participacao, 100)}%` }}
+                              ></div>
+                            </div>
+                            <span className="text-xs text-gray-600">
+                              {participacao.toFixed(1)}%
+                            </span>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       <ExportModal
         open={exportModalOpen}
         onClose={() => setExportModalOpen(false)}
