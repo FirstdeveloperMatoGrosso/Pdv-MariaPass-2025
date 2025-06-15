@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { 
   Sidebar, 
@@ -26,12 +27,14 @@ import {
   Monitor,
   Lock,
   Ticket,
-  Watch
+  Watch,
+  FileSpreadsheet
 } from 'lucide-react';
 
 const menuItems = [
   { title: 'Início', url: '/', icon: Home },
   { title: 'Produtos', url: '/produtos', icon: Package },
+  { title: 'Importar Excel', url: '/importar-excel', icon: FileSpreadsheet },
   { title: 'Relatórios', url: '/relatorios', icon: BarChart3 },
   { title: 'Pagamentos', url: '/pagamentos', icon: CreditCard },
   { title: 'Cancelamentos', url: '/cancelamentos', icon: XCircle },
