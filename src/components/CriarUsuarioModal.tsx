@@ -18,6 +18,18 @@ interface Recurso {
   descricao: string;
   rota: string;
   categoria: string;
+  icone?: string;
+  ativo: boolean;
+}
+
+interface PermissaoAcesso {
+  id: string;
+  tipo_usuario: string;
+  recurso_id: string;
+  pode_visualizar: boolean;
+  pode_criar: boolean;
+  pode_editar: boolean;
+  pode_deletar: boolean;
 }
 
 interface Permissao {
@@ -41,8 +53,8 @@ const CriarUsuarioModal: React.FC = () => {
   // Buscar recursos do sistema
   const { data: recursos = [] } = useQuery({
     queryKey: ['recursos_sistema'],
-    queryFn: async () => {
-      const { data, error } = await supabase
+    queryFn: async (): Promise<Recurso[]> => {
+      const { data, error } = await (supabase as any)
         .from('recursos_sistema')
         .select('*')
         .eq('ativo', true)
@@ -56,10 +68,10 @@ const CriarUsuarioModal: React.FC = () => {
   // Buscar permissões padrão por tipo
   const { data: permissoesPadrao = [] } = useQuery({
     queryKey: ['permissoes_padrao', tipoAcesso],
-    queryFn: async () => {
+    queryFn: async (): Promise<PermissaoAcesso[]> => {
       if (!tipoAcesso) return [];
       
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('permissoes_acesso')
         .select('*')
         .eq('tipo_usuario', tipoAcesso);
@@ -93,7 +105,7 @@ const CriarUsuarioModal: React.FC = () => {
       // Simular hash da senha (em produção, isso seria feito no backend)
       const senhaHash = `$2b$10$${btoa(senha).slice(0, 53)}`;
       
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('usuarios')
         .insert({
           nome,
@@ -107,7 +119,7 @@ const CriarUsuarioModal: React.FC = () => {
       if (error) throw error;
 
       // Registrar ação no controle de acesso
-      await supabase.from('controle_acesso').insert({
+      await (supabase as any).from('controle_acesso').insert({
         usuario: 'Admin',
         acao: 'criar',
         recurso: 'usuario',

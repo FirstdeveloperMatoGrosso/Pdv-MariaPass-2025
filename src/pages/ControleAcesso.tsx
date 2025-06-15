@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -57,7 +58,7 @@ const ControleAcesso: React.FC = () => {
   // Buscar logs de acesso do Supabase
   const { data: accessLogs = [], isLoading, refetch } = useQuery({
     queryKey: ['controle_acesso'],
-    queryFn: async () => {
+    queryFn: async (): Promise<AccessLog[]> => {
       const { data, error } = await supabase
         .from('controle_acesso')
         .select('*')
@@ -119,8 +120,8 @@ const ControleAcesso: React.FC = () => {
   // Buscar usuários do sistema
   const { data: usuarios = [], isLoading: isLoadingUsuarios, refetch: refetchUsuarios } = useQuery({
     queryKey: ['usuarios'],
-    queryFn: async () => {
-      const { data, error } = await supabase
+    queryFn: async (): Promise<Usuario[]> => {
+      const { data, error } = await (supabase as any)
         .from('usuarios')
         .select('*')
         .order('created_at', { ascending: false });
@@ -435,7 +436,7 @@ const ControleAcesso: React.FC = () => {
                   <TableHeader>
                     <TableRow>
                       <TableHead className="min-w-[150px]">Nome</TableHead>
-                      <TableHead className="hidden sm: -cell">Email</TableHead>
+                      <TableHead className="hidden sm:table-cell">Email</TableHead>
                       <TableHead>Tipo de Acesso</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead className="hidden lg:table-cell">Último Login</TableHead>
