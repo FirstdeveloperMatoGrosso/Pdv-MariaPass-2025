@@ -195,7 +195,7 @@ const Index: React.FC = () => {
             const availableStock = product.estoque - quantity;
 
             return (
-              <Card key={product.id} className="relative overflow-hidden min-w-0 flex-shrink-0">
+              <Card key={product.id} className="relative overflow-visible min-w-0 flex-shrink-0">
                 <div className="aspect-square bg-gray-100 overflow-hidden">
                   {product.imagem_url ? (
                     <img 
@@ -214,17 +214,19 @@ const Index: React.FC = () => {
                 </div>
                 
                 <CardHeader className="pb-3 p-3">
-                  <div className="flex items-start justify-between">
+                  <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
                       <CardTitle className="text-sm line-clamp-2 leading-tight">{product.nome}</CardTitle>
                       <Badge variant="outline" className="mt-1 text-xs">{product.categoria}</Badge>
                     </div>
-                    <Badge 
-                      variant={availableStock < 10 ? "destructive" : "secondary"}
-                      className="ml-1 text-xs flex-shrink-0"
-                    >
-                      {availableStock} un.
-                    </Badge>
+                    <div className="flex-shrink-0">
+                      <Badge 
+                        variant={availableStock < 10 ? "destructive" : "secondary"}
+                        className="text-xs whitespace-nowrap"
+                      >
+                        {availableStock} un.
+                      </Badge>
+                    </div>
                   </div>
                   
                   {product.descricao && (
@@ -239,10 +241,10 @@ const Index: React.FC = () => {
                 </CardHeader>
                 
                 <CardContent className="pt-0 p-3">
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between gap-1">
                     <Button 
                       onClick={() => addToCart(product)}
-                      className="flex-1 mr-1 text-xs h-8"
+                      className="flex-1 text-xs h-8"
                       disabled={availableStock <= 0}
                       size="sm"
                     >
@@ -251,7 +253,7 @@ const Index: React.FC = () => {
                     </Button>
                     
                     {quantity > 0 && (
-                      <div className="flex items-center space-x-1">
+                      <div className="flex items-center space-x-1 flex-shrink-0">
                         <Button 
                           size="sm" 
                           variant="outline"
@@ -268,7 +270,7 @@ const Index: React.FC = () => {
                 
                 {quantity > 0 && (
                   <Badge 
-                    className="absolute -top-2 -right-2 bg-red-500 text-xs"
+                    className="absolute -top-3 -right-3 bg-red-500 text-white text-xs min-w-[20px] h-5 flex items-center justify-center rounded-full z-10"
                     variant="destructive"
                   >
                     {quantity}
