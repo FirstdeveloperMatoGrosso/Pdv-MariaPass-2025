@@ -167,20 +167,20 @@ const Index: React.FC = () => {
   }
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-green-600 mb-2">MariaPass Totem</h1>
-        <p className="text-gray-600">Selecione seus produtos e faça o pagamento via QR Code</p>
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
+      <div className="text-center mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold text-green-600 mb-2">MariaPass Totem</h1>
+        <p className="text-sm sm:text-base text-gray-600">Selecione seus produtos e faça o pagamento via QR Code</p>
         
         {/* Botão Scanner */}
-        <div className="mt-4">
+        <div className="mt-3 sm:mt-4">
           <Button
             onClick={() => setShowBarcodeModal(true)}
             variant="outline"
             size="lg"
-            className="flex items-center space-x-2 bg-blue-50 hover:bg-blue-100 border-blue-200"
+            className="flex items-center space-x-2 bg-blue-50 hover:bg-blue-100 border-blue-200 text-xs sm:text-sm"
           >
-            <ScanBarcode className="w-5 h-5 text-blue-600" />
+            <ScanBarcode className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
             <span className="text-blue-600 font-medium">Adicionar por Código de Barras</span>
           </Button>
         </div>
@@ -195,20 +195,20 @@ const Index: React.FC = () => {
 
       {products.length === 0 ? (
         <div className="text-center py-12">
-          <Package className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <p className="text-gray-500 text-lg">Nenhum produto disponível no momento</p>
+          <Package className="w-12 h-12 sm:w-16 sm:h-16 text-gray-300 mx-auto mb-4" />
+          <p className="text-gray-500 text-base sm:text-lg">Nenhum produto disponível no momento</p>
         </div>
       ) : (
-        /* Grid de Produtos - 5 produtos lado a lado */
-        <div className="grid grid-cols-5 gap-4 max-w-full overflow-x-auto">
+        /* Grid de Produtos Responsivo */
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
           {products.map((product) => {
             const cartItem = cart.find(item => item.id === product.id);
             const quantity = cartItem?.quantity || 0;
             const availableStock = product.estoque - quantity;
 
             return (
-              <div key={product.id} className="relative min-w-0 flex-shrink-0">
-                <Card className="overflow-hidden">
+              <div key={product.id} className="relative">
+                <Card className="overflow-hidden h-full">
                   <div className="aspect-square bg-gray-100 overflow-hidden">
                     {product.imagem_url ? (
                       <img 
@@ -221,21 +221,21 @@ const Index: React.FC = () => {
                       />
                     ) : (
                       <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                        <Package className="w-12 h-12 text-gray-400" />
+                        <Package className="w-8 h-8 sm:w-12 sm:h-12 text-gray-400" />
                       </div>
                     )}
                   </div>
                   
-                  <CardHeader className="pb-3 p-3">
-                    <div className="flex items-start justify-between gap-2">
+                  <CardHeader className="p-2 sm:p-3 pb-2">
+                    <div className="flex items-start justify-between gap-1 sm:gap-2">
                       <div className="flex-1 min-w-0">
-                        <CardTitle className="text-sm line-clamp-2 leading-tight">{product.nome}</CardTitle>
-                        <Badge variant="outline" className="mt-1 text-xs">{product.categoria}</Badge>
+                        <CardTitle className="text-xs sm:text-sm line-clamp-2 leading-tight">{product.nome}</CardTitle>
+                        <Badge variant="outline" className="mt-1 text-[10px] sm:text-xs">{product.categoria}</Badge>
                       </div>
                       <div className="flex-shrink-0">
                         <Badge 
                           variant={availableStock < 10 ? "destructive" : "secondary"}
-                          className="text-xs whitespace-nowrap"
+                          className="text-[10px] sm:text-xs whitespace-nowrap"
                         >
                           {availableStock} un.
                         </Badge>
@@ -243,26 +243,26 @@ const Index: React.FC = () => {
                     </div>
                     
                     {product.descricao && (
-                      <p className="text-xs text-gray-600 mt-1 line-clamp-2">
+                      <p className="text-[10px] sm:text-xs text-gray-600 mt-1 line-clamp-2">
                         {product.descricao}
                       </p>
                     )}
                     
-                    <p className="text-lg font-bold text-green-600 mt-2">
+                    <p className="text-sm sm:text-lg font-bold text-green-600 mt-1 sm:mt-2">
                       R$ {product.preco.toFixed(2)}
                     </p>
                   </CardHeader>
                   
-                  <CardContent className="pt-0 p-3">
-                    <div className="flex items-center justify-between gap-2">
+                  <CardContent className="pt-0 p-2 sm:p-3">
+                    <div className="flex items-center justify-between gap-1 sm:gap-2">
                       <Button 
                         onClick={() => addToCart(product)}
-                        className="flex-1 text-xs h-6 bg-green-600 hover:bg-green-700 text-white px-2 flex flex-col items-center py-1"
+                        className="flex-1 text-[10px] sm:text-xs h-12 sm:h-6 bg-green-600 hover:bg-green-700 text-white px-1 sm:px-2 flex flex-col items-center py-1"
                         disabled={availableStock <= 0}
                         size="sm"
                       >
                         <Plus className="w-3 h-3 mb-0.5" />
-                        <span className="text-[10px] leading-none">
+                        <span className="text-[8px] sm:text-[10px] leading-none text-center">
                           {availableStock <= 0 ? 'Sem Estoque' : 'Adicionar'}
                         </span>
                       </Button>
@@ -277,7 +277,7 @@ const Index: React.FC = () => {
                           >
                             <Minus className="w-3 h-3" />
                           </Button>
-                          <Badge variant="secondary" className="text-xs">{quantity}</Badge>
+                          <Badge variant="secondary" className="text-[10px] sm:text-xs">{quantity}</Badge>
                         </div>
                       )}
                     </div>
@@ -286,11 +286,11 @@ const Index: React.FC = () => {
                 
                 {quantity > 0 && (
                   <Badge 
-                    className="absolute bg-red-500 text-white text-xs min-w-[24px] h-6 flex items-center justify-center rounded-full font-bold shadow-lg border-2 border-white z-50"
+                    className="absolute bg-red-500 text-white text-[10px] sm:text-xs min-w-[20px] sm:min-w-[24px] h-5 sm:h-6 flex items-center justify-center rounded-full font-bold shadow-lg border-2 border-white z-50"
                     variant="destructive"
                     style={{ 
                       top: '60%', 
-                      right: '-8px'
+                      right: '-6px'
                     }}
                   >
                     {quantity}
@@ -302,29 +302,29 @@ const Index: React.FC = () => {
         </div>
       )}
 
-      {/* Carrinho Flutuante */}
+      {/* Carrinho Flutuante Responsivo */}
       {cart.length > 0 && (
-        <Card className="fixed bottom-4 right-4 w-80 shadow-lg border-2 border-green-500 z-40">
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center justify-between">
+        <Card className="fixed bottom-2 sm:bottom-4 right-2 sm:right-4 w-72 sm:w-80 shadow-lg border-2 border-green-500 z-40">
+          <CardHeader className="pb-2 sm:pb-3 p-3 sm:p-6">
+            <CardTitle className="flex items-center justify-between text-sm sm:text-base">
               <div className="flex items-center space-x-2">
-                <ShoppingCart className="w-5 h-5" />
+                <ShoppingCart className="w-4 h-4 sm:w-5 sm:h-5" />
                 <span>Carrinho</span>
               </div>
-              <Badge>{getTotalItems()} itens</Badge>
+              <Badge className="text-xs">{getTotalItems()} itens</Badge>
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="max-h-40 overflow-y-auto space-y-2">
+          <CardContent className="space-y-2 sm:space-y-3 p-3 sm:p-6 pt-0">
+            <div className="max-h-32 sm:max-h-40 overflow-y-auto space-y-2">
               {cart.map((item) => (
-                <div key={item.id} className="flex justify-between items-center text-sm p-2 bg-gray-50 rounded">
+                <div key={item.id} className="flex justify-between items-center text-xs sm:text-sm p-2 bg-gray-50 rounded">
                   <div className="flex-1">
                     <span className="font-medium">{item.nome}</span>
-                    <div className="text-xs text-gray-500">
+                    <div className="text-[10px] sm:text-xs text-gray-500">
                       {item.quantity}x R$ {item.preco.toFixed(2)}
                     </div>
                   </div>
-                  <span className="font-bold text-green-600">
+                  <span className="font-bold text-green-600 text-xs sm:text-sm">
                     R$ {(item.preco * item.quantity).toFixed(2)}
                   </span>
                 </div>
@@ -333,14 +333,14 @@ const Index: React.FC = () => {
             
             <div className="border-t pt-2">
               <div className="flex justify-between items-center font-bold">
-                <span>Total:</span>
-                <span className="text-green-600 text-lg">R$ {getTotalPrice().toFixed(2)}</span>
+                <span className="text-sm sm:text-base">Total:</span>
+                <span className="text-green-600 text-base sm:text-lg">R$ {getTotalPrice().toFixed(2)}</span>
               </div>
             </div>
             
             <Button 
               onClick={generateOrder}
-              className="w-full"
+              className="w-full text-xs sm:text-sm"
               size="lg"
             >
               Gerar QR Code para Pagamento
@@ -351,7 +351,7 @@ const Index: React.FC = () => {
 
       {/* QR Code Generator */}
       {showQRCode && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <QRCodeGenerator 
             orderId={currentOrderId}
             amount={getTotalPrice()}
@@ -362,7 +362,7 @@ const Index: React.FC = () => {
 
       {/* Print Simulator */}
       {showPrintSimulator && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <PrintSimulator 
             orderId={currentOrderId}
             cart={cart}
