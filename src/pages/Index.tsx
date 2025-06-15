@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -490,20 +489,10 @@ const Index: React.FC = () => {
         <h1 className="text-lg sm:text-xl font-bold text-green-600 mb-1">MariaPass Totem</h1>
         <p className="text-xs sm:text-sm text-gray-600">Selecione seus produtos e faça o pagamento via QR Code</p>
         
-        {/* Controles de Scanner e Categoria na mesma linha */}
+        {/* Controles de Categoria e Scanner na mesma linha */}
         <div className="mt-2 flex flex-col gap-2">
           <div className="w-full max-w-4xl mx-auto">
             <div className="flex items-center gap-2 mb-2">
-              <Button
-                onClick={() => setShowBarcodeModal(true)}
-                variant="outline"
-                size="sm"
-                className="flex items-center space-x-1 bg-blue-50 hover:bg-blue-100 border-blue-200 text-xs h-7 flex-shrink-0"
-              >
-                <ScanBarcode className="w-3 h-3 text-blue-600" />
-                <span className="text-blue-600 font-medium">Código de Barras</span>
-              </Button>
-              
               <div className="flex-1">
                 <Carousel className="w-full">
                   <CarouselContent className="-ml-1">
@@ -534,6 +523,16 @@ const Index: React.FC = () => {
                   <CarouselNext className="hidden sm:flex" />
                 </Carousel>
               </div>
+              
+              <Button
+                onClick={() => setShowBarcodeModal(true)}
+                variant="outline"
+                size="sm"
+                className="flex items-center space-x-1 bg-blue-50 hover:bg-blue-100 border-blue-200 text-xs h-7 flex-shrink-0"
+              >
+                <ScanBarcode className="w-3 h-3 text-blue-600" />
+                <span className="text-blue-600 font-medium">Código de Barras</span>
+              </Button>
             </div>
           </div>
         </div>
