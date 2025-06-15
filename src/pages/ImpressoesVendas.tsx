@@ -14,7 +14,9 @@ import {
   RotateCcw,
   TrendingUp,
   Eye,
-  Package
+  Package,
+  Copy,
+  AlertCircle
 } from 'lucide-react';
 import {
   Table,
@@ -38,6 +40,11 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from '@/components/ui/alert';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -61,6 +68,7 @@ const ImpressoesVendas: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [selectedImpressao, setSelectedImpressao] = useState<ImpressaoVenda | null>(null);
+  const [showReimpressaoAlert, setShowReimpressaoAlert] = useState(false);
   const queryClient = useQueryClient();
 
   // Buscar impressões da nova tabela
@@ -156,11 +164,13 @@ const ImpressoesVendas: React.FC = () => {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['impressoes-vendas'] });
-      toast.success(`✅ Reimpressão criada para: ${data.produto_nome}`);
+      toast.success(`✅ Ficha reimpresa com sucesso! ${data.produto_nome}`);
+      setShowReimpressaoAlert(true);
+      setTimeout(() => setShowReimpressaoAlert(false), 5000);
     },
     onError: (error) => {
       console.error('❌ Erro na reimpressão:', error);
-      toast.error('❌ Erro ao criar reimpressão');
+      toast.error('❌ Erro ao reimprimir ficha');
     },
   });
 
@@ -195,7 +205,7 @@ const ImpressoesVendas: React.FC = () => {
     };
     
     const typeLabel = {
-      comprovante: 'Comprovante',
+      comprovante: 'Ficha Original',
       reimpressao: 'Reimpressão',
       teste: 'Teste'
     };
@@ -211,6 +221,7 @@ const ImpressoesVendas: React.FC = () => {
   const concluidas = impressoes.filter((i: ImpressaoVenda) => i.status === 'concluido').length;
   const falharam = impressoes.filter((i: ImpressaoVenda) => i.status === 'falhou').length;
   const pendentes = impressoes.filter((i: ImpressaoVenda) => i.status === 'pendente').length;
+  const reimpressoes = impressoes.filter((i: ImpressaoVenda) => i.tipo === 'reimpressao').length;
   const taxaSucesso = totalImpressoes > 0 ? ((concluidas / totalImpressoes) * 100).toFixed(1) : '0';
 
   if (error) {
@@ -239,24 +250,38 @@ const ImpressoesVendas: React.FC = () => {
 
   return (
     <div className="p-1 sm:p-2 space-y-1 sm:space-y-2">
+      {/* Alerta de Reimpressão */}
+      {showReimpressaoAlert && (
+        <Alert className="border-orange-200 bg-orange-50">
+          <AlertCircle className="h-4 w-4 text-orange-600" />
+          <AlertTitle className="text-orange-800">Reimpressão Realizada</AlertTitle>
+          <AlertDescription className="text-orange-700">
+            A ficha foi reimpresa com sucesso. Verifique se saiu corretamente na impressora.
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Header */}
       <div className="flex flex-col space-y-1 lg:flex-row lg:items-center lg:justify-between lg:space-y-0">
         <div className="flex items-center space-x-1">
           <Printer className="w-4 h-4 text-blue-600" />
           <h1 className="text-base sm:text-lg font-bold text-gray-800">Impressões de Vendas</h1>
         </div>
-        <Button 
-          onClick={() => testPrintMutation.mutate()} 
-          className="flex items-center justify-center space-x-1 h-7 text-xs"
-          disabled={testPrintMutation.isPending}
-        >
-          <Printer className="w-3 h-3" />
-          <span>{testPrintMutation.isPending ? 'Enviando...' : 'Teste de Impressão'}</span>
-        </Button>
+        <div className="flex space-x-1">
+          <Button 
+            onClick={() => testPrintMutation.mutate()} 
+            className="flex items-center justify-center space-x-1 h-7 text-xs"
+            disabled={testPrintMutation.isPending}
+            variant="outline"
+          >
+            <Printer className="w-3 h-3" />
+            <span>{testPrintMutation.isPending ? 'Enviando...' : 'Teste'}</span>
+          </Button>
+        </div>
       </div>
 
       {/* Estatísticas */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-1 sm:gap-2">
+      <div className="grid grid-cols-2 lg:grid-cols-6 gap-1 sm:gap-2">
         <Card>
           <CardContent className="p-1 sm:p-2">
             <div className="flex items-center space-x-1">
@@ -276,6 +301,18 @@ const ImpressoesVendas: React.FC = () => {
               <div className="min-w-0">
                 <p className="text-xs text-gray-600 truncate">Concluídas</p>
                 <p className="text-sm sm:text-base font-bold text-green-600">{concluidas}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-1 sm:p-2">
+            <div className="flex items-center space-x-1">
+              <Copy className="w-3 h-3 text-orange-600" />
+              <div className="min-w-0">
+                <p className="text-xs text-gray-600 truncate">Reimpressões</p>
+                <p className="text-sm sm:text-base font-bold text-orange-600">{reimpressoes}</p>
               </div>
             </div>
           </CardContent>
@@ -355,7 +392,7 @@ const ImpressoesVendas: React.FC = () => {
         <CardHeader className="p-1 sm:p-2">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
             <CardTitle className="text-xs sm:text-sm font-semibold text-gray-800">
-              Histórico de Impressões de Vendas
+              Histórico de Impressões - Fichas de Produtos
             </CardTitle>
             <Badge variant="outline" className="text-xs px-1 py-0 w-fit">
               {filteredImpressoes.length} {filteredImpressoes.length === 1 ? 'resultado' : 'resultados'}
@@ -368,7 +405,7 @@ const ImpressoesVendas: React.FC = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead className="h-6 text-xs">Pedido ID</TableHead>
-                  <TableHead className="h-6 text-xs">Produto</TableHead>
+                  <TableHead className="h-6 text-xs">Produto/Ficha</TableHead>
                   <TableHead className="h-6 text-xs">Qtd</TableHead>
                   <TableHead className="h-6 text-xs">Tipo</TableHead>
                   <TableHead className="h-6 text-xs">Status</TableHead>
@@ -438,8 +475,8 @@ const ImpressoesVendas: React.FC = () => {
                           variant="outline"
                           onClick={() => reimprimirMutation.mutate(impressao)}
                           disabled={reimprimirMutation.isPending}
-                          className="h-5 w-5 p-0"
-                          title="Reimprimir"
+                          className="h-5 w-5 p-0 text-orange-600 hover:text-orange-800 hover:bg-orange-50"
+                          title="Reimprimir Ficha"
                         >
                           <RotateCcw className="w-3 h-3" />
                         </Button>
