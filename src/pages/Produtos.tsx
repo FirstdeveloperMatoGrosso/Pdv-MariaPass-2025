@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -133,12 +134,12 @@ const Produtos: React.FC = () => {
   // Mostrar erro se houver
   if (error) {
     return (
-      <div className="p-6 flex items-center justify-center">
+      <div className="p-2 sm:p-3 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-red-600">Erro ao carregar produtos: {error.message}</p>
+          <p className="text-red-600 text-sm">Erro ao carregar produtos: {error.message}</p>
           <Button 
             onClick={() => queryClient.invalidateQueries({ queryKey: ['produtos'] })}
-            className="mt-4"
+            className="mt-2"
           >
             Tentar Novamente
           </Button>
@@ -149,46 +150,44 @@ const Produtos: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="p-6 flex items-center justify-center">
+      <div className="p-2 sm:p-3 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-green-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Carregando produtos...</p>
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-green-600 mx-auto"></div>
+          <p className="mt-2 text-sm text-gray-600">Carregando produtos...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-2">
-          <Package className="w-6 h-6 text-green-600" />
-          <h1 className="text-2xl font-bold text-gray-800">Gestão de Produtos</h1>
+    <div className="p-2 sm:p-3 space-y-2 sm:space-y-3">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+        <div className="flex items-center space-x-1">
+          <Package className="w-5 h-5 text-green-600" />
+          <h1 className="text-lg sm:text-xl font-bold text-gray-800">Gestão de Produtos</h1>
         </div>
         <ProductForm onSuccess={() => queryClient.invalidateQueries({ queryKey: ['produtos'] })} />
       </div>
 
       {/* Filtros */}
       <Card>
-        <CardContent className="p-4">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <Input
-                  placeholder="Buscar por nome ou código de barras..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
+        <CardContent className="p-2 sm:p-3">
+          <div className="flex flex-col gap-2">
+            <div className="relative">
+              <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 w-3 h-3" />
+              <Input
+                placeholder="Buscar por nome ou código de barras..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-7 h-8 text-sm"
+              />
             </div>
-            <div className="flex items-center space-x-2">
-              <Filter className="w-4 h-4 text-gray-500" />
+            <div className="flex items-center space-x-1">
+              <Filter className="w-3 h-3 text-gray-500" />
               <select 
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
-                className="border rounded-md px-3 py-2"
+                className="border rounded-md px-2 py-1 text-sm flex-1"
               >
                 <option value="all">Todas as categorias</option>
                 {categories.map(cat => (
@@ -201,19 +200,19 @@ const Produtos: React.FC = () => {
       </Card>
 
       {/* Debug info */}
-      <div className="text-sm text-gray-500">
+      <div className="text-xs text-gray-500">
         Total de produtos carregados: {products.length} | Filtrados: {filteredProducts.length}
       </div>
 
       {/* Tabela de Produtos */}
       <Card>
-        <CardHeader>
-          <CardTitle>Produtos Cadastrados ({filteredProducts.length})</CardTitle>
+        <CardHeader className="p-2 sm:p-3">
+          <CardTitle className="text-sm sm:text-base">Produtos Cadastrados ({filteredProducts.length})</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           {filteredProducts.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-gray-500">
+            <div className="text-center py-6">
+              <p className="text-gray-500 text-sm">
                 {products.length === 0 
                   ? 'Nenhum produto encontrado no banco de dados.'
                   : 'Nenhum produto encontrado com os filtros aplicados.'
@@ -221,83 +220,94 @@ const Produtos: React.FC = () => {
               </p>
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Imagem</TableHead>
-                  <TableHead>Nome</TableHead>
-                  <TableHead>Categoria</TableHead>
-                  <TableHead>Código</TableHead>
-                  <TableHead>Preço</TableHead>
-                  <TableHead>Estoque</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredProducts.map((product: Product) => (
-                  <TableRow key={product.id}>
-                    <TableCell>
-                      {product.imagem_url ? (
-                        <img 
-                          src={product.imagem_url} 
-                          alt={product.nome}
-                          className="w-12 h-12 object-cover rounded-md border"
-                          onError={(e) => {
-                            e.currentTarget.src = '/placeholder.svg';
-                          }}
-                        />
-                      ) : (
-                        <div className="w-12 h-12 bg-gray-200 rounded-md flex items-center justify-center">
-                          <Package className="w-6 h-6 text-gray-400" />
-                        </div>
-                      )}
-                    </TableCell>
-                    <TableCell className="font-medium">{product.nome}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{product.categoria}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <code className="bg-gray-100 px-2 py-1 rounded text-xs">
-                        {product.codigo_barras || 'N/A'}
-                      </code>
-                    </TableCell>
-                    <TableCell>R$ {product.preco.toFixed(2)}</TableCell>
-                    <TableCell>
-                      <Badge 
-                        variant={product.estoque < 10 ? "destructive" : "secondary"}
-                      >
-                        {product.estoque} un.
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge 
-                        variant={product.status === 'ativo' ? "default" : "secondary"}
-                        className="cursor-pointer"
-                        onClick={() => toggleProductStatus(product.id, product.status)}
-                      >
-                        {product.status === 'ativo' ? 'Ativo' : 'Inativo'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex space-x-2">
-                        <Button size="sm" variant="outline">
-                          <Edit className="w-3 h-3" />
-                        </Button>
-                        <Button 
-                          size="sm" 
-                          variant="destructive"
-                          onClick={() => handleDeleteProduct(product.id)}
-                          disabled={deleteProductMutation.isPending}
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </Button>
-                      </div>
-                    </TableCell>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="h-8 text-xs">Imagem</TableHead>
+                    <TableHead className="h-8 text-xs">Nome</TableHead>
+                    <TableHead className="hidden sm:table-cell h-8 text-xs">Categoria</TableHead>
+                    <TableHead className="hidden md:table-cell h-8 text-xs">Código</TableHead>
+                    <TableHead className="h-8 text-xs">Preço</TableHead>
+                    <TableHead className="hidden lg:table-cell h-8 text-xs">Estoque</TableHead>
+                    <TableHead className="hidden sm:table-cell h-8 text-xs">Status</TableHead>
+                    <TableHead className="h-8 text-xs">Ações</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {filteredProducts.map((product: Product) => (
+                    <TableRow key={product.id}>
+                      <TableCell className="p-2">
+                        {product.imagem_url ? (
+                          <img 
+                            src={product.imagem_url} 
+                            alt={product.nome}
+                            className="w-8 h-8 sm:w-10 sm:h-10 object-cover rounded-md border"
+                            onError={(e) => {
+                              e.currentTarget.src = '/placeholder.svg';
+                            }}
+                          />
+                        ) : (
+                          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gray-200 rounded-md flex items-center justify-center">
+                            <Package className="w-4 h-4 text-gray-400" />
+                          </div>
+                        )}
+                      </TableCell>
+                      <TableCell className="font-medium p-2">
+                        <div>
+                          <div className="text-xs font-semibold">{product.nome}</div>
+                          <div className="text-xs text-gray-500 sm:hidden">
+                            {product.categoria} - R$ {product.preco.toFixed(2)}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="hidden sm:table-cell p-2">
+                        <Badge variant="outline" className="text-xs">{product.categoria}</Badge>
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell p-2">
+                        <code className="bg-gray-100 px-1 py-1 rounded text-xs">
+                          {product.codigo_barras || 'N/A'}
+                        </code>
+                      </TableCell>
+                      <TableCell className="p-2 text-xs font-semibold">R$ {product.preco.toFixed(2)}</TableCell>
+                      <TableCell className="hidden lg:table-cell p-2">
+                        <Badge 
+                          variant={product.estoque < 10 ? "destructive" : "secondary"}
+                          className="text-xs"
+                        >
+                          {product.estoque} un.
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="hidden sm:table-cell p-2">
+                        <Badge 
+                          variant={product.status === 'ativo' ? "default" : "secondary"}
+                          className="cursor-pointer text-xs"
+                          onClick={() => toggleProductStatus(product.id, product.status)}
+                        >
+                          {product.status === 'ativo' ? 'Ativo' : 'Inativo'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="p-2">
+                        <div className="flex space-x-1">
+                          <Button size="sm" variant="outline" className="h-6 w-6 p-0">
+                            <Edit className="w-3 h-3" />
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="destructive"
+                            onClick={() => handleDeleteProduct(product.id)}
+                            disabled={deleteProductMutation.isPending}
+                            className="h-6 w-6 p-0"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </CardContent>
       </Card>

@@ -50,39 +50,39 @@ const Relatorios: React.FC = () => {
   const currentData = salesData[selectedPeriod as keyof typeof salesData];
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-2">
-          <BarChart3 className="w-6 h-6 text-green-600" />
-          <h1 className="text-2xl font-bold text-gray-800">Relatórios e Análises</h1>
+    <div className="p-2 sm:p-3 space-y-2 sm:space-y-3">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+        <div className="flex items-center space-x-1">
+          <BarChart3 className="w-5 h-5 text-green-600" />
+          <h1 className="text-lg sm:text-xl font-bold text-gray-800">Relatórios e Análises</h1>
         </div>
-        <div className="flex items-center space-x-2">
-          <Calendar className="w-4 h-4 text-gray-500" />
+        <div className="flex items-center space-x-1">
+          <Calendar className="w-3 h-3 text-gray-500" />
           <select 
             value={selectedPeriod}
             onChange={(e) => setSelectedPeriod(e.target.value)}
-            className="border rounded-md px-3 py-2"
+            className="border rounded-md px-2 py-1 text-sm"
           >
             <option value="today">Hoje</option>
             <option value="week">Esta Semana</option>
             <option value="month">Este Mês</option>
           </select>
-          <Button variant="outline" className="flex items-center space-x-2">
-            <Download className="w-4 h-4" />
+          <Button variant="outline" className="flex items-center space-x-1 h-8 text-sm px-2">
+            <Download className="w-3 h-3" />
             <span>Exportar</span>
           </Button>
         </div>
       </div>
 
       {/* Cards de Resumo */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-2 sm:gap-3">
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Faturamento Total</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-2 sm:p-3">
+            <CardTitle className="text-xs sm:text-sm font-medium">Faturamento Total</CardTitle>
+            <DollarSign className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">
+          <CardContent className="p-2 sm:p-3 pt-0">
+            <div className="text-lg sm:text-xl font-bold text-green-600">
               R$ {currentData.total.toFixed(2)}
             </div>
             <p className="text-xs text-muted-foreground">
@@ -92,12 +92,12 @@ const Relatorios: React.FC = () => {
         </Card>
 
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pedidos Realizados</CardTitle>
-            <Package className="h-4 w-4 text-muted-foreground" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-2 sm:p-3">
+            <CardTitle className="text-xs sm:text-sm font-medium">Pedidos Realizados</CardTitle>
+            <Package className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-600">
+          <CardContent className="p-2 sm:p-3 pt-0">
+            <div className="text-lg sm:text-xl font-bold text-blue-600">
               {currentData.orders}
             </div>
             <p className="text-xs text-muted-foreground">
@@ -107,12 +107,12 @@ const Relatorios: React.FC = () => {
         </Card>
 
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Ticket Médio</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-2 sm:p-3">
+            <CardTitle className="text-xs sm:text-sm font-medium">Ticket Médio</CardTitle>
+            <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-purple-600">
+          <CardContent className="p-2 sm:p-3 pt-0">
+            <div className="text-lg sm:text-xl font-bold text-purple-600">
               R$ {currentData.avgTicket.toFixed(2)}
             </div>
             <p className="text-xs text-muted-foreground">
@@ -122,78 +122,83 @@ const Relatorios: React.FC = () => {
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 sm:gap-3">
         {/* Produtos Mais Vendidos */}
         <Card>
-          <CardHeader>
-            <CardTitle>Produtos Mais Vendidos</CardTitle>
+          <CardHeader className="p-2 sm:p-3">
+            <CardTitle className="text-sm sm:text-base">Produtos Mais Vendidos</CardTitle>
           </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Produto</TableHead>
-                  <TableHead>Qtd</TableHead>
-                  <TableHead>Receita</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {topProducts.map((product, index) => (
-                  <TableRow key={index}>
-                    <TableCell className="font-medium">{product.name}</TableCell>
-                    <TableCell>
-                      <Badge variant="secondary">{product.quantity}</Badge>
-                    </TableCell>
-                    <TableCell className="text-green-600 font-bold">
-                      R$ {product.revenue.toFixed(2)}
-                    </TableCell>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="h-8 text-xs">Produto</TableHead>
+                    <TableHead className="h-8 text-xs">Qtd</TableHead>
+                    <TableHead className="h-8 text-xs">Receita</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {topProducts.map((product, index) => (
+                    <TableRow key={index}>
+                      <TableCell className="font-medium p-2 text-xs">{product.name}</TableCell>
+                      <TableCell className="p-2">
+                        <Badge variant="secondary" className="text-xs">{product.quantity}</Badge>
+                      </TableCell>
+                      <TableCell className="text-green-600 font-bold p-2 text-xs">
+                        R$ {product.revenue.toFixed(2)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
         </Card>
 
         {/* Pedidos Recentes */}
         <Card>
-          <CardHeader>
-            <CardTitle>Pedidos Recentes</CardTitle>
+          <CardHeader className="p-2 sm:p-3">
+            <CardTitle className="text-sm sm:text-base">Pedidos Recentes</CardTitle>
           </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Pedido</TableHead>
-                  <TableHead>Hora</TableHead>
-                  <TableHead>Itens</TableHead>
-                  <TableHead>Total</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {recentOrders.map((order) => (
-                  <TableRow key={order.id}>
-                    <TableCell>
-                      <code className="bg-gray-100 px-2 py-1 rounded text-xs">
-                        {order.id}
-                      </code>
-                    </TableCell>
-                    <TableCell>{order.time}</TableCell>
-                    <TableCell>{order.items}</TableCell>
-                    <TableCell className="font-bold">
-                      R$ {order.total.toFixed(2)}
-                    </TableCell>
-                    <TableCell>
-                      <Badge 
-                        variant={order.status === 'Concluído' ? 'default' : 'destructive'}
-                      >
-                        {order.status}
-                      </Badge>
-                    </TableCell>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="h-8 text-xs">Pedido</TableHead>
+                    <TableHead className="hidden sm:table-cell h-8 text-xs">Hora</TableHead>
+                    <TableHead className="h-8 text-xs">Itens</TableHead>
+                    <TableHead className="h-8 text-xs">Total</TableHead>
+                    <TableHead className="h-8 text-xs">Status</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {recentOrders.map((order) => (
+                    <TableRow key={order.id}>
+                      <TableCell className="p-2">
+                        <code className="bg-gray-100 px-1 py-1 rounded text-xs">
+                          {order.id}
+                        </code>
+                      </TableCell>
+                      <TableCell className="hidden sm:table-cell p-2 text-xs">{order.time}</TableCell>
+                      <TableCell className="p-2 text-xs">{order.items}</TableCell>
+                      <TableCell className="font-bold p-2 text-xs">
+                        R$ {order.total.toFixed(2)}
+                      </TableCell>
+                      <TableCell className="p-2">
+                        <Badge 
+                          variant={order.status === 'Concluído' ? 'default' : 'destructive'}
+                          className="text-xs"
+                        >
+                          {order.status}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
         </Card>
       </div>

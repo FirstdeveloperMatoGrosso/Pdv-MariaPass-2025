@@ -116,28 +116,28 @@ const Pagamentos: React.FC = () => {
   };
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-2">
-          <CreditCard className="w-6 h-6 text-green-600" />
-          <h1 className="text-2xl font-bold text-gray-800">Integrações de Pagamento</h1>
+    <div className="p-2 sm:p-3 space-y-2 sm:space-y-3">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+        <div className="flex items-center space-x-1">
+          <CreditCard className="w-5 h-5 text-green-600" />
+          <h1 className="text-lg sm:text-xl font-bold text-gray-800">Integrações de Pagamento</h1>
         </div>
       </div>
 
       {/* Status Geral */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Wifi className="w-5 h-5" />
+        <CardHeader className="p-2 sm:p-3">
+          <CardTitle className="flex items-center space-x-1 text-sm sm:text-base">
+            <Wifi className="w-4 h-4" />
             <span>Status das Integrações</span>
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <CardContent className="p-2 sm:p-3 pt-0">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3">
             {providers.map(provider => (
               <div key={provider.id} className="text-center">
-                <div className="text-2xl mb-2">{provider.logo}</div>
-                <div className="font-medium">{provider.name}</div>
+                <div className="text-lg sm:text-xl mb-1">{provider.logo}</div>
+                <div className="font-medium text-xs sm:text-sm">{provider.name}</div>
                 <div className="flex items-center justify-center mt-1">
                   {getStatusIcon(provider.status)}
                 </div>
@@ -148,117 +148,125 @@ const Pagamentos: React.FC = () => {
       </Card>
 
       {/* Configurações Detalhadas */}
-      <div className="grid gap-6">
+      <div className="grid gap-2 sm:gap-3">
         {providers.map(provider => (
           <Card key={provider.id}>
-            <CardHeader>
+            <CardHeader className="p-2 sm:p-3">
               <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <span className="text-2xl">{provider.logo}</span>
+                <div className="flex items-center space-x-2">
+                  <span className="text-lg sm:text-xl">{provider.logo}</span>
                   <div>
-                    <CardTitle>{provider.name}</CardTitle>
-                    <div className="flex items-center space-x-2 mt-1">
+                    <CardTitle className="text-sm sm:text-base">{provider.name}</CardTitle>
+                    <div className="flex items-center space-x-1 mt-1">
                       {getStatusBadge(provider.status)}
                       {getStatusIcon(provider.status)}
                     </div>
                   </div>
                 </div>
-                <div className="flex space-x-2">
+                <div className="flex space-x-1">
                   <Button 
                     variant="outline" 
                     size="sm"
                     onClick={() => handleTestConnection(provider.id)}
+                    className="h-8 text-xs px-2"
                   >
-                    Testar Conexão
+                    Testar
                   </Button>
                   <Button 
                     variant="outline" 
                     size="sm"
                     onClick={() => setEditingProvider(provider.id)}
+                    className="h-8 w-8 p-0"
                   >
-                    <Settings className="w-4 h-4" />
+                    <Settings className="w-3 h-3" />
                   </Button>
                 </div>
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-2 sm:p-3 pt-0">
               {editingProvider === provider.id ? (
-                <div className="space-y-4">
+                <div className="space-y-2">
                   <div>
-                    <label className="block text-sm font-medium mb-1">API Key</label>
+                    <label className="block text-xs font-medium mb-1">API Key</label>
                     <Input 
                       type="password"
                       defaultValue={provider.apiKey}
                       placeholder="Insira a API Key"
+                      className="h-8 text-sm"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1">Webhook URL</label>
+                    <label className="block text-xs font-medium mb-1">Webhook URL</label>
                     <Input 
                       defaultValue={provider.webhookUrl}
                       placeholder="URL do webhook para notificações"
+                      className="h-8 text-sm"
                     />
                   </div>
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-3 gap-2">
                     <div>
-                      <label className="block text-sm font-medium mb-1">Taxa Débito (%)</label>
+                      <label className="block text-xs font-medium mb-1">Taxa Débito (%)</label>
                       <Input 
                         type="number" 
                         step="0.01"
                         defaultValue={provider.fees.debit}
+                        className="h-8 text-sm"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1">Taxa Crédito (%)</label>
+                      <label className="block text-xs font-medium mb-1">Taxa Crédito (%)</label>
                       <Input 
                         type="number" 
                         step="0.01"
                         defaultValue={provider.fees.credit}
+                        className="h-8 text-sm"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1">Taxa PIX (%)</label>
+                      <label className="block text-xs font-medium mb-1">Taxa PIX (%)</label>
                       <Input 
                         type="number" 
                         step="0.01"
                         defaultValue={provider.fees.pix}
+                        className="h-8 text-sm"
                       />
                     </div>
                   </div>
-                  <div className="flex space-x-2">
-                    <Button onClick={() => handleSaveProvider(provider.id, {})}>
+                  <div className="flex space-x-1">
+                    <Button onClick={() => handleSaveProvider(provider.id, {})} className="h-8 text-xs px-3">
                       Salvar
                     </Button>
                     <Button 
                       variant="outline" 
                       onClick={() => setEditingProvider(null)}
+                      className="h-8 text-xs px-3"
                     >
                       Cancelar
                     </Button>
                   </div>
                 </div>
               ) : (
-                <div className="space-y-3">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                     <div>
-                      <span className="text-sm text-gray-500">API Key:</span>
-                      <code className="block bg-gray-100 px-2 py-1 rounded text-xs mt-1">
+                      <span className="text-xs text-gray-500">API Key:</span>
+                      <code className="block bg-gray-100 px-1 py-1 rounded text-xs mt-1">
                         {provider.apiKey || 'Não configurado'}
                       </code>
                     </div>
                     <div>
-                      <span className="text-sm text-gray-500">Webhook:</span>
-                      <code className="block bg-gray-100 px-2 py-1 rounded text-xs mt-1">
+                      <span className="text-xs text-gray-500">Webhook:</span>
+                      <code className="block bg-gray-100 px-1 py-1 rounded text-xs mt-1">
                         {provider.webhookUrl || 'Não configurado'}
                       </code>
                     </div>
                   </div>
                   <div>
-                    <span className="text-sm text-gray-500">Taxas:</span>
-                    <div className="flex space-x-4 mt-1">
-                      <Badge variant="outline">Débito: {provider.fees.debit}%</Badge>
-                      <Badge variant="outline">Crédito: {provider.fees.credit}%</Badge>
-                      <Badge variant="outline">PIX: {provider.fees.pix}%</Badge>
+                    <span className="text-xs text-gray-500">Taxas:</span>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      <Badge variant="outline" className="text-xs">Débito: {provider.fees.debit}%</Badge>
+                      <Badge variant="outline" className="text-xs">Crédito: {provider.fees.credit}%</Badge>
+                      <Badge variant="outline" className="text-xs">PIX: {provider.fees.pix}%</Badge>
                     </div>
                   </div>
                 </div>
