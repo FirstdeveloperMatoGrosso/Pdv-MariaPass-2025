@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,15 +7,14 @@ import { Badge } from '@/components/ui/badge';
 import { 
   Printer, 
   Search,
-  Calendar,
   FileText,
   CheckCircle,
   XCircle,
   Clock,
   RotateCcw,
-  Filter,
   TrendingUp,
-  Eye
+  Eye,
+  Package
 } from 'lucide-react';
 import {
   Table,
@@ -42,9 +42,11 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
-interface PrintJob {
+interface ImpressaoVenda {
   id: string;
   pedido_id: string;
+  produto_nome: string;
+  quantidade: number;
   tipo: string;
   impressora: string;
   status: string;
@@ -55,23 +57,20 @@ interface PrintJob {
   created_at: string;
 }
 
-const Impressoes: React.FC = () => {
+const ImpressoesVendas: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedPrinter, setSelectedPrinter] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('all');
-  const [selectedJob, setSelectedJob] = useState<PrintJob | null>(null);
+  const [selectedImpressao, setSelectedImpressao] = useState<ImpressaoVenda | null>(null);
   const queryClient = useQueryClient();
 
-  const printers = ['Impressora Principal', 'Impressora Vouchers', 'Impressora Backup'];
-
-  // Buscar impressões do Supabase
-  const { data: printJobs = [], isLoading, error, refetch } = useQuery({
-    queryKey: ['impressoes'],
+  // Buscar impressões da nova tabela
+  const { data: impressoes = [], isLoading, error, refetch } = useQuery({
+    queryKey: ['impressoes-vendas'],
     queryFn: async () => {
-      console.log('🔍 Buscando impressões realizadas...');
+      console.log('🔍 Buscando impressões de vendas...');
       
       const { data, error } = await supabase
-        .from('impressoes')
+        .from('impressoes_vendas')
         .select('*')
         .order('created_at', { ascending: false });
       
@@ -81,35 +80,7 @@ const Impressoes: React.FC = () => {
       }
       
       console.log('✅ Impressões encontradas:', data?.length || 0);
-      console.log('📋 Dados das impressões:', data);
       return data || [];
-    },
-  });
-
-  // Mutation para reenviar impressão
-  const retryPrintMutation = useMutation({
-    mutationFn: async (id: string) => {
-      console.log('🔄 Reenviando impressão:', id);
-      
-      const { error } = await supabase
-        .from('impressoes')
-        .update({ 
-          status: 'pendente',
-          data_impressao: new Date().toISOString()
-        })
-        .eq('id', id);
-      
-      if (error) throw error;
-      return { id };
-    },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['impressoes'] });
-      toast.success('Reimpressão solicitada com sucesso!');
-      console.log('✅ Reimpressão solicitada para ID:', data.id);
-    },
-    onError: (error) => {
-      console.error('❌ Erro ao reenviar impressão:', error);
-      toast.error('Erro ao solicitar reimpressão');
     },
   });
 
@@ -121,6 +92,8 @@ const Impressoes: React.FC = () => {
       
       const impressaoData = {
         pedido_id: testId,
+        produto_nome: 'Produto de Teste',
+        quantidade: 1,
         tipo: 'teste',
         impressora: 'Impressora Principal',
         status: 'concluido',
@@ -130,10 +103,8 @@ const Impressoes: React.FC = () => {
         data_impressao: new Date().toISOString()
       };
       
-      console.log('📋 Dados do teste de impressão:', impressaoData);
-      
       const { data, error } = await supabase
-        .from('impressoes')
+        .from('impressoes_vendas')
         .insert(impressaoData)
         .select()
         .single();
@@ -143,26 +114,62 @@ const Impressoes: React.FC = () => {
         throw error;
       }
       
-      console.log('✅ Teste de impressão inserido com sucesso:', data);
+      console.log('✅ Teste de impressão inserido:', data);
       return data;
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['impressoes'] });
+      queryClient.invalidateQueries({ queryKey: ['impressoes-vendas'] });
       toast.success(`✅ Teste de impressão enviado! ID: ${data.pedido_id}`);
-      console.log('🎉 Teste de impressão criado com sucesso:', data);
     },
     onError: (error) => {
       console.error('💥 Erro ao enviar teste:', error);
-      toast.error('❌ Erro ao enviar teste de impressão: ' + error.message);
+      toast.error('❌ Erro ao enviar teste de impressão');
     },
   });
 
-  const filteredJobs = printJobs.filter((job: PrintJob) => {
-    const matchesSearch = job.pedido_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         job.usuario?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesPrinter = selectedPrinter === 'all' || job.impressora === selectedPrinter;
-    const matchesStatus = selectedStatus === 'all' || job.status === selectedStatus;
-    return matchesSearch && matchesPrinter && matchesStatus;
+  // Mutation para reimpressão
+  const reimprimirMutation = useMutation({
+    mutationFn: async (impressao: ImpressaoVenda) => {
+      console.log('🔄 Criando reimpressão para:', impressao.produto_nome);
+      
+      const novaImpressao = {
+        pedido_id: `REIMP-${Date.now()}-${impressao.pedido_id}`,
+        produto_nome: impressao.produto_nome,
+        quantidade: impressao.quantidade,
+        tipo: 'reimpressao',
+        impressora: impressao.impressora,
+        status: 'concluido',
+        paginas: impressao.paginas,
+        copias: impressao.copias,
+        usuario: `Reimpressão - ${impressao.usuario}`,
+        data_impressao: new Date().toISOString()
+      };
+      
+      const { data, error } = await supabase
+        .from('impressoes_vendas')
+        .insert(novaImpressao)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['impressoes-vendas'] });
+      toast.success(`✅ Reimpressão criada para: ${data.produto_nome}`);
+    },
+    onError: (error) => {
+      console.error('❌ Erro na reimpressão:', error);
+      toast.error('❌ Erro ao criar reimpressão');
+    },
+  });
+
+  const filteredImpressoes = impressoes.filter((impressao: ImpressaoVenda) => {
+    const matchesSearch = impressao.pedido_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         impressao.produto_nome?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         impressao.usuario?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = selectedStatus === 'all' || impressao.status === selectedStatus;
+    return matchesSearch && matchesStatus;
   });
 
   const getStatusBadge = (status: string) => {
@@ -180,48 +187,31 @@ const Impressoes: React.FC = () => {
     }
   };
 
-  const getTypeLabel = (type: string) => {
-    switch (type) {
-      case 'comprovante': return 'Comprovante';
-      case 'voucher': return 'Voucher';
-      case 'relatorio': return 'Relatório';
-      case 'ticket': return 'Ticket';
-      case 'teste': return 'Teste';
-      default: return type;
-    }
-  };
-
   const getTypeBadge = (type: string) => {
     const colors = {
       comprovante: 'bg-blue-50 text-blue-700 border-blue-200',
-      voucher: 'bg-purple-50 text-purple-700 border-purple-200',
-      relatorio: 'bg-orange-50 text-orange-700 border-orange-200',
-      ticket: 'bg-green-50 text-green-700 border-green-200',
+      reimpressao: 'bg-orange-50 text-orange-700 border-orange-200',
       teste: 'bg-gray-50 text-gray-700 border-gray-200'
+    };
+    
+    const typeLabel = {
+      comprovante: 'Comprovante',
+      reimpressao: 'Reimpressão',
+      teste: 'Teste'
     };
     
     return (
       <Badge variant="outline" className={`${colors[type as keyof typeof colors] || 'bg-gray-50 text-gray-700'} text-xs`}>
-        {getTypeLabel(type)}
+        {typeLabel[type as keyof typeof typeLabel] || type}
       </Badge>
     );
   };
 
-  const retryPrint = (jobId: string) => {
-    console.log('🔄 Solicitando reimpressão para:', jobId);
-    retryPrintMutation.mutate(jobId);
-  };
-
-  const testPrint = () => {
-    console.log('🖨️ Iniciando teste de impressão...');
-    testPrintMutation.mutate();
-  };
-
-  const totalJobs = printJobs.length;
-  const completedJobs = printJobs.filter((j: PrintJob) => j.status === 'concluido').length;
-  const failedJobs = printJobs.filter((j: PrintJob) => j.status === 'falhou').length;
-  const pendingJobs = printJobs.filter((j: PrintJob) => j.status === 'pendente').length;
-  const successRate = totalJobs > 0 ? ((completedJobs / totalJobs) * 100).toFixed(1) : '0';
+  const totalImpressoes = impressoes.length;
+  const concluidas = impressoes.filter((i: ImpressaoVenda) => i.status === 'concluido').length;
+  const falharam = impressoes.filter((i: ImpressaoVenda) => i.status === 'falhou').length;
+  const pendentes = impressoes.filter((i: ImpressaoVenda) => i.status === 'pendente').length;
+  const taxaSucesso = totalImpressoes > 0 ? ((concluidas / totalImpressoes) * 100).toFixed(1) : '0';
 
   if (error) {
     return (
@@ -253,10 +243,10 @@ const Impressoes: React.FC = () => {
       <div className="flex flex-col space-y-1 lg:flex-row lg:items-center lg:justify-between lg:space-y-0">
         <div className="flex items-center space-x-1">
           <Printer className="w-4 h-4 text-blue-600" />
-          <h1 className="text-base sm:text-lg font-bold text-gray-800">Controle de Impressões</h1>
+          <h1 className="text-base sm:text-lg font-bold text-gray-800">Impressões de Vendas</h1>
         </div>
         <Button 
-          onClick={testPrint} 
+          onClick={() => testPrintMutation.mutate()} 
           className="flex items-center justify-center space-x-1 h-7 text-xs"
           disabled={testPrintMutation.isPending}
         >
@@ -273,7 +263,7 @@ const Impressoes: React.FC = () => {
               <FileText className="w-3 h-3 text-blue-600" />
               <div className="min-w-0">
                 <p className="text-xs text-gray-600 truncate">Total</p>
-                <p className="text-sm sm:text-base font-bold">{totalJobs}</p>
+                <p className="text-sm sm:text-base font-bold">{totalImpressoes}</p>
               </div>
             </div>
           </CardContent>
@@ -285,7 +275,7 @@ const Impressoes: React.FC = () => {
               <CheckCircle className="w-3 h-3 text-green-600" />
               <div className="min-w-0">
                 <p className="text-xs text-gray-600 truncate">Concluídas</p>
-                <p className="text-sm sm:text-base font-bold text-green-600">{completedJobs}</p>
+                <p className="text-sm sm:text-base font-bold text-green-600">{concluidas}</p>
               </div>
             </div>
           </CardContent>
@@ -297,7 +287,7 @@ const Impressoes: React.FC = () => {
               <XCircle className="w-3 h-3 text-red-600" />
               <div className="min-w-0">
                 <p className="text-xs text-gray-600 truncate">Falharam</p>
-                <p className="text-sm sm:text-base font-bold text-red-600">{failedJobs}</p>
+                <p className="text-sm sm:text-base font-bold text-red-600">{falharam}</p>
               </div>
             </div>
           </CardContent>
@@ -309,7 +299,7 @@ const Impressoes: React.FC = () => {
               <Clock className="w-3 h-3 text-yellow-600" />
               <div className="min-w-0">
                 <p className="text-xs text-gray-600 truncate">Pendentes</p>
-                <p className="text-sm sm:text-base font-bold text-yellow-600">{pendingJobs}</p>
+                <p className="text-sm sm:text-base font-bold text-yellow-600">{pendentes}</p>
               </div>
             </div>
           </CardContent>
@@ -321,7 +311,7 @@ const Impressoes: React.FC = () => {
               <TrendingUp className="w-3 h-3 text-purple-600" />
               <div className="min-w-0">
                 <p className="text-xs text-gray-600 truncate">Taxa Sucesso</p>
-                <p className="text-sm sm:text-base font-bold text-purple-600">{successRate}%</p>
+                <p className="text-sm sm:text-base font-bold text-purple-600">{taxaSucesso}%</p>
               </div>
             </div>
           </CardContent>
@@ -335,42 +325,26 @@ const Impressoes: React.FC = () => {
             <div className="relative">
               <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 w-3 h-3" />
               <Input
-                placeholder="Buscar por ID do pedido ou usuário..."
+                placeholder="Buscar por ID, produto ou usuário..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-7 h-7 text-xs"
               />
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-gray-700">Impressora</label>
-                <Select value={selectedPrinter} onValueChange={setSelectedPrinter}>
-                  <SelectTrigger className="h-7 text-xs">
-                    <SelectValue placeholder="Todas as impressoras" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todas as impressoras</SelectItem>
-                    {printers.map(printer => (
-                      <SelectItem key={printer} value={printer}>{printer}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-gray-700">Status</label>
-                <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-                  <SelectTrigger className="h-7 text-xs">
-                    <SelectValue placeholder="Todos os status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos os status</SelectItem>
-                    <SelectItem value="pendente">Pendente</SelectItem>
-                    <SelectItem value="imprimindo">Imprimindo</SelectItem>
-                    <SelectItem value="concluido">Concluído</SelectItem>
-                    <SelectItem value="falhou">Falhou</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-gray-700">Status</label>
+              <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                <SelectTrigger className="h-7 text-xs">
+                  <SelectValue placeholder="Todos os status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os status</SelectItem>
+                  <SelectItem value="pendente">Pendente</SelectItem>
+                  <SelectItem value="imprimindo">Imprimindo</SelectItem>
+                  <SelectItem value="concluido">Concluído</SelectItem>
+                  <SelectItem value="falhou">Falhou</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </CardContent>
@@ -381,10 +355,10 @@ const Impressoes: React.FC = () => {
         <CardHeader className="p-1 sm:p-2">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
             <CardTitle className="text-xs sm:text-sm font-semibold text-gray-800">
-              Histórico de Impressões
+              Histórico de Impressões de Vendas
             </CardTitle>
             <Badge variant="outline" className="text-xs px-1 py-0 w-fit">
-              {filteredJobs.length} {filteredJobs.length === 1 ? 'resultado' : 'resultados'}
+              {filteredImpressoes.length} {filteredImpressoes.length === 1 ? 'resultado' : 'resultados'}
             </Badge>
           </div>
         </CardHeader>
@@ -393,28 +367,37 @@ const Impressoes: React.FC = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="h-6 text-xs">ID / Pedido</TableHead>
+                  <TableHead className="h-6 text-xs">Pedido ID</TableHead>
+                  <TableHead className="h-6 text-xs">Produto</TableHead>
+                  <TableHead className="h-6 text-xs">Qtd</TableHead>
                   <TableHead className="h-6 text-xs">Tipo</TableHead>
                   <TableHead className="h-6 text-xs">Status</TableHead>
-                  <TableHead className="hidden sm:table-cell h-6 text-xs">Data/Hora</TableHead>
+                  <TableHead className="hidden sm:table-cell h-6 text-xs">Data</TableHead>
                   <TableHead className="h-6 text-xs">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredJobs.map((job: PrintJob) => (
-                  <TableRow key={job.id}>
+                {filteredImpressoes.map((impressao: ImpressaoVenda) => (
+                  <TableRow key={impressao.id}>
                     <TableCell className="font-medium p-1">
-                      <div>
-                        <div className="text-xs font-semibold">{job.pedido_id}</div>
-                        <div className="text-xs text-gray-500">{job.usuario}</div>
-                      </div>
+                      <div className="text-xs font-semibold">{impressao.pedido_id}</div>
+                      <div className="text-xs text-gray-500">{impressao.usuario}</div>
                     </TableCell>
                     <TableCell className="p-1">
-                      {getTypeBadge(job.tipo)}
+                      <div className="flex items-center space-x-1">
+                        <Package className="w-3 h-3 text-blue-600" />
+                        <span className="text-xs font-medium">{impressao.produto_nome}</span>
+                      </div>
                     </TableCell>
-                    <TableCell className="p-1">{getStatusBadge(job.status)}</TableCell>
+                    <TableCell className="p-1 text-center">
+                      <Badge variant="outline" className="text-xs">{impressao.quantidade}</Badge>
+                    </TableCell>
+                    <TableCell className="p-1">
+                      {getTypeBadge(impressao.tipo)}
+                    </TableCell>
+                    <TableCell className="p-1">{getStatusBadge(impressao.status)}</TableCell>
                     <TableCell className="hidden sm:table-cell p-1 text-xs">
-                      {new Date(job.data_impressao).toLocaleString('pt-BR')}
+                      {new Date(impressao.data_impressao).toLocaleString('pt-BR')}
                     </TableCell>
                     <TableCell className="p-1">
                       <div className="flex space-x-1">
@@ -423,8 +406,9 @@ const Impressoes: React.FC = () => {
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => setSelectedJob(job)}
+                              onClick={() => setSelectedImpressao(impressao)}
                               className="h-5 w-5 p-0"
+                              title="Ver detalhes"
                             >
                               <Eye className="w-3 h-3" />
                             </Button>
@@ -433,16 +417,18 @@ const Impressoes: React.FC = () => {
                             <DialogHeader>
                               <DialogTitle className="text-sm">Detalhes da Impressão</DialogTitle>
                             </DialogHeader>
-                            {selectedJob && (
+                            {selectedImpressao && (
                               <div className="space-y-2 text-xs">
-                                <div><strong>ID:</strong> {selectedJob.pedido_id}</div>
-                                <div><strong>Tipo:</strong> {getTypeLabel(selectedJob.tipo)}</div>
-                                <div><strong>Impressora:</strong> {selectedJob.impressora}</div>
-                                <div><strong>Status:</strong> {selectedJob.status}</div>
-                                <div><strong>Páginas:</strong> {selectedJob.paginas}</div>
-                                <div><strong>Cópias:</strong> {selectedJob.copias}</div>
-                                <div><strong>Usuário:</strong> {selectedJob.usuario}</div>
-                                <div><strong>Data:</strong> {new Date(selectedJob.data_impressao).toLocaleString('pt-BR')}</div>
+                                <div><strong>ID:</strong> {selectedImpressao.pedido_id}</div>
+                                <div><strong>Produto:</strong> {selectedImpressao.produto_nome}</div>
+                                <div><strong>Quantidade:</strong> {selectedImpressao.quantidade}</div>
+                                <div><strong>Tipo:</strong> {selectedImpressao.tipo}</div>
+                                <div><strong>Impressora:</strong> {selectedImpressao.impressora}</div>
+                                <div><strong>Status:</strong> {selectedImpressao.status}</div>
+                                <div><strong>Páginas:</strong> {selectedImpressao.paginas}</div>
+                                <div><strong>Cópias:</strong> {selectedImpressao.copias}</div>
+                                <div><strong>Usuário:</strong> {selectedImpressao.usuario}</div>
+                                <div><strong>Data:</strong> {new Date(selectedImpressao.data_impressao).toLocaleString('pt-BR')}</div>
                               </div>
                             )}
                           </DialogContent>
@@ -450,8 +436,8 @@ const Impressoes: React.FC = () => {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => retryPrint(job.id)}
-                          disabled={retryPrintMutation.isPending}
+                          onClick={() => reimprimirMutation.mutate(impressao)}
+                          disabled={reimprimirMutation.isPending}
                           className="h-5 w-5 p-0"
                           title="Reimprimir"
                         >
@@ -461,13 +447,13 @@ const Impressoes: React.FC = () => {
                     </TableCell>
                   </TableRow>
                 ))}
-                {filteredJobs.length === 0 && (
+                {filteredImpressoes.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-4">
+                    <TableCell colSpan={7} className="text-center py-4">
                       <div className="space-y-1">
                         <FileText className="w-4 h-4 text-gray-400 mx-auto" />
                         <p className="text-gray-500 text-xs">Nenhuma impressão encontrada</p>
-                        <p className="text-xs text-gray-400">Tente ajustar os filtros de pesquisa</p>
+                        <p className="text-xs text-gray-400">Faça uma venda para ver as impressões aqui</p>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -481,4 +467,4 @@ const Impressoes: React.FC = () => {
   );
 };
 
-export default Impressoes;
+export default ImpressoesVendas;

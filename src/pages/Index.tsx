@@ -89,7 +89,7 @@ const Index: React.FC = () => {
     },
   });
 
-  // Mutation para registrar impressão no histórico
+  // Mutation para registrar impressão no histórico - AGORA USANDO A TABELA CORRETA
   const registrarImpressaoMutation = useMutation({
     mutationFn: async (dadosImpressao: {
       pedido_id: string;
@@ -99,9 +99,11 @@ const Index: React.FC = () => {
       console.log('🖨️ REGISTRANDO IMPRESSÃO NO HISTÓRICO:', dadosImpressao);
       
       const { data, error } = await supabase
-        .from('impressoes')
+        .from('impressoes_vendas')
         .insert({
           pedido_id: dadosImpressao.pedido_id,
+          produto_nome: dadosImpressao.produto_nome,
+          quantidade: dadosImpressao.quantidade,
           tipo: 'comprovante',
           impressora: 'Impressora Principal',
           status: 'concluido',
@@ -125,7 +127,7 @@ const Index: React.FC = () => {
       console.log('✅ Impressão salva no banco de dados:', data);
       console.log('📋 Produto associado:', variables.produto_nome);
       // Invalidar cache das impressões para atualizar a página de histórico
-      queryClient.invalidateQueries({ queryKey: ['impressoes'] });
+      queryClient.invalidateQueries({ queryKey: ['impressoes-vendas'] });
     },
     onError: (error, variables) => {
       console.error('❌ Erro ao registrar impressão no histórico:', error);
@@ -270,7 +272,7 @@ const Index: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['produtos-totem'] });
       queryClient.invalidateQueries({ queryKey: ['categorias-produtos-ativos'] });
       queryClient.invalidateQueries({ queryKey: ['estoque'] });
-      queryClient.invalidateQueries({ queryKey: ['impressoes'] });
+      queryClient.invalidateQueries({ queryKey: ['impressoes-vendas'] });
       
       const totalProdutos = stockUpdates.length;
       const totalVendas = salesRecords.length;

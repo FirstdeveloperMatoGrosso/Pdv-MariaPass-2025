@@ -202,6 +202,51 @@ export type Database = {
           },
         ]
       }
+      impressoes_vendas: {
+        Row: {
+          copias: number
+          created_at: string
+          data_impressao: string
+          id: string
+          impressora: string
+          paginas: number
+          pedido_id: string
+          produto_nome: string
+          quantidade: number
+          status: string
+          tipo: string
+          usuario: string
+        }
+        Insert: {
+          copias?: number
+          created_at?: string
+          data_impressao?: string
+          id?: string
+          impressora?: string
+          paginas?: number
+          pedido_id: string
+          produto_nome: string
+          quantidade?: number
+          status?: string
+          tipo?: string
+          usuario: string
+        }
+        Update: {
+          copias?: number
+          created_at?: string
+          data_impressao?: string
+          id?: string
+          impressora?: string
+          paginas?: number
+          pedido_id?: string
+          produto_nome?: string
+          quantidade?: number
+          status?: string
+          tipo?: string
+          usuario?: string
+        }
+        Relationships: []
+      }
       itens_pedido: {
         Row: {
           created_at: string
