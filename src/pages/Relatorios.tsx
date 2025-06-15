@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,7 +10,8 @@ import {
   Package,
   Calendar,
   Download,
-  Filter
+  RefreshCw,
+  AlertCircle
 } from 'lucide-react';
 import {
   Table,
@@ -20,35 +22,23 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import ExportModal from '@/components/ExportModal';
+import GraficoVendas from '@/components/GraficoVendas';
+import { useRelatorioDados } from '@/hooks/useRelatorioDados';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 const Relatorios: React.FC = () => {
-  const [selectedPeriod, setSelectedPeriod] = useState('today');
+  const [selectedPeriod, setSelectedPeriod] = useState<'today' | 'week' | 'month'>('today');
   const [exportModalOpen, setExportModalOpen] = useState(false);
 
-  // Dados simulados
-  const salesData = {
-    today: { total: 1250.50, orders: 23, avgTicket: 54.37 },
-    week: { total: 8750.25, orders: 156, avgTicket: 56.09 },
-    month: { total: 35200.75, orders: 672, avgTicket: 52.38 }
-  };
-
-  const topProducts = [
-    { name: 'Suco Natural Laranja', quantity: 45, revenue: 450.00 },
-    { name: 'Sanduíche Natural Frango', quantity: 28, revenue: 420.00 },
-    { name: 'Café Expresso Premium', quantity: 52, revenue: 416.00 },
-    { name: 'Pão de Queijo Tradicional', quantity: 67, revenue: 335.00 },
-    { name: 'Água Mineral 500ml', quantity: 89, revenue: 267.00 }
-  ];
-
-  const recentOrders = [
-    { id: 'PED-001', time: '14:32', items: 3, total: 28.50, status: 'Concluído' },
-    { id: 'PED-002', time: '14:28', items: 2, total: 18.00, status: 'Concluído' },
-    { id: 'PED-003', time: '14:25', items: 5, total: 67.50, status: 'Concluído' },
-    { id: 'PED-004', time: '14:20', items: 1, total: 8.00, status: 'Cancelado' },
-    { id: 'PED-005', time: '14:18', items: 4, total: 42.00, status: 'Concluído' }
-  ];
-
-  const currentData = salesData[selectedPeriod as keyof typeof salesData];
+  const { 
+    dados, 
+    produtosMaisVendidos, 
+    pedidosRecentes, 
+    loading, 
+    error, 
+    refetch 
+  } = useRelatorioDados(selectedPeriod);
 
   const getPeriodLabel = (period: string) => {
     switch (period) {
@@ -58,6 +48,48 @@ const Relatorios: React.FC = () => {
       default: return period;
     }
   };
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(value);
+  };
+
+  const formatTime = (dateString: string) => {
+    try {
+      return format(new Date(dateString), 'HH:mm', { locale: ptBR });
+    } catch {
+      return '--:--';
+    }
+  };
+
+  // Dados para gráficos
+  const dadosGraficoVendas = produtosMaisVendidos.map(produto => ({
+    nome: produto.nome.length > 15 ? produto.nome.substring(0, 15) + '...' : produto.nome,
+    valor: produto.receita,
+    periodo: selectedPeriod
+  }));
+
+  if (error) {
+    return (
+      <div className="p-2 sm:p-3">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <Card className="w-full max-w-md">
+            <CardContent className="p-6 text-center">
+              <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold mb-2">Erro ao carregar dados</h3>
+              <p className="text-gray-600 mb-4">{error}</p>
+              <Button onClick={refetch} className="w-full">
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Tentar novamente
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-2 sm:p-3 space-y-2 sm:space-y-3">
@@ -70,8 +102,9 @@ const Relatorios: React.FC = () => {
           <Calendar className="w-3 h-3 text-gray-500" />
           <select 
             value={selectedPeriod}
-            onChange={(e) => setSelectedPeriod(e.target.value)}
+            onChange={(e) => setSelectedPeriod(e.target.value as 'today' | 'week' | 'month')}
             className="border rounded-md px-2 py-1 text-sm"
+            disabled={loading}
           >
             <option value="today">Hoje</option>
             <option value="week">Esta Semana</option>
@@ -80,7 +113,17 @@ const Relatorios: React.FC = () => {
           <Button 
             variant="outline" 
             className="flex items-center space-x-1 h-8 text-sm px-2"
+            onClick={refetch}
+            disabled={loading}
+          >
+            <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
+            <span>Atualizar</span>
+          </Button>
+          <Button 
+            variant="outline" 
+            className="flex items-center space-x-1 h-8 text-sm px-2"
             onClick={() => setExportModalOpen(true)}
+            disabled={loading}
           >
             <Download className="w-3 h-3" />
             <span>Exportar</span>
@@ -97,10 +140,10 @@ const Relatorios: React.FC = () => {
           </CardHeader>
           <CardContent className="p-2 sm:p-3 pt-0">
             <div className="text-lg sm:text-xl font-bold text-green-600">
-              R$ {currentData.total.toFixed(2)}
+              {loading ? '...' : formatCurrency(dados?.faturamentoTotal || 0)}
             </div>
             <p className="text-xs text-muted-foreground">
-              +12.5% em relação ao período anterior
+              {loading ? '...' : `+${dados?.crescimentoPercentual || 0}% em relação ao período anterior`}
             </p>
           </CardContent>
         </Card>
@@ -112,10 +155,10 @@ const Relatorios: React.FC = () => {
           </CardHeader>
           <CardContent className="p-2 sm:p-3 pt-0">
             <div className="text-lg sm:text-xl font-bold text-blue-600">
-              {currentData.orders}
+              {loading ? '...' : dados?.pedidosRealizados || 0}
             </div>
             <p className="text-xs text-muted-foreground">
-              +8.2% em relação ao período anterior
+              {loading ? '...' : '+8.2% em relação ao período anterior'}
             </p>
           </CardContent>
         </Card>
@@ -127,10 +170,10 @@ const Relatorios: React.FC = () => {
           </CardHeader>
           <CardContent className="p-2 sm:p-3 pt-0">
             <div className="text-lg sm:text-xl font-bold text-purple-600">
-              R$ {currentData.avgTicket.toFixed(2)}
+              {loading ? '...' : formatCurrency(dados?.ticketMedio || 0)}
             </div>
             <p className="text-xs text-muted-foreground">
-              +3.8% em relação ao período anterior
+              {loading ? '...' : '+3.8% em relação ao período anterior'}
             </p>
           </CardContent>
         </Card>
@@ -143,84 +186,120 @@ const Relatorios: React.FC = () => {
             <CardTitle className="text-sm sm:text-base">Produtos Mais Vendidos</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="h-8 text-xs">Produto</TableHead>
-                    <TableHead className="h-8 text-xs">Qtd</TableHead>
-                    <TableHead className="h-8 text-xs">Receita</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {topProducts.map((product, index) => (
-                    <TableRow key={index}>
-                      <TableCell className="font-medium p-2 text-xs">{product.name}</TableCell>
-                      <TableCell className="p-2">
-                        <Badge variant="secondary" className="text-xs">{product.quantity}</Badge>
-                      </TableCell>
-                      <TableCell className="text-green-600 font-bold p-2 text-xs">
-                        R$ {product.revenue.toFixed(2)}
-                      </TableCell>
+            {loading ? (
+              <div className="p-4 text-center">
+                <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2" />
+                <p className="text-sm text-gray-500">Carregando produtos...</p>
+              </div>
+            ) : produtosMaisVendidos.length === 0 ? (
+              <div className="p-4 text-center">
+                <Package className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                <p className="text-sm text-gray-500">Nenhum produto vendido no período</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="h-8 text-xs">Produto</TableHead>
+                      <TableHead className="h-8 text-xs">Qtd</TableHead>
+                      <TableHead className="h-8 text-xs">Receita</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                  </TableHeader>
+                  <TableBody>
+                    {produtosMaisVendidos.map((produto, index) => (
+                      <TableRow key={produto.id}>
+                        <TableCell className="font-medium p-2 text-xs">{produto.nome}</TableCell>
+                        <TableCell className="p-2">
+                          <Badge variant="secondary" className="text-xs">{produto.quantidade}</Badge>
+                        </TableCell>
+                        <TableCell className="text-green-600 font-bold p-2 text-xs">
+                          {formatCurrency(produto.receita)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
           </CardContent>
         </Card>
 
         {/* Pedidos Recentes */}
         <Card>
           <CardHeader className="p-2 sm:p-3">
-            <CardTitle className="text-sm sm:text-base">Pedidos Recentes</CardTitle>
+            <CardTitle className="text-sm sm:text-base">Vendas Recentes</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="h-8 text-xs">Pedido</TableHead>
-                    <TableHead className="hidden sm:table-cell h-8 text-xs">Hora</TableHead>
-                    <TableHead className="h-8 text-xs">Itens</TableHead>
-                    <TableHead className="h-8 text-xs">Total</TableHead>
-                    <TableHead className="h-8 text-xs">Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {recentOrders.map((order) => (
-                    <TableRow key={order.id}>
-                      <TableCell className="p-2">
-                        <code className="bg-gray-100 px-1 py-1 rounded text-xs">
-                          {order.id}
-                        </code>
-                      </TableCell>
-                      <TableCell className="hidden sm:table-cell p-2 text-xs">{order.time}</TableCell>
-                      <TableCell className="p-2 text-xs">{order.items}</TableCell>
-                      <TableCell className="font-bold p-2 text-xs">
-                        R$ {order.total.toFixed(2)}
-                      </TableCell>
-                      <TableCell className="p-2">
-                        <Badge 
-                          variant={order.status === 'Concluído' ? 'default' : 'destructive'}
-                          className="text-xs"
-                        >
-                          {order.status}
-                        </Badge>
-                      </TableCell>
+            {loading ? (
+              <div className="p-4 text-center">
+                <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2" />
+                <p className="text-sm text-gray-500">Carregando vendas...</p>
+              </div>
+            ) : pedidosRecentes.length === 0 ? (
+              <div className="p-4 text-center">
+                <Package className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                <p className="text-sm text-gray-500">Nenhuma venda no período</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="h-8 text-xs">Código</TableHead>
+                      <TableHead className="hidden sm:table-cell h-8 text-xs">Hora</TableHead>
+                      <TableHead className="h-8 text-xs">Itens</TableHead>
+                      <TableHead className="h-8 text-xs">Total</TableHead>
+                      <TableHead className="h-8 text-xs">Pagamento</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                  </TableHeader>
+                  <TableBody>
+                    {pedidosRecentes.map((pedido) => (
+                      <TableRow key={pedido.id}>
+                        <TableCell className="p-2">
+                          <code className="bg-gray-100 px-1 py-1 rounded text-xs">
+                            {pedido.numeroAutorizacao}
+                          </code>
+                        </TableCell>
+                        <TableCell className="hidden sm:table-cell p-2 text-xs">
+                          {formatTime(pedido.dataVenda)}
+                        </TableCell>
+                        <TableCell className="p-2 text-xs">{pedido.quantidade}</TableCell>
+                        <TableCell className="font-bold p-2 text-xs">
+                          {formatCurrency(pedido.valorTotal)}
+                        </TableCell>
+                        <TableCell className="p-2">
+                          <Badge 
+                            variant="outline"
+                            className="text-xs"
+                          >
+                            {pedido.formaPagamento}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
 
+      {/* Gráfico de Vendas por Produto */}
+      {!loading && dadosGraficoVendas.length > 0 && (
+        <GraficoVendas
+          dados={dadosGraficoVendas}
+          tipo="bar"
+          titulo="Receita por Produto Mais Vendido"
+          corPrimaria="#10b981"
+        />
+      )}
+
       <ExportModal
         open={exportModalOpen}
         onClose={() => setExportModalOpen(false)}
-        reportData={currentData}
+        reportData={dados || { total: 0, orders: 0, avgTicket: 0 }}
         period={getPeriodLabel(selectedPeriod)}
       />
     </div>

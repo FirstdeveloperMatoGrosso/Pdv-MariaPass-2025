@@ -321,6 +321,54 @@ export type Database = {
         }
         Relationships: []
       }
+      produtos_mais_vendidos: {
+        Row: {
+          created_at: string
+          id: string
+          nome_produto: string
+          posicao_ranking: number
+          produto_id: string | null
+          quantidade_vendida: number
+          receita_gerada: number
+          relatorio_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nome_produto: string
+          posicao_ranking: number
+          produto_id?: string | null
+          quantidade_vendida?: number
+          receita_gerada?: number
+          relatorio_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nome_produto?: string
+          posicao_ranking?: number
+          produto_id?: string | null
+          quantidade_vendida?: number
+          receita_gerada?: number
+          relatorio_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "produtos_mais_vendidos_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "produtos_mais_vendidos_relatorio_id_fkey"
+            columns: ["relatorio_id"]
+            isOneToOne: false
+            referencedRelation: "relatorios_vendas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pulseiras: {
         Row: {
           cliente_documento: string | null
@@ -419,6 +467,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      relatorios_vendas: {
+        Row: {
+          created_at: string
+          crescimento_percentual: number | null
+          data_relatorio: string
+          faturamento_total: number
+          id: string
+          pedidos_realizados: number
+          periodo: string
+          ticket_medio: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          crescimento_percentual?: number | null
+          data_relatorio: string
+          faturamento_total?: number
+          id?: string
+          pedidos_realizados?: number
+          periodo: string
+          ticket_medio?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          crescimento_percentual?: number | null
+          data_relatorio?: string
+          faturamento_total?: number
+          id?: string
+          pedidos_realizados?: number
+          periodo?: string
+          ticket_medio?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       terminais: {
         Row: {
@@ -649,7 +733,23 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      calcular_relatorio_vendas: {
+        Args: { data_inicio: string; data_fim: string }
+        Returns: {
+          faturamento_total: number
+          pedidos_realizados: number
+          ticket_medio: number
+        }[]
+      }
+      obter_produtos_mais_vendidos: {
+        Args: { data_inicio: string; data_fim: string; limite?: number }
+        Returns: {
+          produto_id: string
+          nome_produto: string
+          quantidade_vendida: number
+          receita_gerada: number
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
