@@ -217,6 +217,7 @@ const Relatorios: React.FC = () => {
               <Table>
                 <TableHeader className="bg-gray-50">
                   <TableRow>
+                    <TableHead className="h-6 text-xs px-2">Produto</TableHead>
                     <TableHead className="h-6 text-xs px-2">Código</TableHead>
                     <TableHead className="hidden sm:table-cell h-6 text-xs px-2">Hora</TableHead>
                     <TableHead className="h-6 text-xs px-2">Itens</TableHead>
@@ -226,7 +227,24 @@ const Relatorios: React.FC = () => {
                 </TableHeader>
                 <TableBody>
                   {pedidosRecentes.map((pedido) => (
-                    <TableRow key={pedido.id} className="h-6">
+                    <TableRow key={pedido.id} className="h-8">
+                      <TableCell className="p-1">
+                        <div className="flex items-center space-x-2">
+                          {pedido.produtoImagem && (
+                            <img 
+                              src={pedido.produtoImagem} 
+                              alt={pedido.produtoNome}
+                              className="w-6 h-6 object-cover rounded"
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                              }}
+                            />
+                          )}
+                          <span className="text-xs truncate max-w-[100px]">
+                            {pedido.produtoNome || 'Produto não identificado'}
+                          </span>
+                        </div>
+                      </TableCell>
                       <TableCell className="p-1">
                         <code className="bg-gray-100 px-1 py-0.5 rounded text-xs">
                           {pedido.numeroAutorizacao}

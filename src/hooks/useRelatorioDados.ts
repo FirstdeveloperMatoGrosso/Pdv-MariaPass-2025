@@ -24,6 +24,8 @@ interface PedidoRecente {
   quantidade: number;
   valorTotal: number;
   formaPagamento: string;
+  produtoNome?: string;
+  produtoImagem?: string;
 }
 
 export const useRelatorioDados = (periodo: 'today' | 'week' | 'month') => {
@@ -150,7 +152,7 @@ export const useRelatorioDados = (periodo: 'today' | 'week' | 'month') => {
         setProdutosMaisVendidos(produtosOrdenados);
       }
 
-      // Buscar vendas recentes
+      // Buscar vendas recentes com informações do produto
       const { data: vendasRecentes, error: errorVendas } = await supabase
         .from('vendas_pulseiras')
         .select(`
@@ -159,7 +161,11 @@ export const useRelatorioDados = (periodo: 'today' | 'week' | 'month') => {
           valor_total,
           forma_pagamento,
           numero_autorizacao,
-          data_venda
+          data_venda,
+          produtos:produto_id (
+            nome,
+            imagem_url
+          )
         `)
         .gte('data_venda', inicio)
         .lt('data_venda', fim)
@@ -177,7 +183,9 @@ export const useRelatorioDados = (periodo: 'today' | 'week' | 'month') => {
           dataVenda: venda.data_venda,
           quantidade: Number(venda.quantidade) || 1,
           valorTotal: Number(venda.valor_total) || 0,
-          formaPagamento: venda.forma_pagamento || 'Não informado'
+          formaPagamento: venda.forma_pagamento || 'Não informado',
+          produtoNome: venda.produtos?.nome || 'Produto não identificado',
+          produtoImagem: venda.produtos?.imagem_url || undefined
         })) || [];
         setPedidosRecentes(pedidosProcessados);
       }
