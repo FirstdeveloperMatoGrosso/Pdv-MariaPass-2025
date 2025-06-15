@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -206,94 +207,94 @@ const Index: React.FC = () => {
             const availableStock = product.estoque - quantity;
 
             return (
-              <Card key={product.id} className="relative min-w-0 flex-shrink-0" style={{ overflow: 'visible' }}>
-                <div className="aspect-square bg-gray-100 overflow-hidden">
-                  {product.imagem_url ? (
-                    <img 
-                      src={product.imagem_url} 
-                      alt={product.nome}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        e.currentTarget.src = '/placeholder.svg';
-                      }}
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                      <Package className="w-12 h-12 text-gray-400" />
-                    </div>
-                  )}
-                </div>
-                
-                <CardHeader className="pb-3 p-3">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1 min-w-0">
-                      <CardTitle className="text-sm line-clamp-2 leading-tight">{product.nome}</CardTitle>
-                      <Badge variant="outline" className="mt-1 text-xs">{product.categoria}</Badge>
-                    </div>
-                    <div className="flex-shrink-0">
-                      <Badge 
-                        variant={availableStock < 10 ? "destructive" : "secondary"}
-                        className="text-xs whitespace-nowrap"
-                      >
-                        {availableStock} un.
-                      </Badge>
-                    </div>
-                  </div>
-                  
-                  {product.descricao && (
-                    <p className="text-xs text-gray-600 mt-1 line-clamp-2">
-                      {product.descricao}
-                    </p>
-                  )}
-                  
-                  <p className="text-lg font-bold text-green-600 mt-2">
-                    R$ {product.preco.toFixed(2)}
-                  </p>
-                </CardHeader>
-                
-                <CardContent className="pt-0 p-3">
-                  <div className="flex items-center justify-between gap-1">
-                    <Button 
-                      onClick={() => addToCart(product)}
-                      className="flex-1 text-xs h-8"
-                      disabled={availableStock <= 0}
-                      size="sm"
-                    >
-                      <Plus className="w-3 h-3 mr-1" />
-                      {availableStock <= 0 ? 'Sem Estoque' : 'Adicionar'}
-                    </Button>
-                    
-                    {quantity > 0 && (
-                      <div className="flex items-center space-x-1 flex-shrink-0">
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          onClick={() => removeFromCart(product.id)}
-                          className="h-6 w-6 p-0"
-                        >
-                          <Minus className="w-3 h-3" />
-                        </Button>
-                        <Badge variant="secondary" className="text-xs">{quantity}</Badge>
+              <div key={product.id} className="relative min-w-0 flex-shrink-0">
+                <Card className="overflow-hidden">
+                  <div className="aspect-square bg-gray-100 overflow-hidden">
+                    {product.imagem_url ? (
+                      <img 
+                        src={product.imagem_url} 
+                        alt={product.nome}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.src = '/placeholder.svg';
+                        }}
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                        <Package className="w-12 h-12 text-gray-400" />
                       </div>
                     )}
                   </div>
-                </CardContent>
+                  
+                  <CardHeader className="pb-3 p-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <CardTitle className="text-sm line-clamp-2 leading-tight">{product.nome}</CardTitle>
+                        <Badge variant="outline" className="mt-1 text-xs">{product.categoria}</Badge>
+                      </div>
+                      <div className="flex-shrink-0">
+                        <Badge 
+                          variant={availableStock < 10 ? "destructive" : "secondary"}
+                          className="text-xs whitespace-nowrap"
+                        >
+                          {availableStock} un.
+                        </Badge>
+                      </div>
+                    </div>
+                    
+                    {product.descricao && (
+                      <p className="text-xs text-gray-600 mt-1 line-clamp-2">
+                        {product.descricao}
+                      </p>
+                    )}
+                    
+                    <p className="text-lg font-bold text-green-600 mt-2">
+                      R$ {product.preco.toFixed(2)}
+                    </p>
+                  </CardHeader>
+                  
+                  <CardContent className="pt-0 p-3">
+                    <div className="flex items-center justify-between gap-1">
+                      <Button 
+                        onClick={() => addToCart(product)}
+                        className="flex-1 text-xs h-8"
+                        disabled={availableStock <= 0}
+                        size="sm"
+                      >
+                        <Plus className="w-3 h-3 mr-1" />
+                        {availableStock <= 0 ? 'Sem Estoque' : 'Adicionar'}
+                      </Button>
+                      
+                      {quantity > 0 && (
+                        <div className="flex items-center space-x-1 flex-shrink-0">
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => removeFromCart(product.id)}
+                            className="h-6 w-6 p-0"
+                          >
+                            <Minus className="w-3 h-3" />
+                          </Button>
+                          <Badge variant="secondary" className="text-xs">{quantity}</Badge>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
                 
                 {quantity > 0 && (
                   <Badge 
-                    className="absolute bg-red-500 text-white text-xs min-w-[24px] h-6 flex items-center justify-center rounded-full font-bold shadow-lg"
+                    className="absolute bg-red-500 text-white text-xs min-w-[24px] h-6 flex items-center justify-center rounded-full font-bold shadow-lg border-2 border-white z-50"
                     variant="destructive"
                     style={{ 
                       top: '-12px', 
-                      right: '-12px', 
-                      zIndex: 50,
-                      border: '2px solid white'
+                      right: '-12px'
                     }}
                   >
                     {quantity}
                   </Badge>
                 )}
-              </Card>
+              </div>
             );
           })}
         </div>
