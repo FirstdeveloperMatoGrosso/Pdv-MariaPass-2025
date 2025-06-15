@@ -132,289 +132,279 @@ const Terminais: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
-        <div className="text-center space-y-2">
-          <div className="animate-spin rounded-full h-8 w-8 border-3 border-blue-600 border-t-transparent mx-auto"></div>
-          <div className="space-y-0.5">
-            <h3 className="text-sm font-semibold text-gray-800">Carregando terminais</h3>
-            <p className="text-xs text-gray-600">Aguarde enquanto buscamos os dados...</p>
-          </div>
+      <div className="p-2 sm:p-3 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-2 text-sm text-gray-600">Carregando terminais...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
-      <div className="p-2 space-y-2">
-        {/* Header */}
-        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-2 bg-white p-3 rounded-lg shadow-sm border border-gray-100">
-          <div className="flex items-center space-x-2">
-            <div className="p-1.5 bg-blue-100 rounded-lg">
-              <Monitor className="w-4 h-4 text-blue-600" />
-            </div>
-            <div>
-              <h1 className="text-lg font-bold text-gray-900">Controle de Terminais</h1>
-              <p className="text-xs text-gray-600">Monitore e gerencie todos os terminais da rede</p>
-            </div>
-          </div>
-          <Button 
-            className="flex items-center space-x-1 bg-blue-600 hover:bg-blue-700 shadow-sm text-xs h-7"
-            onClick={() => refetch()}
-            size="sm"
-          >
-            <RefreshCw className="w-3 h-3" />
-            <span>Atualizar Status</span>
-          </Button>
+    <div className="p-2 sm:p-3 space-y-2 sm:space-y-3">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+        <div className="flex items-center space-x-1">
+          <Monitor className="w-5 h-5 text-blue-600" />
+          <h1 className="text-lg sm:text-xl font-bold text-gray-800">Controle de Terminais</h1>
         </div>
+        <Button 
+          className="flex items-center space-x-1 bg-blue-600 hover:bg-blue-700 h-8 text-sm px-3"
+          onClick={() => refetch()}
+          size="sm"
+        >
+          <RefreshCw className="w-3 h-3" />
+          <span>Atualizar Status</span>
+        </Button>
+      </div>
 
-        {/* Estatísticas Compactas */}
-        <div className="grid grid-cols-5 gap-2">
-          <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200 shadow-sm">
-            <CardContent className="p-2">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0">
-                  <p className="text-xs font-medium text-green-700">Online</p>
-                  <p className="text-base font-bold text-green-900">{onlineTerminals}</p>
-                </div>
-                <div className="p-1 bg-green-200 rounded">
-                  <CheckCircle className="w-3 h-3 text-green-700" />
-                </div>
+      {/* Estatísticas Compactas */}
+      <div className="grid grid-cols-5 gap-2">
+        <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200">
+          <CardContent className="p-2">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0">
+                <p className="text-xs font-medium text-green-700">Online</p>
+                <p className="text-base font-bold text-green-900">{onlineTerminals}</p>
               </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-red-50 to-red-100 border-red-200 shadow-sm">
-            <CardContent className="p-2">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0">
-                  <p className="text-xs font-medium text-red-700">Offline</p>
-                  <p className="text-base font-bold text-red-900">{offlineTerminals}</p>
-                </div>
-                <div className="p-1 bg-red-200 rounded">
-                  <WifiOff className="w-3 h-3 text-red-700" />
-                </div>
+              <div className="p-1 bg-green-200 rounded">
+                <CheckCircle className="w-3 h-3 text-green-700" />
               </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-yellow-50 to-yellow-100 border-yellow-200 shadow-sm">
-            <CardContent className="p-2">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0">
-                  <p className="text-xs font-medium text-yellow-700">Manutenção</p>
-                  <p className="text-base font-bold text-yellow-900">{maintenanceTerminals}</p>
-                </div>
-                <div className="p-1 bg-yellow-200 rounded">
-                  <AlertTriangle className="w-3 h-3 text-yellow-700" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 shadow-sm">
-            <CardContent className="p-2">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0">
-                  <p className="text-xs font-medium text-blue-700">Vendas Hoje</p>
-                  <p className="text-base font-bold text-blue-900">{totalSalesToday}</p>
-                </div>
-                <div className="p-1 bg-blue-200 rounded">
-                  <TrendingUp className="w-3 h-3 text-blue-700" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200 shadow-sm">
-            <CardContent className="p-2">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0">
-                  <p className="text-xs font-medium text-purple-700">Uptime</p>
-                  <p className="text-base font-bold text-purple-900">{uptime}%</p>
-                </div>
-                <div className="p-1 bg-purple-200 rounded">
-                  <Activity className="w-3 h-3 text-purple-700" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Alertas Compactos */}
-        {offlineTerminals > 0 && (
-          <Card className="border-red-200 bg-gradient-to-r from-red-50 to-orange-50 shadow-sm">
-            <CardHeader className="pb-1">
-              <CardTitle className="text-red-800 flex items-center text-sm">
-                <AlertTriangle className="w-3 h-3 mr-1" />
-                Atenção: {offlineTerminals} {offlineTerminals === 1 ? 'Terminal Offline' : 'Terminais Offline'}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-1 pt-0">
-              {terminals.filter((t: any) => t.status === 'offline').map((terminal: any) => (
-                <div key={terminal.id} className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-2 bg-white rounded border border-red-100 shadow-sm gap-1">
-                  <div className="flex items-center space-x-1.5">
-                    <div className="p-1 bg-red-100 rounded">
-                      <Monitor className="w-2.5 h-2.5 text-red-600" />
-                    </div>
-                    <div>
-                      <span className="font-semibold text-gray-900 text-xs">{terminal.nome}</span>
-                      <div className="flex items-center text-xs text-gray-600">
-                        <MapPin className="w-2 h-2 mr-0.5" />
-                        {terminal.localizacao}
-                      </div>
-                    </div>
-                  </div>
-                  <Badge variant="destructive" className="bg-red-100 text-red-800 border-red-200 text-xs px-1 py-0">
-                    Offline desde {new Date(terminal.ultima_conexao).toLocaleString('pt-BR')}
-                  </Badge>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Filtros Compactos */}
-        <Card className="shadow-sm border-gray-200">
-          <CardHeader className="pb-1">
-            <CardTitle className="flex items-center text-sm font-semibold text-gray-800">
-              <Filter className="w-3 h-3 mr-1 text-gray-600" />
-              Filtros de Pesquisa
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div className="relative">
-              <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 w-3 h-3" />
-              <Input
-                placeholder="Buscar por nome, localização ou IP..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-7 h-7 border-gray-300 focus:border-blue-500 focus:ring-blue-500 text-xs"
-              />
             </div>
           </CardContent>
         </Card>
 
-        {/* Lista de Terminais Compacta */}
-        <Card className="shadow-sm border-gray-200">
-          <CardHeader className="pb-1">
+        <Card className="bg-gradient-to-br from-red-50 to-red-100 border-red-200">
+          <CardContent className="p-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-semibold text-gray-800">
-                Terminais Cadastrados
-              </CardTitle>
-              <Badge variant="outline" className="text-xs px-1.5 py-0.5">
-                {filteredTerminals.length} {filteredTerminals.length === 1 ? 'terminal' : 'terminais'}
-              </Badge>
+              <div className="space-y-0">
+                <p className="text-xs font-medium text-red-700">Offline</p>
+                <p className="text-base font-bold text-red-900">{offlineTerminals}</p>
+              </div>
+              <div className="p-1 bg-red-200 rounded">
+                <WifiOff className="w-3 h-3 text-red-700" />
+              </div>
             </div>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader className="bg-gray-50">
-                  <TableRow>
-                    <TableHead className="font-semibold text-gray-700 min-w-[100px] text-xs h-7">Terminal</TableHead>
-                    <TableHead className="font-semibold text-gray-700 hidden sm:table-cell text-xs h-7">Localização</TableHead>
-                    <TableHead className="font-semibold text-gray-700 hidden md:table-cell text-xs h-7">IP</TableHead>
-                    <TableHead className="font-semibold text-gray-700 text-xs h-7">Status</TableHead>
-                    <TableHead className="font-semibold text-gray-700 hidden lg:table-cell text-xs h-7">Última Conexão</TableHead>
-                    <TableHead className="font-semibold text-gray-700 hidden md:table-cell text-xs h-7">Versão</TableHead>
-                    <TableHead className="font-semibold text-gray-700 hidden lg:table-cell text-xs h-7">Uptime</TableHead>
-                    <TableHead className="font-semibold text-gray-700 hidden sm:table-cell text-center text-xs h-7">Vendas Hoje</TableHead>
-                    <TableHead className="font-semibold text-gray-700 text-center text-xs h-7">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredTerminals.map((terminal: any) => (
-                    <TableRow key={terminal.id} className="hover:bg-gray-50 transition-colors h-8">
-                      <TableCell className="font-medium py-1">
-                        <div className="space-y-0">
-                          <div className="font-semibold text-gray-900 text-xs">{terminal.nome}</div>
-                          <div className="text-xs text-gray-500 sm:hidden flex items-center">
-                            <MapPin className="w-2 h-2 mr-0.5" />
-                            {terminal.localizacao}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell className="hidden sm:table-cell py-1">
-                        <div className="flex items-center text-xs text-gray-600">
-                          <MapPin className="w-2 h-2 mr-0.5 text-gray-400" />
-                          {terminal.localizacao}
-                        </div>
-                      </TableCell>
-                      <TableCell className="hidden md:table-cell py-1">
-                        <code className="bg-gray-100 px-1 py-0.5 rounded text-xs font-mono border">
-                          {terminal.endereco_ip}
-                        </code>
-                      </TableCell>
-                      <TableCell className="py-1">{getStatusBadge(terminal.status)}</TableCell>
-                      <TableCell className="hidden lg:table-cell text-xs text-gray-600 py-1">
-                        {new Date(terminal.ultima_conexao).toLocaleString('pt-BR')}
-                      </TableCell>
-                      <TableCell className="hidden md:table-cell py-1">
-                        <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200 px-1 py-0">
-                          v{terminal.versao}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="hidden lg:table-cell text-xs text-gray-600 py-1">{terminal.tempo_atividade}</TableCell>
-                      <TableCell className="hidden sm:table-cell text-center py-1">
-                        <Badge variant="outline" className="font-semibold text-green-700 bg-green-50 border-green-200 text-xs px-1 py-0">
-                          {terminal.vendas_hoje}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="py-1">
-                        <div className="flex flex-wrap gap-0.5 justify-center">
-                          {terminal.status === 'offline' && (
-                            <Button
-                              size="sm"
-                              className="bg-green-600 hover:bg-green-700 h-5 w-5 p-0"
-                              onClick={() => updateTerminalStatus(terminal.id, 'online')}
-                              disabled={updateStatusMutation.isPending}
-                              title="Ativar terminal"
-                            >
-                              <Power className="w-2 h-2" />
-                            </Button>
-                          )}
-                          {terminal.status === 'online' && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => restartTerminal(terminal.id)}
-                              className="h-5 w-5 p-0 border-blue-200 text-blue-700 hover:bg-blue-50"
-                              title="Reiniciar terminal"
-                            >
-                              <RefreshCw className="w-2 h-2" />
-                            </Button>
-                          )}
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => updateTerminalStatus(terminal.id, 'manutencao')}
-                            className="h-5 w-5 p-0 border-yellow-200 text-yellow-700 hover:bg-yellow-50"
-                            title="Colocar em manutenção"
-                          >
-                            <Settings className="w-2 h-2" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {filteredTerminals.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={9} className="text-center py-4">
-                        <div className="space-y-1">
-                          <Monitor className="w-5 h-5 text-gray-400 mx-auto" />
-                          <p className="text-gray-500 text-xs">Nenhum terminal encontrado</p>
-                          <p className="text-xs text-gray-400">Tente ajustar os filtros de pesquisa</p>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-yellow-50 to-yellow-100 border-yellow-200">
+          <CardContent className="p-2">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0">
+                <p className="text-xs font-medium text-yellow-700">Manutenção</p>
+                <p className="text-base font-bold text-yellow-900">{maintenanceTerminals}</p>
+              </div>
+              <div className="p-1 bg-yellow-200 rounded">
+                <AlertTriangle className="w-3 h-3 text-yellow-700" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
+          <CardContent className="p-2">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0">
+                <p className="text-xs font-medium text-blue-700">Vendas Hoje</p>
+                <p className="text-base font-bold text-blue-900">{totalSalesToday}</p>
+              </div>
+              <div className="p-1 bg-blue-200 rounded">
+                <TrendingUp className="w-3 h-3 text-blue-700" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
+          <CardContent className="p-2">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0">
+                <p className="text-xs font-medium text-purple-700">Uptime</p>
+                <p className="text-base font-bold text-purple-900">{uptime}%</p>
+              </div>
+              <div className="p-1 bg-purple-200 rounded">
+                <Activity className="w-3 h-3 text-purple-700" />
+              </div>
             </div>
           </CardContent>
         </Card>
       </div>
+
+      {/* Alertas Compactos */}
+      {offlineTerminals > 0 && (
+        <Card className="border-red-200 bg-gradient-to-r from-red-50 to-orange-50">
+          <CardHeader className="pb-1 p-2 sm:p-3">
+            <CardTitle className="text-red-800 flex items-center text-sm">
+              <AlertTriangle className="w-3 h-3 mr-1" />
+              Atenção: {offlineTerminals} {offlineTerminals === 1 ? 'Terminal Offline' : 'Terminais Offline'}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-1 pt-0 p-2 sm:p-3">
+            {terminals.filter((t: any) => t.status === 'offline').map((terminal: any) => (
+              <div key={terminal.id} className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-2 bg-white rounded border border-red-100 gap-1">
+                <div className="flex items-center space-x-1">
+                  <div className="p-1 bg-red-100 rounded">
+                    <Monitor className="w-2 h-2 text-red-600" />
+                  </div>
+                  <div>
+                    <span className="font-semibold text-gray-900 text-xs">{terminal.nome}</span>
+                    <div className="flex items-center text-xs text-gray-600">
+                      <MapPin className="w-2 h-2 mr-0.5" />
+                      {terminal.localizacao}
+                    </div>
+                  </div>
+                </div>
+                <Badge variant="destructive" className="bg-red-100 text-red-800 border-red-200 text-xs px-1 py-0">
+                  Offline desde {new Date(terminal.ultima_conexao).toLocaleString('pt-BR')}
+                </Badge>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Filtros Compactos */}
+      <Card>
+        <CardHeader className="pb-1 p-2 sm:p-3">
+          <CardTitle className="flex items-center text-sm font-semibold text-gray-800">
+            <Filter className="w-3 h-3 mr-1 text-gray-600" />
+            Filtros de Pesquisa
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-0 p-2 sm:p-3">
+          <div className="relative">
+            <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 w-3 h-3" />
+            <Input
+              placeholder="Buscar por nome, localização ou IP..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-7 h-8 border-gray-300 focus:border-blue-500 focus:ring-blue-500 text-xs"
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Lista de Terminais Compacta */}
+      <Card>
+        <CardHeader className="pb-1 p-2 sm:p-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-sm font-semibold text-gray-800">
+              Terminais Cadastrados
+            </CardTitle>
+            <Badge variant="outline" className="text-xs px-1 py-0">
+              {filteredTerminals.length} {filteredTerminals.length === 1 ? 'terminal' : 'terminais'}
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader className="bg-gray-50">
+                <TableRow>
+                  <TableHead className="font-semibold text-gray-700 min-w-[100px] text-xs h-7">Terminal</TableHead>
+                  <TableHead className="font-semibold text-gray-700 hidden sm:table-cell text-xs h-7">Localização</TableHead>
+                  <TableHead className="font-semibold text-gray-700 hidden md:table-cell text-xs h-7">IP</TableHead>
+                  <TableHead className="font-semibold text-gray-700 text-xs h-7">Status</TableHead>
+                  <TableHead className="font-semibold text-gray-700 hidden lg:table-cell text-xs h-7">Última Conexão</TableHead>
+                  <TableHead className="font-semibold text-gray-700 hidden md:table-cell text-xs h-7">Versão</TableHead>
+                  <TableHead className="font-semibold text-gray-700 hidden lg:table-cell text-xs h-7">Uptime</TableHead>
+                  <TableHead className="font-semibold text-gray-700 hidden sm:table-cell text-center text-xs h-7">Vendas Hoje</TableHead>
+                  <TableHead className="font-semibold text-gray-700 text-center text-xs h-7">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredTerminals.map((terminal: any) => (
+                  <TableRow key={terminal.id} className="hover:bg-gray-50 transition-colors h-8">
+                    <TableCell className="font-medium py-1 p-2">
+                      <div className="space-y-0">
+                        <div className="font-semibold text-gray-900 text-xs">{terminal.nome}</div>
+                        <div className="text-xs text-gray-500 sm:hidden flex items-center">
+                          <MapPin className="w-2 h-2 mr-0.5" />
+                          {terminal.localizacao}
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="hidden sm:table-cell py-1 p-2">
+                      <div className="flex items-center text-xs text-gray-600">
+                        <MapPin className="w-2 h-2 mr-0.5 text-gray-400" />
+                        {terminal.localizacao}
+                      </div>
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell py-1 p-2">
+                      <code className="bg-gray-100 px-1 py-0.5 rounded text-xs font-mono border">
+                        {terminal.endereco_ip}
+                      </code>
+                    </TableCell>
+                    <TableCell className="py-1 p-2">{getStatusBadge(terminal.status)}</TableCell>
+                    <TableCell className="hidden lg:table-cell text-xs text-gray-600 py-1 p-2">
+                      {new Date(terminal.ultima_conexao).toLocaleString('pt-BR')}
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell py-1 p-2">
+                      <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200 px-1 py-0">
+                        v{terminal.versao}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="hidden lg:table-cell text-xs text-gray-600 py-1 p-2">{terminal.tempo_atividade}</TableCell>
+                    <TableCell className="hidden sm:table-cell text-center py-1 p-2">
+                      <Badge variant="outline" className="font-semibold text-green-700 bg-green-50 border-green-200 text-xs px-1 py-0">
+                        {terminal.vendas_hoje}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="py-1 p-2">
+                      <div className="flex flex-wrap gap-0.5 justify-center">
+                        {terminal.status === 'offline' && (
+                          <Button
+                            size="sm"
+                            className="bg-green-600 hover:bg-green-700 h-5 w-5 p-0"
+                            onClick={() => updateTerminalStatus(terminal.id, 'online')}
+                            disabled={updateStatusMutation.isPending}
+                            title="Ativar terminal"
+                          >
+                            <Power className="w-2 h-2" />
+                          </Button>
+                        )}
+                        {terminal.status === 'online' && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => restartTerminal(terminal.id)}
+                            className="h-5 w-5 p-0 border-blue-200 text-blue-700 hover:bg-blue-50"
+                            title="Reiniciar terminal"
+                          >
+                            <RefreshCw className="w-2 h-2" />
+                          </Button>
+                        )}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => updateTerminalStatus(terminal.id, 'manutencao')}
+                          className="h-5 w-5 p-0 border-yellow-200 text-yellow-700 hover:bg-yellow-50"
+                          title="Colocar em manutenção"
+                        >
+                          <Settings className="w-2 h-2" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {filteredTerminals.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={9} className="text-center py-4">
+                      <div className="space-y-1">
+                        <Monitor className="w-5 h-5 text-gray-400 mx-auto" />
+                        <p className="text-gray-500 text-xs">Nenhum terminal encontrado</p>
+                        <p className="text-xs text-gray-400">Tente ajustar os filtros de pesquisa</p>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };

@@ -111,67 +111,67 @@ const Cancelamentos: React.FC = () => {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'pending':
-        return <Badge variant="secondary"><AlertTriangle className="w-3 h-3 mr-1" />Pendente</Badge>;
+        return <Badge variant="secondary" className="text-xs"><AlertTriangle className="w-3 h-3 mr-1" />Pendente</Badge>;
       case 'approved':
-        return <Badge className="bg-green-600"><CheckCircle className="w-3 h-3 mr-1" />Aprovado</Badge>;
+        return <Badge className="bg-green-600 text-xs"><CheckCircle className="w-3 h-3 mr-1" />Aprovado</Badge>;
       case 'rejected':
-        return <Badge variant="destructive"><XCircle className="w-3 h-3 mr-1" />Rejeitado</Badge>;
+        return <Badge variant="destructive" className="text-xs"><XCircle className="w-3 h-3 mr-1" />Rejeitado</Badge>;
       default:
-        return <Badge variant="outline">{status}</Badge>;
+        return <Badge variant="outline" className="text-xs">{status}</Badge>;
     }
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-2 sm:p-3 space-y-2 sm:space-y-3">
       <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-2">
-          <XCircle className="w-6 h-6 text-red-600" />
-          <h1 className="text-2xl font-bold text-gray-800">Cancelamentos</h1>
+        <div className="flex items-center space-x-1">
+          <XCircle className="w-5 h-5 text-red-600" />
+          <h1 className="text-lg sm:text-xl font-bold text-gray-800">Cancelamentos</h1>
         </div>
       </div>
 
       {/* Estatísticas */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3">
         <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <AlertTriangle className="w-5 h-5 text-yellow-600" />
+          <CardContent className="p-2 sm:p-3">
+            <div className="flex items-center space-x-1">
+              <AlertTriangle className="w-4 h-4 text-yellow-600" />
               <div>
-                <p className="text-sm text-gray-600">Pendentes</p>
-                <p className="text-2xl font-bold">{cancellations.filter(c => c.status === 'pending').length}</p>
+                <p className="text-xs sm:text-sm text-gray-600">Pendentes</p>
+                <p className="text-lg sm:text-xl font-bold">{cancellations.filter(c => c.status === 'pending').length}</p>
               </div>
             </div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <CheckCircle className="w-5 h-5 text-green-600" />
+          <CardContent className="p-2 sm:p-3">
+            <div className="flex items-center space-x-1">
+              <CheckCircle className="w-4 h-4 text-green-600" />
               <div>
-                <p className="text-sm text-gray-600">Aprovados</p>
-                <p className="text-2xl font-bold">{cancellations.filter(c => c.status === 'approved').length}</p>
+                <p className="text-xs sm:text-sm text-gray-600">Aprovados</p>
+                <p className="text-lg sm:text-xl font-bold">{cancellations.filter(c => c.status === 'approved').length}</p>
               </div>
             </div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <XCircle className="w-5 h-5 text-red-600" />
+          <CardContent className="p-2 sm:p-3">
+            <div className="flex items-center space-x-1">
+              <XCircle className="w-4 h-4 text-red-600" />
               <div>
-                <p className="text-sm text-gray-600">Rejeitados</p>
-                <p className="text-2xl font-bold">{cancellations.filter(c => c.status === 'rejected').length}</p>
+                <p className="text-xs sm:text-sm text-gray-600">Rejeitados</p>
+                <p className="text-lg sm:text-xl font-bold">{cancellations.filter(c => c.status === 'rejected').length}</p>
               </div>
             </div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <DollarSign className="w-5 h-5 text-blue-600" />
+          <CardContent className="p-2 sm:p-3">
+            <div className="flex items-center space-x-1">
+              <DollarSign className="w-4 h-4 text-blue-600" />
               <div>
-                <p className="text-sm text-gray-600">Total Reembolsado</p>
-                <p className="text-2xl font-bold">R$ {cancellations.filter(c => c.status === 'approved').reduce((acc, c) => acc + c.amount, 0).toFixed(2)}</p>
+                <p className="text-xs sm:text-sm text-gray-600">Total Reembolsado</p>
+                <p className="text-lg sm:text-xl font-bold">R$ {cancellations.filter(c => c.status === 'approved').reduce((acc, c) => acc + c.amount, 0).toFixed(2)}</p>
               </div>
             </div>
           </CardContent>
@@ -180,22 +180,24 @@ const Cancelamentos: React.FC = () => {
 
       {/* Novo Cancelamento */}
       <Card>
-        <CardHeader>
-          <CardTitle>Solicitar Cancelamento</CardTitle>
+        <CardHeader className="p-2 sm:p-3">
+          <CardTitle className="text-sm sm:text-base">Solicitar Cancelamento</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <CardContent className="p-2 sm:p-3 pt-0">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-2 sm:gap-3">
             <Input
               placeholder="ID do Pedido"
               value={newCancellation.orderId}
               onChange={(e) => setNewCancellation(prev => ({ ...prev, orderId: e.target.value }))}
+              className="h-8 text-sm"
             />
             <Input
               placeholder="Motivo do cancelamento"
               value={newCancellation.reason}
               onChange={(e) => setNewCancellation(prev => ({ ...prev, reason: e.target.value }))}
+              className="h-8 text-sm"
             />
-            <Button onClick={handleNewCancellation}>
+            <Button onClick={handleNewCancellation} className="h-8 text-sm">
               Solicitar Cancelamento
             </Button>
           </div>
@@ -204,14 +206,14 @@ const Cancelamentos: React.FC = () => {
 
       {/* Filtros */}
       <Card>
-        <CardContent className="p-4">
+        <CardContent className="p-2 sm:p-3">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 w-3 h-3" />
             <Input
               placeholder="Buscar por ID do pedido ou nome do cliente..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
+              className="pl-7 h-8 text-sm"
             />
           </div>
         </CardContent>
@@ -219,57 +221,67 @@ const Cancelamentos: React.FC = () => {
 
       {/* Lista de Cancelamentos */}
       <Card>
-        <CardHeader>
-          <CardTitle>Histórico de Cancelamentos ({filteredCancellations.length})</CardTitle>
+        <CardHeader className="p-2 sm:p-3">
+          <CardTitle className="text-sm sm:text-base">Histórico de Cancelamentos ({filteredCancellations.length})</CardTitle>
         </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>ID Pedido</TableHead>
-                <TableHead>Cliente</TableHead>
-                <TableHead>Valor</TableHead>
-                <TableHead>Motivo</TableHead>
-                <TableHead>Data</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Operador</TableHead>
-                <TableHead>Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredCancellations.map((cancellation) => (
-                <TableRow key={cancellation.id}>
-                  <TableCell className="font-medium">{cancellation.orderId}</TableCell>
-                  <TableCell>{cancellation.customerName}</TableCell>
-                  <TableCell>R$ {cancellation.amount.toFixed(2)}</TableCell>
-                  <TableCell>{cancellation.reason}</TableCell>
-                  <TableCell>{cancellation.date}</TableCell>
-                  <TableCell>{getStatusBadge(cancellation.status)}</TableCell>
-                  <TableCell>{cancellation.operator}</TableCell>
-                  <TableCell>
-                    {cancellation.status === 'pending' && (
-                      <div className="flex space-x-2">
-                        <Button
-                          size="sm"
-                          className="bg-green-600 hover:bg-green-700"
-                          onClick={() => handleStatusChange(cancellation.id, 'approved')}
-                        >
-                          Aprovar
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => handleStatusChange(cancellation.id, 'rejected')}
-                        >
-                          Rejeitar
-                        </Button>
-                      </div>
-                    )}
-                  </TableCell>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="h-8 text-xs">ID Pedido</TableHead>
+                  <TableHead className="hidden sm:table-cell h-8 text-xs">Cliente</TableHead>
+                  <TableHead className="hidden md:table-cell h-8 text-xs">Valor</TableHead>
+                  <TableHead className="h-8 text-xs">Motivo</TableHead>
+                  <TableHead className="hidden lg:table-cell h-8 text-xs">Data</TableHead>
+                  <TableHead className="h-8 text-xs">Status</TableHead>
+                  <TableHead className="hidden sm:table-cell h-8 text-xs">Operador</TableHead>
+                  <TableHead className="h-8 text-xs">Ações</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {filteredCancellations.map((cancellation) => (
+                  <TableRow key={cancellation.id}>
+                    <TableCell className="font-medium p-2">
+                      <div>
+                        <div className="text-xs font-semibold">{cancellation.orderId}</div>
+                        <div className="text-xs text-gray-500 sm:hidden">
+                          {cancellation.customerName}
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="hidden sm:table-cell p-2 text-xs">{cancellation.customerName}</TableCell>
+                    <TableCell className="hidden md:table-cell p-2 text-xs">R$ {cancellation.amount.toFixed(2)}</TableCell>
+                    <TableCell className="p-2 text-xs">{cancellation.reason}</TableCell>
+                    <TableCell className="hidden lg:table-cell p-2 text-xs">{cancellation.date}</TableCell>
+                    <TableCell className="p-2">{getStatusBadge(cancellation.status)}</TableCell>
+                    <TableCell className="hidden sm:table-cell p-2 text-xs">{cancellation.operator}</TableCell>
+                    <TableCell className="p-2">
+                      {cancellation.status === 'pending' && (
+                        <div className="flex space-x-1">
+                          <Button
+                            size="sm"
+                            className="bg-green-600 hover:bg-green-700 h-6 text-xs px-2"
+                            onClick={() => handleStatusChange(cancellation.id, 'approved')}
+                          >
+                            Aprovar
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => handleStatusChange(cancellation.id, 'rejected')}
+                            className="h-6 text-xs px-2"
+                          >
+                            Rejeitar
+                          </Button>
+                        </div>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
     </div>

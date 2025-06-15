@@ -78,15 +78,15 @@ const Vouchers: React.FC = () => {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'ativo':
-        return <Badge className="bg-green-600">Ativo</Badge>;
+        return <Badge className="bg-green-600 text-xs">Ativo</Badge>;
       case 'usado':
-        return <Badge className="bg-blue-600">Usado</Badge>;
+        return <Badge className="bg-blue-600 text-xs">Usado</Badge>;
       case 'expirado':
-        return <Badge variant="secondary">Expirado</Badge>;
+        return <Badge variant="secondary" className="text-xs">Expirado</Badge>;
       case 'cancelado':
-        return <Badge variant="destructive">Cancelado</Badge>;
+        return <Badge variant="destructive" className="text-xs">Cancelado</Badge>;
       default:
-        return <Badge variant="outline">{status}</Badge>;
+        return <Badge variant="outline" className="text-xs">{status}</Badge>;
     }
   };
 
@@ -129,70 +129,70 @@ const Vouchers: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="p-3 sm:p-6 flex items-center justify-center">
+      <div className="p-2 sm:p-3 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-purple-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Carregando vouchers...</p>
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-purple-600 mx-auto"></div>
+          <p className="mt-2 text-sm text-gray-600">Carregando vouchers...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div className="flex items-center space-x-2">
-          <Ticket className="w-6 h-6 text-purple-600" />
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-800">Gestão de Vouchers</h1>
+    <div className="p-2 sm:p-3 space-y-2 sm:space-y-3">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+        <div className="flex items-center space-x-1">
+          <Ticket className="w-5 h-5 text-purple-600" />
+          <h1 className="text-lg sm:text-xl font-bold text-gray-800">Gestão de Vouchers</h1>
         </div>
-        <Button className="flex items-center space-x-2 w-full sm:w-auto">
-          <Plus className="w-4 h-4" />
+        <Button className="flex items-center space-x-1 w-full sm:w-auto h-8 text-sm px-3">
+          <Plus className="w-3 h-3" />
           <span>Novo Voucher</span>
         </Button>
       </div>
 
       {/* Estatísticas */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
         <Card>
-          <CardContent className="p-3 sm:p-4">
-            <div className="flex items-center space-x-2">
-              <Ticket className="w-5 h-5 text-purple-600" />
+          <CardContent className="p-2 sm:p-3">
+            <div className="flex items-center space-x-1">
+              <Ticket className="w-4 h-4 text-purple-600" />
               <div className="min-w-0">
                 <p className="text-xs sm:text-sm text-gray-600 truncate">Total de Vouchers</p>
-                <p className="text-lg sm:text-2xl font-bold">{totalVouchers}</p>
+                <p className="text-lg sm:text-xl font-bold">{totalVouchers}</p>
               </div>
             </div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-3 sm:p-4">
-            <div className="flex items-center space-x-2">
-              <Gift className="w-5 h-5 text-green-600" />
+          <CardContent className="p-2 sm:p-3">
+            <div className="flex items-center space-x-1">
+              <Gift className="w-4 h-4 text-green-600" />
               <div className="min-w-0">
                 <p className="text-xs sm:text-sm text-gray-600 truncate">Ativos</p>
-                <p className="text-lg sm:text-2xl font-bold text-green-600">{activeVouchers}</p>
+                <p className="text-lg sm:text-xl font-bold text-green-600">{activeVouchers}</p>
               </div>
             </div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-3 sm:p-4">
-            <div className="flex items-center space-x-2">
-              <CreditCard className="w-5 h-5 text-blue-600" />
+          <CardContent className="p-2 sm:p-3">
+            <div className="flex items-center space-x-1">
+              <CreditCard className="w-4 h-4 text-blue-600" />
               <div className="min-w-0">
                 <p className="text-xs sm:text-sm text-gray-600 truncate">Usados</p>
-                <p className="text-lg sm:text-2xl font-bold text-blue-600">{usedVouchers}</p>
+                <p className="text-lg sm:text-xl font-bold text-blue-600">{usedVouchers}</p>
               </div>
             </div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-3 sm:p-4">
-            <div className="flex items-center space-x-2">
-              <Calendar className="w-5 h-5 text-red-600" />
+          <CardContent className="p-2 sm:p-3">
+            <div className="flex items-center space-x-1">
+              <Calendar className="w-4 h-4 text-red-600" />
               <div className="min-w-0">
                 <p className="text-xs sm:text-sm text-gray-600 truncate">Expirados</p>
-                <p className="text-lg sm:text-2xl font-bold text-red-600">{expiredVouchers}</p>
+                <p className="text-lg sm:text-xl font-bold text-red-600">{expiredVouchers}</p>
               </div>
             </div>
           </CardContent>
@@ -201,24 +201,24 @@ const Vouchers: React.FC = () => {
 
       {/* Filtros */}
       <Card>
-        <CardContent className="p-3 sm:p-4">
-          <div className="flex flex-col gap-3 sm:gap-4">
+        <CardContent className="p-2 sm:p-3">
+          <div className="flex flex-col gap-2">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 w-3 h-3" />
               <Input
                 placeholder="Buscar por código, cliente ou email..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="pl-7 h-8 text-sm"
               />
             </div>
-            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-              <div className="flex items-center space-x-2 flex-1">
-                <Filter className="w-4 h-4 text-gray-500" />
+            <div className="flex flex-col sm:flex-row gap-2">
+              <div className="flex items-center space-x-1 flex-1">
+                <Filter className="w-3 h-3 text-gray-500" />
                 <select 
                   value={selectedType}
                   onChange={(e) => setSelectedType(e.target.value)}
-                  className="border rounded-md px-3 py-2 w-full"
+                  className="border rounded-md px-2 py-1 w-full text-sm"
                 >
                   <option value="all">Todos os tipos</option>
                   <option value="desconto">Desconto</option>
@@ -226,12 +226,12 @@ const Vouchers: React.FC = () => {
                   <option value="credito">Crédito</option>
                 </select>
               </div>
-              <div className="flex items-center space-x-2 flex-1">
-                <Users className="w-4 h-4 text-gray-500" />
+              <div className="flex items-center space-x-1 flex-1">
+                <Users className="w-3 h-3 text-gray-500" />
                 <select 
                   value={selectedStatus}
                   onChange={(e) => setSelectedStatus(e.target.value)}
-                  className="border rounded-md px-3 py-2 w-full"
+                  className="border rounded-md px-2 py-1 w-full text-sm"
                 >
                   <option value="all">Todos os status</option>
                   <option value="ativo">Ativo</option>
@@ -247,55 +247,55 @@ const Vouchers: React.FC = () => {
 
       {/* Tabela de Vouchers */}
       <Card>
-        <CardHeader className="p-3 sm:p-6">
-          <CardTitle className="text-lg sm:text-xl">Vouchers Cadastrados ({filteredVouchers.length})</CardTitle>
+        <CardHeader className="p-2 sm:p-3">
+          <CardTitle className="text-sm sm:text-base">Vouchers Cadastrados ({filteredVouchers.length})</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="min-w-[100px]">Código</TableHead>
-                  <TableHead className="hidden sm:table-cell">Tipo</TableHead>
-                  <TableHead className="hidden md:table-cell">Valor</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="hidden lg:table-cell">Validade</TableHead>
-                  <TableHead className="hidden md:table-cell">Uso</TableHead>
-                  <TableHead className="hidden lg:table-cell">Cliente</TableHead>
-                  <TableHead className="hidden sm:table-cell">Email</TableHead>
+                  <TableHead className="min-w-[100px] h-8 text-xs">Código</TableHead>
+                  <TableHead className="hidden sm:table-cell h-8 text-xs">Tipo</TableHead>
+                  <TableHead className="hidden md:table-cell h-8 text-xs">Valor</TableHead>
+                  <TableHead className="h-8 text-xs">Status</TableHead>
+                  <TableHead className="hidden lg:table-cell h-8 text-xs">Validade</TableHead>
+                  <TableHead className="hidden md:table-cell h-8 text-xs">Uso</TableHead>
+                  <TableHead className="hidden lg:table-cell h-8 text-xs">Cliente</TableHead>
+                  <TableHead className="hidden sm:table-cell h-8 text-xs">Email</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredVouchers.map((voucher: Voucher) => (
                   <TableRow key={voucher.id}>
-                    <TableCell className="font-medium">
+                    <TableCell className="font-medium p-2">
                       <div>
-                        <div className="font-semibold">{voucher.codigo}</div>
+                        <div className="font-semibold text-xs">{voucher.codigo}</div>
                         <div className="text-xs text-gray-500 sm:hidden">
                           {getTypeLabel(voucher.tipo)} - {formatValue(voucher)}
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell className="hidden sm:table-cell">
-                      <Badge variant="outline" className="flex items-center w-fit">
+                    <TableCell className="hidden sm:table-cell p-2">
+                      <Badge variant="outline" className="flex items-center w-fit text-xs">
                         {getTypeIcon(voucher.tipo)}
                         {getTypeLabel(voucher.tipo)}
                       </Badge>
                     </TableCell>
-                    <TableCell className="hidden md:table-cell font-semibold">
+                    <TableCell className="hidden md:table-cell p-2 font-semibold text-xs">
                       {formatValue(voucher)}
                     </TableCell>
-                    <TableCell>{getStatusBadge(voucher.status)}</TableCell>
-                    <TableCell className="hidden lg:table-cell text-sm">
+                    <TableCell className="p-2">{getStatusBadge(voucher.status)}</TableCell>
+                    <TableCell className="hidden lg:table-cell text-xs p-2">
                       {new Date(voucher.data_validade).toLocaleDateString('pt-BR')}
                     </TableCell>
-                    <TableCell className="hidden md:table-cell">
-                      <span className="text-sm">
+                    <TableCell className="hidden md:table-cell p-2">
+                      <span className="text-xs">
                         {voucher.usos_realizados} / {voucher.limite_uso}
                       </span>
                     </TableCell>
-                    <TableCell className="hidden lg:table-cell">{voucher.cliente_nome}</TableCell>
-                    <TableCell className="hidden sm:table-cell text-sm">{voucher.cliente_email}</TableCell>
+                    <TableCell className="hidden lg:table-cell text-xs p-2">{voucher.cliente_nome}</TableCell>
+                    <TableCell className="hidden sm:table-cell text-xs p-2">{voucher.cliente_email}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
