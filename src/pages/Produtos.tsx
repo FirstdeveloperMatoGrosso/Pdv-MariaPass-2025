@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Plus, Search, Edit, Trash2, Package, AlertCircle, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -134,7 +133,6 @@ const Produtos = () => {
         <ProductForm onSuccess={fetchProdutos} />
       </div>
 
-      {/* Estatísticas */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
         <Card>
           <CardHeader>

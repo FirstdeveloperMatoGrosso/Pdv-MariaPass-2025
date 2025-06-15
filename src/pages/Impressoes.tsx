@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -87,14 +86,19 @@ const Impressoes: React.FC = () => {
     mutationFn: async (id: string) => {
       const { error } = await supabase
         .from('impressoes')
-        .update({ status: 'pendente' })
+        .update({ 
+          status: 'pendente',
+          data_impressao: new Date().toISOString()
+        })
         .eq('id', id);
       
       if (error) throw error;
+      return { id };
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['impressoes'] });
       toast.success('Reimpressão solicitada com sucesso!');
+      console.log('Reimpressão solicitada para ID:', data.id);
     },
     onError: (error) => {
       console.error('Erro ao reenviar impressão:', error);
@@ -105,27 +109,39 @@ const Impressoes: React.FC = () => {
   // Mutation para teste de impressão
   const testPrintMutation = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase
+      const testId = 'TEST-' + Date.now();
+      console.log('Enviando teste de impressão:', testId);
+      
+      const { data, error } = await supabase
         .from('impressoes')
         .insert({
-          pedido_id: 'TEST-' + Date.now(),
+          pedido_id: testId,
           tipo: 'comprovante',
           impressora: 'Impressora Principal',
           status: 'pendente',
           paginas: 1,
           copias: 1,
-          usuario: 'Admin'
-        });
+          usuario: 'Sistema'
+        })
+        .select()
+        .single();
       
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao inserir teste:', error);
+        throw error;
+      }
+      
+      console.log('Teste de impressão inserido:', data);
+      return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['impressoes'] });
-      toast.success('Teste de impressão enviado com sucesso!');
+      toast.success(`Teste de impressão enviado! ID: ${data.pedido_id}`);
+      console.log('Teste de impressão criado com sucesso:', data);
     },
     onError: (error) => {
       console.error('Erro ao enviar teste:', error);
-      toast.error('Erro ao enviar teste de impressão');
+      toast.error('Erro ao enviar teste de impressão: ' + error.message);
     },
   });
 
@@ -178,10 +194,12 @@ const Impressoes: React.FC = () => {
   };
 
   const retryPrint = (jobId: string) => {
+    console.log('Solicitando reimpressão para:', jobId);
     retryPrintMutation.mutate(jobId);
   };
 
   const testPrint = () => {
+    console.log('Iniciando teste de impressão...');
     testPrintMutation.mutate();
   };
 
@@ -216,7 +234,7 @@ const Impressoes: React.FC = () => {
           disabled={testPrintMutation.isPending}
         >
           <Printer className="w-3 h-3" />
-          <span>Teste de Impressão</span>
+          <span>{testPrintMutation.isPending ? 'Enviando...' : 'Teste de Impressão'}</span>
         </Button>
       </div>
 
@@ -402,17 +420,16 @@ const Impressoes: React.FC = () => {
                             )}
                           </DialogContent>
                         </Dialog>
-                        {job.status === 'falhou' && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => retryPrint(job.id)}
-                            disabled={retryPrintMutation.isPending}
-                            className="h-5 w-5 p-0"
-                          >
-                            <RotateCcw className="w-3 h-3" />
-                          </Button>
-                        )}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => retryPrint(job.id)}
+                          disabled={retryPrintMutation.isPending}
+                          className="h-5 w-5 p-0"
+                          title="Reimprimir"
+                        >
+                          <RotateCcw className="w-3 h-3" />
+                        </Button>
                       </div>
                     </TableCell>
                   </TableRow>
