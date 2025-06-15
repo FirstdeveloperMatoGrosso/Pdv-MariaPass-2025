@@ -34,31 +34,42 @@ export const useRelatorioDados = (periodo: 'today' | 'week' | 'month') => {
 
   const getDateRange = () => {
     const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     
     switch (periodo) {
       case 'today':
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
         return {
           inicio: today.toISOString(),
-          fim: new Date(today.getTime() + 24 * 60 * 60 * 1000).toISOString()
+          fim: tomorrow.toISOString()
         };
       case 'week':
-        const weekStart = new Date(today);
-        weekStart.setDate(today.getDate() - today.getDay());
+        const weekStart = new Date(now);
+        weekStart.setDate(now.getDate() - now.getDay());
+        weekStart.setHours(0, 0, 0, 0);
+        const weekEnd = new Date(now);
+        weekEnd.setHours(23, 59, 59, 999);
         return {
           inicio: weekStart.toISOString(),
-          fim: now.toISOString()
+          fim: weekEnd.toISOString()
         };
       case 'month':
-        const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        monthStart.setHours(0, 0, 0, 0);
+        const monthEnd = new Date(now);
+        monthEnd.setHours(23, 59, 59, 999);
         return {
           inicio: monthStart.toISOString(),
-          fim: now.toISOString()
+          fim: monthEnd.toISOString()
         };
       default:
+        const defaultStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const defaultEnd = new Date(defaultStart);
+        defaultEnd.setDate(defaultEnd.getDate() + 1);
         return {
-          inicio: today.toISOString(),
-          fim: new Date(today.getTime() + 24 * 60 * 60 * 1000).toISOString()
+          inicio: defaultStart.toISOString(),
+          fim: defaultEnd.toISOString()
         };
     }
   };
@@ -70,7 +81,10 @@ export const useRelatorioDados = (periodo: 'today' | 'week' | 'month') => {
       
       const { inicio, fim } = getDateRange();
       
-      console.log('Buscando dados de vendas para período:', { inicio, fim, periodo });
+      console.log('=== BUSCANDO RELATÓRIOS ===');
+      console.log('Período:', periodo);
+      console.log('Data início:', inicio);
+      console.log('Data fim:', fim);
 
       // Buscar todas as vendas da tabela vendas_pulseiras
       const { data: vendasDiretas, error: errorVendasDiretas } = await supabase
@@ -90,7 +104,7 @@ export const useRelatorioDados = (periodo: 'today' | 'week' | 'month') => {
           )
         `)
         .gte('data_venda', inicio)
-        .lte('data_venda', fim)
+        .lt('data_venda', fim)
         .order('data_venda', { ascending: false });
 
       if (errorVendasDiretas) {
@@ -98,28 +112,36 @@ export const useRelatorioDados = (periodo: 'today' | 'week' | 'month') => {
         throw errorVendasDiretas;
       }
 
-      console.log('Vendas encontradas para período:', vendasDiretas?.length || 0);
-      console.log('Vendas detalhadas:', vendasDiretas);
-
-      if (!vendasDiretas || vendasDiretas.length === 0) {
-        console.log('Nenhuma venda encontrada para o período especificado');
+      console.log('Total de vendas encontradas:', vendasDiretas?.length || 0);
+      
+      if (vendasDiretas && vendasDiretas.length > 0) {
+        console.log('Primeiras 3 vendas:', vendasDiretas.slice(0, 3));
+      } else {
+        console.log('Nenhuma venda encontrada para o período');
         
-        // Verificar se existem vendas na tabela (para debug)
-        const { data: todasVendas, error: errorTodasVendas } = await supabase
+        // Debug: buscar todas as vendas para verificar
+        const { data: todasVendas } = await supabase
           .from('vendas_pulseiras')
-          .select('id, data_venda')
+          .select('id, data_venda, valor_total')
           .order('data_venda', { ascending: false })
-          .limit(10);
+          .limit(5);
         
-        if (!errorTodasVendas) {
-          console.log('Últimas 10 vendas na tabela:', todasVendas);
-        }
+        console.log('Últimas 5 vendas na tabela (qualquer data):', todasVendas);
       }
 
       // Calcular dados consolidados
-      const faturamentoTotal = vendasDiretas?.reduce((total, venda) => total + (Number(venda.valor_total) || 0), 0) || 0;
+      const faturamentoTotal = vendasDiretas?.reduce((total, venda) => {
+        const valor = Number(venda.valor_total) || 0;
+        return total + valor;
+      }, 0) || 0;
+      
       const pedidosRealizados = vendasDiretas?.length || 0;
       const ticketMedio = pedidosRealizados > 0 ? faturamentoTotal / pedidosRealizados : 0;
+
+      console.log('Dados calculados:');
+      console.log('- Faturamento total:', faturamentoTotal);
+      console.log('- Pedidos realizados:', pedidosRealizados);
+      console.log('- Ticket médio:', ticketMedio);
 
       // Agrupar produtos mais vendidos
       const produtosGrouped = vendasDiretas?.reduce((acc: any, venda: any) => {
@@ -145,6 +167,8 @@ export const useRelatorioDados = (periodo: 'today' | 'week' | 'month') => {
         .sort((a: any, b: any) => b.quantidade - a.quantidade)
         .slice(0, 10);
 
+      console.log('Produtos mais vendidos:', produtosMaisVendidosArray);
+
       // Processar pedidos recentes
       const pedidosRecentesProcessados = (vendasDiretas || []).slice(0, 10).map((venda: any) => ({
         id: venda.id,
@@ -154,6 +178,8 @@ export const useRelatorioDados = (periodo: 'today' | 'week' | 'month') => {
         valorTotal: Number(venda.valor_total) || 0,
         formaPagamento: venda.forma_pagamento || 'Pulseira'
       }));
+
+      console.log('Pedidos recentes processados:', pedidosRecentesProcessados.length);
 
       setDados({
         faturamentoTotal,
@@ -165,13 +191,7 @@ export const useRelatorioDados = (periodo: 'today' | 'week' | 'month') => {
       setProdutosMaisVendidos(produtosMaisVendidosArray as ProdutoMaisVendido[]);
       setPedidosRecentes(pedidosRecentesProcessados);
 
-      console.log('Dados processados para relatórios:', {
-        faturamentoTotal,
-        pedidosRealizados,
-        ticketMedio,
-        produtosMaisVendidos: produtosMaisVendidosArray.length,
-        pedidosRecentes: pedidosRecentesProcessados.length
-      });
+      console.log('=== DADOS FINAIS DEFINIDOS ===');
 
     } catch (err) {
       console.error('Erro ao carregar dados do relatório:', err);
@@ -182,6 +202,7 @@ export const useRelatorioDados = (periodo: 'today' | 'week' | 'month') => {
   };
 
   useEffect(() => {
+    console.log('Hook useRelatorioDados iniciado para período:', periodo);
     buscarDados();
   }, [periodo]);
 
