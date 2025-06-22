@@ -159,14 +159,14 @@ const Produtos: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen p-4 space-y-4">
+    <div className="min-h-screen p-2 sm:p-4 space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center space-x-2">
           <Package className="w-6 h-6 text-blue-600" />
-          <h1 className="text-2xl font-bold text-gray-800">Produtos</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-800">Produtos</h1>
         </div>
-        <Button onClick={() => setShowForm(true)}>
+        <Button onClick={() => setShowForm(true)} className="w-full sm:w-auto">
           <Plus className="w-4 h-4 mr-2" />
           Novo Produto
         </Button>
@@ -175,13 +175,13 @@ const Produtos: React.FC = () => {
       {/* Filters */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
+          <CardTitle className="flex items-center space-x-2 text-lg">
             <Filter className="w-5 h-5" />
             <span>Filtros</span>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="space-y-2">
               <label className="text-sm font-medium">Buscar</label>
               <div className="relative">
@@ -228,13 +228,13 @@ const Produtos: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Products Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {/* Products Grid - Responsivo para mostrar 5 produtos */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
         {isLoading ? (
-          Array.from({ length: 6 }).map((_, index) => (
+          Array.from({ length: 10 }).map((_, index) => (
             <Card key={index} className="animate-pulse">
-              <CardContent className="p-4">
-                <div className="h-32 bg-gray-200 rounded mb-4"></div>
+              <CardContent className="p-3 sm:p-4">
+                <div className="h-24 sm:h-32 bg-gray-200 rounded mb-4"></div>
                 <div className="h-4 bg-gray-200 rounded mb-2"></div>
                 <div className="h-4 bg-gray-200 rounded w-2/3"></div>
               </CardContent>
@@ -259,54 +259,60 @@ const Produtos: React.FC = () => {
                     }}
                   />
                 ) : (
-                  <ImageIcon className="w-12 h-12 text-gray-300" />
+                  <ImageIcon className="w-8 h-8 sm:w-12 sm:h-12 text-gray-300" />
                 )}
               </div>
               
-              <CardContent className="p-4">
-                <div className="space-y-3">
+              <CardContent className="p-3 sm:p-4">
+                <div className="space-y-2 sm:space-y-3">
                   <div>
-                    <h3 className="font-semibold text-lg truncate">{product.nome}</h3>
-                    <p className="text-sm text-gray-600">{product.categoria}</p>
+                    <h3 className="font-semibold text-sm sm:text-lg truncate" title={product.nome}>
+                      {product.nome}
+                    </h3>
+                    <p className="text-xs sm:text-sm text-gray-600 truncate">
+                      {product.categoria}
+                    </p>
                   </div>
                   
                   <div className="flex items-center justify-between">
-                    <div className="text-xl font-bold text-green-600">
+                    <div className="text-sm sm:text-xl font-bold text-green-600">
                       {formatCurrency(product.preco)}
                     </div>
-                    <Badge className={getStatusBadge(product.status)}>
+                    <Badge className={`text-xs ${getStatusBadge(product.status)}`}>
                       {product.status}
                     </Badge>
                   </div>
                   
-                  <div className="text-sm text-gray-600">
+                  <div className="text-xs sm:text-sm text-gray-600">
                     Estoque: {product.estoque} un.
                   </div>
                   
-                  <div className="flex space-x-2">
+                  <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => handleViewDetails(product)}
-                      className="flex-1"
+                      className="flex-1 text-xs"
                     >
-                      <Eye className="w-4 h-4 mr-1" />
-                      Detalhes
+                      <Eye className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                      <span className="hidden sm:inline">Detalhes</span>
+                      <span className="sm:hidden">Ver</span>
                     </Button>
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => handleEdit(product)}
+                      className="px-2 sm:px-3"
                     >
-                      <Edit className="w-4 h-4" />
+                      <Edit className="w-3 h-3 sm:w-4 sm:h-4" />
                     </Button>
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => handleDelete(product.id)}
-                      className="text-red-600 hover:text-red-700"
+                      className="text-red-600 hover:text-red-700 px-2 sm:px-3"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
                     </Button>
                   </div>
                 </div>
