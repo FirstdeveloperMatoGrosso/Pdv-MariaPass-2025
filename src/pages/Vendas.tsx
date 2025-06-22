@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,7 +9,12 @@ import {
   Calendar,
   Filter,
   Download,
-  Eye
+  Eye,
+  Image as ImageIcon,
+  Package,
+  CreditCard,
+  Hash,
+  MapPin
 } from 'lucide-react';
 import {
   Select,
@@ -19,6 +23,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery } from '@tanstack/react-query';
@@ -41,6 +51,7 @@ const Vendas: React.FC = () => {
   const [filtroData, setFiltroData] = useState('hoje');
   const [filtroFormaPagamento, setFiltroFormaPagamento] = useState('todas');
   const [busca, setBusca] = useState('');
+  const [selectedVenda, setSelectedVenda] = useState<VendaRealizada | null>(null);
   const { toast } = useToast();
 
   // Buscar vendas realizadas
@@ -156,6 +167,20 @@ const Vendas: React.FC = () => {
     };
     
     return cores[forma as keyof typeof cores] || 'bg-gray-100 text-gray-800';
+  };
+
+  const getPaymentIcon = (forma: string) => {
+    switch (forma.toLowerCase()) {
+      case 'cartao_credito':
+      case 'cartao_debito':
+        return <CreditCard className="w-4 h-4" />;
+      case 'pix':
+        return <Hash className="w-4 h-4" />;
+      case 'pulseira':
+        return <Package className="w-4 h-4" />;
+      default:
+        return <CreditCard className="w-4 h-4" />;
+    }
   };
 
   if (error) {
@@ -296,36 +321,52 @@ const Vendas: React.FC = () => {
                 <div key={venda.id} className="border rounded-lg p-4 hover:bg-gray-50">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4">
-                      {venda.produto_imagem && (
-                        <img 
-                          src={venda.produto_imagem} 
-                          alt={venda.produto_nome}
-                          className="w-12 h-12 object-cover rounded"
-                          onError={(e) => {
-                            e.currentTarget.src = '/placeholder.svg';
-                          }}
-                        />
-                      )}
+                      <div className="flex-shrink-0">
+                        {venda.produto_imagem ? (
+                          <img 
+                            src={venda.produto_imagem} 
+                            alt={venda.produto_nome}
+                            className="w-16 h-16 object-cover rounded-lg border"
+                            onError={(e) => {
+                              e.currentTarget.src = '/placeholder.svg';
+                            }}
+                          />
+                        ) : (
+                          <div className="w-16 h-16 bg-gray-100 rounded-lg border flex items-center justify-center">
+                            <ImageIcon className="w-6 h-6 text-gray-400" />
+                          </div>
+                        )}
+                      </div>
                       
-                      <div>
-                        <h4 className="font-medium">{venda.produto_nome}</h4>
-                        <p className="text-sm text-gray-600">
-                          Venda: {venda.numero_autorizacao}
-                        </p>
-                        <p className="text-xs text-gray-500">
+                      <div className="flex-1">
+                        <h4 className="font-medium text-lg">{venda.produto_nome}</h4>
+                        <div className="flex items-center space-x-2 mt-1">
+                          <p className="text-sm text-gray-600">
+                            Venda: {venda.numero_autorizacao}
+                          </p>
+                          {venda.nsu && (
+                            <Badge variant="outline" className="text-xs">
+                              NSU: {venda.nsu}
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-xs text-gray-500 mt-1">
                           {formatDate(venda.data_venda)}
                         </p>
                       </div>
                     </div>
 
-                    <div className="text-right">
-                      <div className="flex items-center space-x-2 mb-2">
-                        <Badge className={getFormaPagamentoBadge(venda.forma_pagamento)}>
-                          {venda.forma_pagamento.replace('_', ' ').toUpperCase()}
-                        </Badge>
+                    <div className="text-right space-y-2">
+                      <div className="flex items-center justify-end space-x-2">
+                        <div className="flex items-center space-x-1">
+                          {getPaymentIcon(venda.forma_pagamento)}
+                          <Badge className={getFormaPagamentoBadge(venda.forma_pagamento)}>
+                            {venda.forma_pagamento.replace('_', ' ').toUpperCase()}
+                          </Badge>
+                        </div>
                         {venda.bandeira && (
                           <Badge variant="outline" className="text-xs">
-                            {venda.bandeira}
+                            {venda.bandeira.toUpperCase()}
                           </Badge>
                         )}
                       </div>
@@ -334,16 +375,87 @@ const Vendas: React.FC = () => {
                         <p className="text-sm">
                           Qtd: {venda.quantidade} x {formatCurrency(venda.valor_unitario)}
                         </p>
-                        <p className="font-bold text-green-600">
+                        <p className="font-bold text-lg text-green-600">
                           Total: {formatCurrency(venda.valor_total)}
                         </p>
                       </div>
                       
-                      {venda.nsu && (
-                        <p className="text-xs text-gray-500 mt-1">
-                          NSU: {venda.nsu}
-                        </p>
-                      )}
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => setSelectedVenda(venda)}
+                          >
+                            <Eye className="w-4 h-4 mr-1" />
+                            Detalhes
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-md">
+                          <DialogHeader>
+                            <DialogTitle>Detalhes da Venda</DialogTitle>
+                          </DialogHeader>
+                          {selectedVenda && (
+                            <div className="space-y-4">
+                              <div className="flex items-center space-x-3">
+                                {selectedVenda.produto_imagem ? (
+                                  <img 
+                                    src={selectedVenda.produto_imagem} 
+                                    alt={selectedVenda.produto_nome}
+                                    className="w-20 h-20 object-cover rounded-lg border"
+                                    onError={(e) => {
+                                      e.currentTarget.src = '/placeholder.svg';
+                                    }}
+                                  />
+                                ) : (
+                                  <div className="w-20 h-20 bg-gray-100 rounded-lg border flex items-center justify-center">
+                                    <ImageIcon className="w-8 h-8 text-gray-400" />
+                                  </div>
+                                )}
+                                <div>
+                                  <h3 className="font-semibold">{selectedVenda.produto_nome}</h3>
+                                  <p className="text-sm text-gray-600">{selectedVenda.numero_autorizacao}</p>
+                                </div>
+                              </div>
+                              
+                              <div className="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                  <p className="font-medium">Quantidade:</p>
+                                  <p>{selectedVenda.quantidade}</p>
+                                </div>
+                                <div>
+                                  <p className="font-medium">Valor Unitário:</p>
+                                  <p>{formatCurrency(selectedVenda.valor_unitario)}</p>
+                                </div>
+                                <div>
+                                  <p className="font-medium">Valor Total:</p>
+                                  <p className="font-bold text-green-600">{formatCurrency(selectedVenda.valor_total)}</p>
+                                </div>
+                                <div>
+                                  <p className="font-medium">Forma Pagamento:</p>
+                                  <p>{selectedVenda.forma_pagamento.replace('_', ' ')}</p>
+                                </div>
+                                {selectedVenda.nsu && (
+                                  <div>
+                                    <p className="font-medium">NSU:</p>
+                                    <p>{selectedVenda.nsu}</p>
+                                  </div>
+                                )}
+                                {selectedVenda.bandeira && (
+                                  <div>
+                                    <p className="font-medium">Bandeira:</p>
+                                    <p>{selectedVenda.bandeira}</p>
+                                  </div>
+                                )}
+                                <div className="col-span-2">
+                                  <p className="font-medium">Data/Hora:</p>
+                                  <p>{formatDate(selectedVenda.data_venda)}</p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </DialogContent>
+                      </Dialog>
                     </div>
                   </div>
                 </div>
