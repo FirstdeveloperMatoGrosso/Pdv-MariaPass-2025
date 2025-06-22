@@ -52,103 +52,103 @@ const IntegracaoNFCe = () => {
   };
 
   return (
-    <div className="p-1 sm:p-2 md:p-3 space-y-1 sm:space-y-2 md:space-y-3 min-h-screen">
-      <div className="flex flex-col gap-1 sm:gap-2 mb-1 sm:mb-2 md:mb-3">
-        <div className="flex items-center gap-1 sm:gap-2">
-          <FileCheck2 className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600" />
+    <div className="p-1 space-y-1 min-h-screen">
+      <div className="flex flex-col gap-1 mb-1">
+        <div className="flex items-center gap-1">
+          <FileCheck2 className="w-4 h-4 text-purple-600" />
           <div>
-            <h1 className="text-base sm:text-lg md:text-xl font-bold">Integração NFC-e</h1>
-            <p className="text-xs sm:text-sm text-gray-600">Configuração da Nota Fiscal de Consumidor Eletrônica</p>
+            <h1 className="text-sm font-bold">Integração NFC-e</h1>
+            <p className="text-xs text-gray-600">Configuração da Nota Fiscal de Consumidor Eletrônica</p>
           </div>
         </div>
       </div>
 
-      <Tabs defaultValue="configuracao" className="space-y-1 sm:space-y-2 md:space-y-3">
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 h-7 sm:h-8 md:h-10">
-          <TabsTrigger value="configuracao" className="text-xs sm:text-sm">Config</TabsTrigger>
-          <TabsTrigger value="teste" className="text-xs sm:text-sm">Teste</TabsTrigger>
-          <TabsTrigger value="numeracao" className="text-xs sm:text-sm hidden sm:flex">Numeração</TabsTrigger>
-          <TabsTrigger value="historico" className="text-xs sm:text-sm">Histórico</TabsTrigger>
+      <Tabs defaultValue="configuracao" className="space-y-1">
+        <TabsList className="grid w-full grid-cols-4 h-7">
+          <TabsTrigger value="configuracao" className="text-xs">Config</TabsTrigger>
+          <TabsTrigger value="teste" className="text-xs">Teste</TabsTrigger>
+          <TabsTrigger value="numeracao" className="text-xs">Numeração</TabsTrigger>
+          <TabsTrigger value="historico" className="text-xs">Histórico</TabsTrigger>
         </TabsList>
 
         <TabsContent value="configuracao">
           <Card>
-            <CardHeader className="p-1 sm:p-2 md:p-3">
-              <CardTitle className="flex items-center gap-1 text-sm sm:text-base">
-                <Settings className="w-3 h-3 sm:w-4 sm:h-4" />
+            <CardHeader className="p-2">
+              <CardTitle className="flex items-center gap-1 text-sm">
+                <Settings className="w-3 h-3" />
                 Configurações NFC-e
               </CardTitle>
-              <CardDescription className="text-xs sm:text-sm">
+              <CardDescription className="text-xs">
                 Configure os dados para emissão de NFC-e via NFE.io
               </CardDescription>
             </CardHeader>
-            <CardContent className="p-1 sm:p-2 md:p-3 space-y-2 sm:space-y-3 md:space-y-4">
-              <div className="p-1 sm:p-2 md:p-3 bg-orange-50 border border-orange-200 rounded-lg">
+            <CardContent className="p-2 space-y-2">
+              <div className="p-2 bg-orange-50 border border-orange-200 rounded-lg">
                 <div className="flex items-center gap-1 mb-1">
                   <AlertTriangle className="w-3 h-3 text-orange-600" />
-                  <span className="font-medium text-orange-800 text-xs sm:text-sm">Importante</span>
+                  <span className="font-medium text-orange-800 text-xs">Importante</span>
                 </div>
                 <p className="text-xs text-orange-700">
                   A NFC-e é obrigatória para estabelecimentos do Simples Nacional que fazem vendas ao consumidor final.
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-1 sm:gap-2 md:gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                 <div className="space-y-1">
-                  <Label htmlFor="apiKey" className="text-xs sm:text-sm">API Key NFE.io</Label>
+                  <Label htmlFor="apiKey" className="text-xs">API Key NFE.io</Label>
                   <Input
                     id="apiKey"
                     type="password"
                     placeholder="Sua API Key da NFE.io"
                     value={config.apiKey}
                     onChange={(e) => setConfig({...config, apiKey: e.target.value})}
-                    className="h-7 sm:h-8 md:h-10 text-xs sm:text-sm"
+                    className="h-7 text-xs"
                   />
                 </div>
                 
                 <div className="space-y-1">
-                  <Label htmlFor="empresaId" className="text-xs sm:text-sm">ID da Empresa</Label>
+                  <Label htmlFor="empresaId" className="text-xs">ID da Empresa</Label>
                   <Input
                     id="empresaId"
                     placeholder="ID da sua empresa na NFE.io"
                     value={config.empresaId}
                     onChange={(e) => setConfig({...config, empresaId: e.target.value})}
-                    className="h-7 sm:h-8 md:h-10 text-xs sm:text-sm"
+                    className="h-7 text-xs"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-1 sm:gap-2 md:gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                 <div className="space-y-1">
-                  <Label htmlFor="csc" className="text-xs sm:text-sm">CSC - Código de Segurança</Label>
+                  <Label htmlFor="csc" className="text-xs">CSC - Código de Segurança</Label>
                   <Input
                     id="csc"
                     type="password"
                     placeholder="Código de Segurança do Contribuinte"
                     value={config.csc}
                     onChange={(e) => setConfig({...config, csc: e.target.value})}
-                    className="h-7 sm:h-8 md:h-10 text-xs sm:text-sm"
+                    className="h-7 text-xs"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <Label htmlFor="cscId" className="text-xs sm:text-sm">ID do CSC</Label>
+                  <Label htmlFor="cscId" className="text-xs">ID do CSC</Label>
                   <Input
                     id="cscId"
                     placeholder="Identificador do CSC"
                     value={config.cscId}
                     onChange={(e) => setConfig({...config, cscId: e.target.value})}
-                    className="h-7 sm:h-8 md:h-10 text-xs sm:text-sm"
+                    className="h-7 text-xs"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-1 sm:gap-2 md:gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                 <div className="space-y-1">
-                  <Label htmlFor="ambiente" className="text-xs sm:text-sm">Ambiente</Label>
+                  <Label htmlFor="ambiente" className="text-xs">Ambiente</Label>
                   <select
                     id="ambiente"
-                    className="w-full p-1 sm:p-2 border rounded-md h-7 sm:h-8 md:h-10 text-xs sm:text-sm"
+                    className="w-full p-1 border rounded-md h-7 text-xs"
                     value={config.ambiente}
                     onChange={(e) => setConfig({...config, ambiente: e.target.value})}
                   >
@@ -158,20 +158,20 @@ const IntegracaoNFCe = () => {
                 </div>
 
                 <div className="space-y-1">
-                  <Label htmlFor="serie" className="text-xs sm:text-sm">Série</Label>
+                  <Label htmlFor="serie" className="text-xs">Série</Label>
                   <Input
                     id="serie"
                     type="number"
                     value={config.serie}
                     onChange={(e) => setConfig({...config, serie: parseInt(e.target.value)})}
-                    className="h-7 sm:h-8 md:h-10 text-xs sm:text-sm"
+                    className="h-7 text-xs"
                   />
                 </div>
               </div>
 
-              <div className="flex items-center justify-between p-1 sm:p-2 md:p-3 border rounded-lg">
+              <div className="flex items-center justify-between p-2 border rounded-lg">
                 <div className="space-y-0.5">
-                  <Label className="text-xs sm:text-sm">Integração Ativa</Label>
+                  <Label className="text-xs">Integração Ativa</Label>
                   <p className="text-xs text-gray-600">Ative para começar a emitir NFC-e</p>
                 </div>
                 <Switch
@@ -180,9 +180,9 @@ const IntegracaoNFCe = () => {
                 />
               </div>
 
-              <div className="flex items-center justify-between p-1 sm:p-2 md:p-3 border rounded-lg">
+              <div className="flex items-center justify-between p-2 border rounded-lg">
                 <div className="space-y-0.5">
-                  <Label className="text-xs sm:text-sm">Emissão Automática</Label>
+                  <Label className="text-xs">Emissão Automática</Label>
                   <p className="text-xs text-gray-600">Emitir NFC-e automaticamente após a venda</p>
                 </div>
                 <Switch
@@ -191,8 +191,8 @@ const IntegracaoNFCe = () => {
                 />
               </div>
 
-              <div className="pt-2 pb-4">
-                <Button onClick={handleSaveConfig} className="w-full h-7 sm:h-8 md:h-10 text-xs sm:text-sm">
+              <div className="pt-1">
+                <Button onClick={handleSaveConfig} className="w-full h-7 text-xs">
                   Salvar Configurações
                 </Button>
               </div>
@@ -202,29 +202,27 @@ const IntegracaoNFCe = () => {
 
         <TabsContent value="teste">
           <Card>
-            <CardHeader className="p-1 sm:p-2 md:p-3">
-              <CardTitle className="flex items-center gap-1 text-sm sm:text-base">
-                <TestTube className="w-3 h-3 sm:w-4 sm:h-4" />
+            <CardHeader className="p-2">
+              <CardTitle className="flex items-center gap-1 text-sm">
+                <TestTube className="w-3 h-3" />
                 Teste da Integração
               </CardTitle>
-              <CardDescription className="text-xs sm:text-sm">
+              <CardDescription className="text-xs">
                 Teste a conexão e emissão de NFC-e
               </CardDescription>
             </CardHeader>
-            <CardContent className="p-1 sm:p-2 md:p-3 space-y-1 sm:space-y-2 md:space-y-3">
-              <div className="space-y-2">
-                <Button onClick={handleTestConnection} className="w-full h-7 sm:h-8 md:h-10 text-xs sm:text-sm" variant="outline">
-                  <Settings className="w-3 h-3 mr-1" />
-                  Testar Conexão
-                </Button>
-                
-                <Button onClick={handleTestEmission} className="w-full h-7 sm:h-8 md:h-10 text-xs sm:text-sm">
-                  <Receipt className="w-3 h-3 mr-1" />
-                  Emitir NFC-e de Teste
-                </Button>
-              </div>
+            <CardContent className="p-2 space-y-2">
+              <Button onClick={handleTestConnection} className="w-full h-7 text-xs" variant="outline">
+                <Settings className="w-3 h-3 mr-1" />
+                Testar Conexão
+              </Button>
               
-              <div className="p-1 sm:p-2 md:p-3 bg-gray-50 border rounded-lg">
+              <Button onClick={handleTestEmission} className="w-full h-7 text-xs">
+                <Receipt className="w-3 h-3 mr-1" />
+                Emitir NFC-e de Teste
+              </Button>
+              
+              <div className="p-2 bg-gray-50 border rounded-lg">
                 <p className="text-xs text-gray-700">
                   <strong>Dica:</strong> Use o ambiente de homologação para realizar testes sem impacto fiscal.
                 </p>
@@ -235,34 +233,34 @@ const IntegracaoNFCe = () => {
 
         <TabsContent value="numeracao">
           <Card>
-            <CardHeader className="p-1 sm:p-2 md:p-3">
-              <CardTitle className="text-sm sm:text-base">Controle de Numeração</CardTitle>
-              <CardDescription className="text-xs sm:text-sm">
+            <CardHeader className="p-2">
+              <CardTitle className="text-sm">Controle de Numeração</CardTitle>
+              <CardDescription className="text-xs">
                 Gerencie a numeração das NFC-e
               </CardDescription>
             </CardHeader>
-            <CardContent className="p-1 sm:p-2 md:p-3 space-y-1 sm:space-y-2 md:space-y-3">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-1 sm:gap-2 md:gap-3">
+            <CardContent className="p-2 space-y-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                 <div className="space-y-1">
-                  <Label htmlFor="proximoNumero" className="text-xs sm:text-sm">Próximo Número</Label>
+                  <Label htmlFor="proximoNumero" className="text-xs">Próximo Número</Label>
                   <Input
                     id="proximoNumero"
                     type="number"
                     value={config.proximoNumero}
                     onChange={(e) => setConfig({...config, proximoNumero: parseInt(e.target.value)})}
-                    className="h-7 sm:h-8 md:h-10 text-xs sm:text-sm"
+                    className="h-7 text-xs"
                   />
                 </div>
                 
                 <div className="space-y-1">
-                  <Label className="text-xs sm:text-sm">Série Atual</Label>
-                  <div className="p-1 sm:p-2 bg-gray-100 rounded-md h-7 sm:h-8 md:h-10 flex items-center text-xs sm:text-sm">
+                  <Label className="text-xs">Série Atual</Label>
+                  <div className="p-1 bg-gray-100 rounded-md h-7 flex items-center text-xs">
                     {config.serie}
                   </div>
                 </div>
               </div>
               
-              <Button className="w-full h-7 sm:h-8 md:h-10 text-xs sm:text-sm" variant="outline">
+              <Button className="w-full h-7 text-xs" variant="outline">
                 Atualizar Numeração
               </Button>
             </CardContent>
@@ -271,16 +269,16 @@ const IntegracaoNFCe = () => {
 
         <TabsContent value="historico">
           <Card>
-            <CardHeader className="p-1 sm:p-2 md:p-3">
-              <CardTitle className="text-sm sm:text-base">Histórico de NFC-e</CardTitle>
-              <CardDescription className="text-xs sm:text-sm">
+            <CardHeader className="p-2">
+              <CardTitle className="text-sm">Histórico de NFC-e</CardTitle>
+              <CardDescription className="text-xs">
                 Acompanhe as NFC-e emitidas pelo sistema
               </CardDescription>
             </CardHeader>
-            <CardContent className="p-1 sm:p-2 md:p-3">
-              <div className="text-center py-3 sm:py-4 md:py-6 text-gray-500">
-                <FileCheck2 className="w-6 h-6 sm:w-8 sm:h-8 md:w-12 md:h-12 mx-auto mb-2 opacity-50" />
-                <p className="text-xs sm:text-sm">Nenhuma NFC-e encontrada</p>
+            <CardContent className="p-2">
+              <div className="text-center py-4 text-gray-500">
+                <FileCheck2 className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                <p className="text-xs">Nenhuma NFC-e encontrada</p>
                 <p className="text-xs">As NFC-e emitidas aparecerão aqui</p>
               </div>
             </CardContent>
