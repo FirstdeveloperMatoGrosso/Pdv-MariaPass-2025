@@ -12,6 +12,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import CategoryForm from '@/components/CategoryForm';
 import ProductDetailsModal from '@/components/ProductDetailsModal';
+import { useSystemAlert } from '@/hooks/useSystemAlert';
+import SystemAlert from '@/components/SystemAlert';
 
 // Using the actual Supabase type instead of custom interface
 type EstoqueItem = {
@@ -58,6 +60,7 @@ const Estoque: React.FC = () => {
   const [selectedProduct, setSelectedProduct] = useState<EstoqueItem | null>(null);
   const [showDetails, setShowDetails] = useState(false);
   const queryClient = useQueryClient();
+  const { alerts, showAlert, removeAlert } = useSystemAlert();
 
   // Buscar categorias reais do Supabase
   const { data: categories = [] } = useQuery({
@@ -304,6 +307,26 @@ const Estoque: React.FC = () => {
     setShowDetails(true);
   };
 
+  const handleAddButtonClick = () => {
+    showAlert({
+      type: 'info',
+      title: 'Adicionar Produto',
+      message: 'Deseja adicionar um novo produto ao estoque?',
+      actions: [
+        {
+          label: 'Sim, adicionar',
+          onClick: () => setShowAddProduct(true),
+          variant: 'default'
+        },
+        {
+          label: 'Cancelar',
+          onClick: () => {},
+          variant: 'outline'
+        }
+      ]
+    });
+  };
+
   if (isLoading) {
     return <div className="p-2 sm:p-3 flex items-center justify-center">
         <div className="text-center">
@@ -314,6 +337,18 @@ const Estoque: React.FC = () => {
   }
 
   return <div className="p-2 sm:p-3 space-y-2">
+      {/* System Alerts */}
+      {alerts.map((alert) => (
+        <SystemAlert
+          key={alert.id}
+          type={alert.type}
+          title={alert.title}
+          message={alert.message}
+          onClose={() => removeAlert(alert.id)}
+          actions={alert.actions}
+        />
+      ))}
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
         <div className="flex items-center space-x-1">
@@ -324,7 +359,7 @@ const Estoque: React.FC = () => {
           <div className="flex-1 sm:flex-none">
             <CategoryForm onSuccess={handleCategorySuccess} />
           </div>
-          <Button onClick={() => setShowAddProduct(!showAddProduct)} className="flex items-center space-x-1 flex-1 sm:flex-none h-8 text-sm">
+          <Button onClick={handleAddButtonClick} className="flex items-center space-x-1 h-7 text-xs px-2">
             <Plus className="w-3 h-3" />
             <span>Adicionar</span>
           </Button>
