@@ -159,23 +159,23 @@ const ControleAcesso: React.FC = () => {
 
   if (isLoading || isLoadingUsuarios) {
     return (
-      <div className="p-3 sm:p-6 flex items-center justify-center">
+      <div className="p-2 sm:p-3 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-green-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Carregando dados...</p>
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-green-600 mx-auto"></div>
+          <p className="mt-2 text-sm text-gray-600">Carregando dados...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div className="flex items-center space-x-2">
-          <Shield className="w-6 h-6 text-green-600" />
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-800">Controle de Acesso</h1>
+    <div className="p-2 sm:p-3 space-y-2 sm:space-y-3">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+        <div className="flex items-center space-x-1">
+          <Shield className="w-5 h-5 text-green-600" />
+          <h1 className="text-lg sm:text-xl font-bold text-gray-800">Controle de Acesso</h1>
         </div>
-        <div className="flex flex-col sm:flex-row gap-2">
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
           <CriarUsuarioModal />
           <Button 
             onClick={() => {
@@ -183,9 +183,9 @@ const ControleAcesso: React.FC = () => {
               refetchUsuarios();
             }}
             variant="outline"
-            className="flex items-center space-x-2"
+            className="flex items-center space-x-1 h-8 text-sm px-3"
           >
-            <Activity className="w-4 h-4" />
+            <Activity className="w-3 h-3" />
             <span>Atualizar</span>
           </Button>
         </div>
@@ -218,47 +218,47 @@ const ControleAcesso: React.FC = () => {
       {activeTab === 'logs' && (
         <>
           {/* Estatísticas */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
             <Card>
-              <CardContent className="p-3 sm:p-4">
-                <div className="flex items-center space-x-2">
-                  <Activity className="w-5 h-5 text-blue-600" />
+              <CardContent className="p-2 sm:p-3">
+                <div className="flex items-center space-x-1">
+                  <Activity className="w-4 h-4 text-blue-600" />
                   <div className="min-w-0">
                     <p className="text-xs sm:text-sm text-gray-600 truncate">Total de Logs</p>
-                    <p className="text-lg sm:text-2xl font-bold">{totalLogs}</p>
+                    <p className="text-lg sm:text-xl font-bold">{totalLogs}</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
             <Card>
-              <CardContent className="p-3 sm:p-4">
-                <div className="flex items-center space-x-2">
-                  <CheckCircle className="w-5 h-5 text-green-600" />
+              <CardContent className="p-2 sm:p-3">
+                <div className="flex items-center space-x-1">
+                  <CheckCircle className="w-4 h-4 text-green-600" />
                   <div className="min-w-0">
                     <p className="text-xs sm:text-sm text-gray-600 truncate">Sucessos</p>
-                    <p className="text-lg sm:text-2xl font-bold text-green-600">{successfulLogs}</p>
+                    <p className="text-lg sm:text-xl font-bold text-green-600">{successfulLogs}</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
             <Card>
-              <CardContent className="p-3 sm:p-4">
-                <div className="flex items-center space-x-2">
-                  <XCircle className="w-5 h-5 text-red-600" />
+              <CardContent className="p-2 sm:p-3">
+                <div className="flex items-center space-x-1">
+                  <XCircle className="w-4 h-4 text-red-600" />
                   <div className="min-w-0">
                     <p className="text-xs sm:text-sm text-gray-600 truncate">Falhas</p>
-                    <p className="text-lg sm:text-2xl font-bold text-red-600">{failedLogs}</p>
+                    <p className="text-lg sm:text-xl font-bold text-red-600">{failedLogs}</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
             <Card>
-              <CardContent className="p-3 sm:p-4">
-                <div className="flex items-center space-x-2">
-                  <Users className="w-5 h-5 text-purple-600" />
+              <CardContent className="p-2 sm:p-3">
+                <div className="flex items-center space-x-1">
+                  <Users className="w-4 h-4 text-purple-600" />
                   <div className="min-w-0">
                     <p className="text-xs sm:text-sm text-gray-600 truncate">Usuários Únicos</p>
-                    <p className="text-lg sm:text-2xl font-bold text-purple-600">{uniqueUsers}</p>
+                    <p className="text-lg sm:text-xl font-bold text-purple-600">{uniqueUsers}</p>
                   </div>
                 </div>
               </CardContent>
@@ -267,24 +267,24 @@ const ControleAcesso: React.FC = () => {
 
           {/* Filtros */}
           <Card>
-            <CardContent className="p-3 sm:p-4">
-              <div className="flex flex-col gap-3 sm:gap-4">
+            <CardContent className="p-2 sm:p-3">
+              <div className="flex flex-col gap-2">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 w-3 h-3" />
                   <Input
                     placeholder="Buscar por usuário, recurso ou IP..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
+                    className="pl-7 h-8 text-sm"
                   />
                 </div>
-                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-                  <div className="flex items-center space-x-2 flex-1">
-                    <Filter className="w-4 h-4 text-gray-500" />
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <div className="flex items-center space-x-1 flex-1">
+                    <Filter className="w-3 h-3 text-gray-500" />
                     <select 
                       value={selectedAction}
                       onChange={(e) => setSelectedAction(e.target.value)}
-                      className="border rounded-md px-3 py-2 w-full"
+                      className="border rounded-md px-2 py-1 w-full text-sm"
                     >
                       <option value="all">Todas as ações</option>
                       {actions.map(action => (
@@ -292,12 +292,12 @@ const ControleAcesso: React.FC = () => {
                       ))}
                     </select>
                   </div>
-                  <div className="flex items-center space-x-2 flex-1">
-                    <AlertTriangle className="w-4 h-4 text-gray-500" />
+                  <div className="flex items-center space-x-1 flex-1">
+                    <AlertTriangle className="w-3 h-3 text-gray-500" />
                     <select 
                       value={selectedStatus}
                       onChange={(e) => setSelectedStatus(e.target.value)}
-                      className="border rounded-md px-3 py-2 w-full"
+                      className="border rounded-md px-2 py-1 w-full text-sm"
                     >
                       <option value="all">Todos os status</option>
                       <option value="sucesso">Sucesso</option>
@@ -311,50 +311,50 @@ const ControleAcesso: React.FC = () => {
 
           {/* Tabela de Logs */}
           <Card>
-            <CardHeader className="p-3 sm:p-6">
-              <CardTitle className="text-lg sm:text-xl">Logs de Acesso ({filteredLogs.length})</CardTitle>
+            <CardHeader className="p-2 sm:p-3">
+              <CardTitle className="text-sm sm:text-base">Logs de Acesso ({filteredLogs.length})</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="min-w-[100px]">Usuário</TableHead>
-                      <TableHead className="hidden sm:table-cell">Ação</TableHead>
-                      <TableHead className="hidden md:table-cell">Recurso</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="hidden lg:table-cell">IP</TableHead>
-                      <TableHead className="hidden lg:table-cell">Data/Hora</TableHead>
-                      <TableHead className="hidden md:table-cell">Detalhes</TableHead>
+                      <TableHead className="min-w-[100px] h-8 text-xs">Usuário</TableHead>
+                      <TableHead className="hidden sm:table-cell h-8 text-xs">Ação</TableHead>
+                      <TableHead className="hidden md:table-cell h-8 text-xs">Recurso</TableHead>
+                      <TableHead className="h-8 text-xs">Status</TableHead>
+                      <TableHead className="hidden lg:table-cell h-8 text-xs">IP</TableHead>
+                      <TableHead className="hidden lg:table-cell h-8 text-xs">Data/Hora</TableHead>
+                      <TableHead className="hidden md:table-cell h-8 text-xs">Detalhes</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredLogs.map((log: AccessLog) => (
                       <TableRow key={log.id}>
-                        <TableCell className="font-medium">
+                        <TableCell className="font-medium p-2">
                           <div>
-                            <div className="font-semibold">{log.usuario}</div>
+                            <div className="font-semibold text-xs">{log.usuario}</div>
                             <div className="text-xs text-gray-500 sm:hidden">
                               {getActionLabel(log.acao)} - {log.recurso}
                             </div>
                           </div>
                         </TableCell>
-                        <TableCell className="hidden sm:table-cell">
-                          <Badge variant="outline">{getActionLabel(log.acao)}</Badge>
+                        <TableCell className="hidden sm:table-cell p-2">
+                          <Badge variant="outline" className="text-xs">{getActionLabel(log.acao)}</Badge>
                         </TableCell>
-                        <TableCell className="hidden md:table-cell">{log.recurso}</TableCell>
-                        <TableCell>{getStatusBadge(log.sucesso)}</TableCell>
-                        <TableCell className="hidden lg:table-cell">
-                          <code className="bg-gray-100 px-2 py-1 rounded text-xs">
+                        <TableCell className="hidden md:table-cell p-2 text-xs">{log.recurso}</TableCell>
+                        <TableCell className="p-2">{getStatusBadge(log.sucesso)}</TableCell>
+                        <TableCell className="hidden lg:table-cell p-2">
+                          <code className="bg-gray-100 px-1 py-0.5 rounded text-xs">
                             {log.ip_address}
                           </code>
                         </TableCell>
-                        <TableCell className="hidden lg:table-cell text-sm">
+                        <TableCell className="hidden lg:table-cell text-xs p-2">
                           {new Date(log.created_at).toLocaleString('pt-BR')}
                         </TableCell>
-                        <TableCell className="hidden md:table-cell">
+                        <TableCell className="hidden md:table-cell p-2">
                           {log.detalhes && (
-                            <Button size="sm" variant="outline" className="h-8 w-8 p-0">
+                            <Button size="sm" variant="outline" className="h-6 w-6 p-0">
                               <Eye className="w-3 h-3" />
                             </Button>
                           )}
@@ -372,25 +372,25 @@ const ControleAcesso: React.FC = () => {
       {activeTab === 'usuarios' && (
         <>
           {/* Estatísticas dos Usuários */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
             <Card>
-              <CardContent className="p-3 sm:p-4">
-                <div className="flex items-center space-x-2">
-                  <Users className="w-5 h-5 text-blue-600" />
+              <CardContent className="p-2 sm:p-3">
+                <div className="flex items-center space-x-1">
+                  <Users className="w-4 h-4 text-blue-600" />
                   <div className="min-w-0">
                     <p className="text-xs sm:text-sm text-gray-600 truncate">Total Usuários</p>
-                    <p className="text-lg sm:text-2xl font-bold">{usuarios.length}</p>
+                    <p className="text-lg sm:text-xl font-bold">{usuarios.length}</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
             <Card>
-              <CardContent className="p-3 sm:p-4">
-                <div className="flex items-center space-x-2">
-                  <CheckCircle className="w-5 h-5 text-green-600" />
+              <CardContent className="p-2 sm:p-3">
+                <div className="flex items-center space-x-1">
+                  <CheckCircle className="w-4 h-4 text-green-600" />
                   <div className="min-w-0">
                     <p className="text-xs sm:text-sm text-gray-600 truncate">Usuários Ativos</p>
-                    <p className="text-lg sm:text-2xl font-bold text-green-600">
+                    <p className="text-lg sm:text-xl font-bold text-green-600">
                       {usuarios.filter(u => u.ativo).length}
                     </p>
                   </div>
@@ -398,12 +398,12 @@ const ControleAcesso: React.FC = () => {
               </CardContent>
             </Card>
             <Card>
-              <CardContent className="p-3 sm:p-4">
-                <div className="flex items-center space-x-2">
-                  <Shield className="w-5 h-5 text-red-600" />
+              <CardContent className="p-2 sm:p-3">
+                <div className="flex items-center space-x-1">
+                  <Shield className="w-4 h-4 text-red-600" />
                   <div className="min-w-0">
                     <p className="text-xs sm:text-sm text-gray-600 truncate">Administradores</p>
-                    <p className="text-lg sm:text-2xl font-bold text-red-600">
+                    <p className="text-lg sm:text-xl font-bold text-red-600">
                       {usuarios.filter(u => u.tipo_acesso === 'admin').length}
                     </p>
                   </div>
@@ -411,12 +411,12 @@ const ControleAcesso: React.FC = () => {
               </CardContent>
             </Card>
             <Card>
-              <CardContent className="p-3 sm:p-4">
-                <div className="flex items-center space-x-2">
-                  <Eye className="w-5 h-5 text-purple-600" />
+              <CardContent className="p-2 sm:p-3">
+                <div className="flex items-center space-x-1">
+                  <Eye className="w-4 h-4 text-purple-600" />
                   <div className="min-w-0">
                     <p className="text-xs sm:text-sm text-gray-600 truncate">Operadores</p>
-                    <p className="text-lg sm:text-2xl font-bold text-purple-600">
+                    <p className="text-lg sm:text-xl font-bold text-purple-600">
                       {usuarios.filter(u => u.tipo_acesso === 'operador').length}
                     </p>
                   </div>
@@ -427,53 +427,53 @@ const ControleAcesso: React.FC = () => {
 
           {/* Tabela de Usuários */}
           <Card>
-            <CardHeader className="p-3 sm:p-6">
-              <CardTitle className="text-lg sm:text-xl">Usuários do Sistema ({usuarios.length})</CardTitle>
+            <CardHeader className="p-2 sm:p-3">
+              <CardTitle className="text-sm sm:text-base">Usuários do Sistema ({usuarios.length})</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="min-w-[150px]">Nome</TableHead>
-                      <TableHead className="hidden sm:table-cell">Email</TableHead>
-                      <TableHead>Tipo de Acesso</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="hidden lg:table-cell">Último Login</TableHead>
-                      <TableHead className="hidden lg:table-cell">Criado em</TableHead>
+                      <TableHead className="min-w-[150px] h-8 text-xs">Nome</TableHead>
+                      <TableHead className="hidden sm:table-cell h-8 text-xs">Email</TableHead>
+                      <TableHead className="h-8 text-xs">Tipo de Acesso</TableHead>
+                      <TableHead className="h-8 text-xs">Status</TableHead>
+                      <TableHead className="hidden lg:table-cell h-8 text-xs">Último Login</TableHead>
+                      <TableHead className="hidden lg:table-cell h-8 text-xs">Criado em</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {usuarios.map((usuario: Usuario) => (
                       <TableRow key={usuario.id}>
-                        <TableCell className="font-medium">
+                        <TableCell className="font-medium p-2">
                           <div>
-                            <div className="font-semibold">{usuario.nome}</div>
+                            <div className="font-semibold text-xs">{usuario.nome}</div>
                             <div className="text-xs text-gray-500 sm:hidden">{usuario.email}</div>
                           </div>
                         </TableCell>
-                        <TableCell className="hidden sm:table-cell">{usuario.email}</TableCell>
-                        <TableCell>{getTipoAcessoBadge(usuario.tipo_acesso)}</TableCell>
-                        <TableCell>
+                        <TableCell className="hidden sm:table-cell p-2 text-xs">{usuario.email}</TableCell>
+                        <TableCell className="p-2">{getTipoAcessoBadge(usuario.tipo_acesso)}</TableCell>
+                        <TableCell className="p-2">
                           {usuario.ativo ? (
-                            <Badge className="bg-green-600">
+                            <Badge className="bg-green-600 text-xs">
                               <CheckCircle className="w-3 h-3 mr-1" />
                               Ativo
                             </Badge>
                           ) : (
-                            <Badge variant="destructive">
+                            <Badge variant="destructive" className="text-xs">
                               <XCircle className="w-3 h-3 mr-1" />
                               Inativo
                             </Badge>
                           )}
                         </TableCell>
-                        <TableCell className="hidden lg:table-cell text-sm">
+                        <TableCell className="hidden lg:table-cell text-xs p-2">
                           {usuario.ultimo_login 
                             ? new Date(usuario.ultimo_login).toLocaleString('pt-BR')
                             : 'Nunca'
                           }
                         </TableCell>
-                        <TableCell className="hidden lg:table-cell text-sm">
+                        <TableCell className="hidden lg:table-cell text-xs p-2">
                           {new Date(usuario.created_at).toLocaleString('pt-BR')}
                         </TableCell>
                       </TableRow>
