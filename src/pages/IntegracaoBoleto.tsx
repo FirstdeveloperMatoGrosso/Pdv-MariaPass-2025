@@ -42,137 +42,148 @@ const IntegracaoBoleto = () => {
   };
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center gap-3 mb-6">
-        <Banknote className="w-8 h-8 text-green-600" />
-        <div>
-          <h1 className="text-3xl font-bold">Integração Boleto</h1>
-          <p className="text-gray-600">Configuração da integração bancária para emissão de boletos</p>
+    <div className="p-2 sm:p-3 space-y-2 sm:space-y-3">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-2 sm:mb-3">
+        <div className="flex items-center gap-2">
+          <Banknote className="w-5 h-5 text-green-600" />
+          <div>
+            <h1 className="text-lg sm:text-xl font-bold">Integração Boleto</h1>
+            <p className="text-xs sm:text-sm text-gray-600">Configuração da integração bancária para emissão de boletos</p>
+          </div>
         </div>
       </div>
 
-      <Tabs defaultValue="configuracao" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="configuracao">Configuração</TabsTrigger>
-          <TabsTrigger value="teste">Teste</TabsTrigger>
-          <TabsTrigger value="boletos">Boletos Emitidos</TabsTrigger>
+      <Tabs defaultValue="configuracao" className="space-y-2 sm:space-y-3">
+        <TabsList className="grid w-full grid-cols-3 h-8 sm:h-10">
+          <TabsTrigger value="configuracao" className="text-xs sm:text-sm">Configuração</TabsTrigger>
+          <TabsTrigger value="teste" className="text-xs sm:text-sm">Teste</TabsTrigger>
+          <TabsTrigger value="boletos" className="text-xs sm:text-sm">Boletos Emitidos</TabsTrigger>
         </TabsList>
 
         <TabsContent value="configuracao">
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Settings className="w-5 h-5" />
+            <CardHeader className="p-2 sm:p-3">
+              <CardTitle className="flex items-center gap-1 text-sm sm:text-base">
+                <Settings className="w-4 h-4" />
                 Configurações Bancárias
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-xs sm:text-sm">
                 Configure os dados bancários para emissão de boletos
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="banco">Código do Banco</Label>
+            <CardContent className="p-2 sm:p-3 space-y-3 sm:space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2 sm:gap-3">
+                <div className="space-y-1">
+                  <Label htmlFor="banco" className="text-xs sm:text-sm">Código do Banco</Label>
                   <Input
                     id="banco"
                     placeholder="Ex: 341, 033, 104"
                     value={config.banco}
                     onChange={(e) => setConfig({...config, banco: e.target.value})}
+                    className="h-8 sm:h-10 text-xs sm:text-sm"
                   />
                 </div>
                 
-                <div className="space-y-2">
-                  <Label htmlFor="agencia">Agência</Label>
+                <div className="space-y-1">
+                  <Label htmlFor="agencia" className="text-xs sm:text-sm">Agência</Label>
                   <Input
                     id="agencia"
                     placeholder="Número da agência"
                     value={config.agencia}
                     onChange={(e) => setConfig({...config, agencia: e.target.value})}
+                    className="h-8 sm:h-10 text-xs sm:text-sm"
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="conta">Conta</Label>
+                <div className="space-y-1">
+                  <Label htmlFor="conta" className="text-xs sm:text-sm">Conta</Label>
                   <Input
                     id="conta"
                     placeholder="Número da conta"
                     value={config.conta}
                     onChange={(e) => setConfig({...config, conta: e.target.value})}
+                    className="h-8 sm:h-10 text-xs sm:text-sm"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="carteira">Carteira</Label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-3">
+                <div className="space-y-1">
+                  <Label htmlFor="carteira" className="text-xs sm:text-sm">Carteira</Label>
                   <Input
                     id="carteira"
                     placeholder="Número da carteira"
                     value={config.carteira}
                     onChange={(e) => setConfig({...config, carteira: e.target.value})}
+                    className="h-8 sm:h-10 text-xs sm:text-sm"
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="convenio">Convênio</Label>
+                <div className="space-y-1">
+                  <Label htmlFor="convenio" className="text-xs sm:text-sm">Convênio</Label>
                   <Input
                     id="convenio"
                     placeholder="Número do convênio"
                     value={config.convenio}
                     onChange={(e) => setConfig({...config, convenio: e.target.value})}
+                    className="h-8 sm:h-10 text-xs sm:text-sm"
                   />
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="codigoBeneficiario">Código do Beneficiário</Label>
+              <div className="space-y-1">
+                <Label htmlFor="codigoBeneficiario" className="text-xs sm:text-sm">Código do Beneficiário</Label>
                 <Input
                   id="codigoBeneficiario"
                   placeholder="Código do beneficiário"
                   value={config.codigoBeneficiario}
                   onChange={(e) => setConfig({...config, codigoBeneficiario: e.target.value})}
+                  className="h-8 sm:h-10 text-xs sm:text-sm"
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="diasVencimento">Dias para Vencimento</Label>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2 sm:gap-3">
+                <div className="space-y-1">
+                  <Label htmlFor="diasVencimento" className="text-xs sm:text-sm">Dias para Vencimento</Label>
                   <Input
                     id="diasVencimento"
                     type="number"
                     value={config.diasVencimento}
                     onChange={(e) => setConfig({...config, diasVencimento: parseInt(e.target.value)})}
+                    className="h-8 sm:h-10 text-xs sm:text-sm"
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="juros">Juros (% ao mês)</Label>
+                <div className="space-y-1">
+                  <Label htmlFor="juros" className="text-xs sm:text-sm">Juros (% ao mês)</Label>
                   <Input
                     id="juros"
                     type="number"
                     step="0.01"
                     value={config.juros}
                     onChange={(e) => setConfig({...config, juros: parseFloat(e.target.value)})}
+                    className="h-8 sm:h-10 text-xs sm:text-sm"
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="multa">Multa (%)</Label>
+                <div className="space-y-1">
+                  <Label htmlFor="multa" className="text-xs sm:text-sm">Multa (%)</Label>
                   <Input
                     id="multa"
                     type="number"
                     step="0.01"
                     value={config.multa}
                     onChange={(e) => setConfig({...config, multa: parseFloat(e.target.value)})}
+                    className="h-8 sm:h-10 text-xs sm:text-sm"
                   />
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="ambiente">Ambiente</Label>
+              <div className="space-y-1">
+                <Label htmlFor="ambiente" className="text-xs sm:text-sm">Ambiente</Label>
                 <select
                   id="ambiente"
-                  className="w-full p-2 border rounded-md"
+                  className="w-full p-1 sm:p-2 border rounded-md h-8 sm:h-10 text-xs sm:text-sm"
                   value={config.ambiente}
                   onChange={(e) => setConfig({...config, ambiente: e.target.value})}
                 >
@@ -181,10 +192,10 @@ const IntegracaoBoleto = () => {
                 </select>
               </div>
 
-              <div className="flex items-center justify-between p-4 border rounded-lg">
-                <div className="space-y-1">
-                  <Label>Integração Ativa</Label>
-                  <p className="text-sm text-gray-600">Ative para começar a emitir boletos</p>
+              <div className="flex items-center justify-between p-2 sm:p-3 border rounded-lg">
+                <div className="space-y-0.5">
+                  <Label className="text-xs sm:text-sm">Integração Ativa</Label>
+                  <p className="text-xs text-gray-600">Ative para começar a emitir boletos</p>
                 </div>
                 <Switch
                   checked={config.ativo}
@@ -192,7 +203,7 @@ const IntegracaoBoleto = () => {
                 />
               </div>
 
-              <Button onClick={handleSaveConfig} className="w-full">
+              <Button onClick={handleSaveConfig} className="w-full h-8 sm:h-10 text-xs sm:text-sm">
                 Salvar Configurações
               </Button>
             </CardContent>
@@ -201,24 +212,24 @@ const IntegracaoBoleto = () => {
 
         <TabsContent value="teste">
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <TestTube className="w-5 h-5" />
+            <CardHeader className="p-2 sm:p-3">
+              <CardTitle className="flex items-center gap-1 text-sm sm:text-base">
+                <TestTube className="w-4 h-4" />
                 Teste de Conexão Bancária
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-xs sm:text-sm">
                 Teste a conexão com o banco para validar as configurações
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <p className="text-sm text-blue-800">
+            <CardContent className="p-2 sm:p-3 space-y-2 sm:space-y-3">
+              <div className="p-2 sm:p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-xs sm:text-sm text-blue-800">
                   Certifique-se de ter configurado todos os dados bancários antes de testar.
                 </p>
               </div>
               
-              <Button onClick={handleTestConnection} className="w-full">
-                <CreditCard className="w-4 h-4 mr-2" />
+              <Button onClick={handleTestConnection} className="w-full h-8 sm:h-10 text-xs sm:text-sm">
+                <CreditCard className="w-3 h-3 mr-1" />
                 Testar Conexão Bancária
               </Button>
             </CardContent>
@@ -227,17 +238,17 @@ const IntegracaoBoleto = () => {
 
         <TabsContent value="boletos">
           <Card>
-            <CardHeader>
-              <CardTitle>Boletos Emitidos</CardTitle>
-              <CardDescription>
+            <CardHeader className="p-2 sm:p-3">
+              <CardTitle className="text-sm sm:text-base">Boletos Emitidos</CardTitle>
+              <CardDescription className="text-xs sm:text-sm">
                 Acompanhe os boletos gerados pelo sistema
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="text-center py-8 text-gray-500">
-                <Banknote className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                <p>Nenhum boleto encontrado</p>
-                <p className="text-sm">Os boletos emitidos aparecerão aqui</p>
+            <CardContent className="p-2 sm:p-3">
+              <div className="text-center py-4 sm:py-6 text-gray-500">
+                <Banknote className="w-8 h-8 sm:w-12 sm:h-12 mx-auto mb-2 opacity-50" />
+                <p className="text-xs sm:text-sm">Nenhum boleto encontrado</p>
+                <p className="text-xs">Os boletos emitidos aparecerão aqui</p>
               </div>
             </CardContent>
           </Card>

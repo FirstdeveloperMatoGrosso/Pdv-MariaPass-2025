@@ -38,63 +38,67 @@ const IntegracaoNotaFiscal = () => {
   };
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center gap-3 mb-6">
-        <FileText className="w-8 h-8 text-blue-600" />
-        <div>
-          <h1 className="text-3xl font-bold">Integração Nota Fiscal</h1>
-          <p className="text-gray-600">Configuração da integração com NFE.io para emissão de notas fiscais</p>
+    <div className="p-2 sm:p-3 space-y-2 sm:space-y-3">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-2 sm:mb-3">
+        <div className="flex items-center gap-2">
+          <FileText className="w-5 h-5 text-blue-600" />
+          <div>
+            <h1 className="text-lg sm:text-xl font-bold">Integração Nota Fiscal</h1>
+            <p className="text-xs sm:text-sm text-gray-600">Configuração da integração com NFE.io</p>
+          </div>
         </div>
       </div>
 
-      <Tabs defaultValue="configuracao" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="configuracao">Configuração</TabsTrigger>
-          <TabsTrigger value="teste">Teste de Conexão</TabsTrigger>
-          <TabsTrigger value="historico">Histórico</TabsTrigger>
+      <Tabs defaultValue="configuracao" className="space-y-2 sm:space-y-3">
+        <TabsList className="grid w-full grid-cols-3 h-8 sm:h-10">
+          <TabsTrigger value="configuracao" className="text-xs sm:text-sm">Configuração</TabsTrigger>
+          <TabsTrigger value="teste" className="text-xs sm:text-sm">Teste</TabsTrigger>
+          <TabsTrigger value="historico" className="text-xs sm:text-sm">Histórico</TabsTrigger>
         </TabsList>
 
         <TabsContent value="configuracao">
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Settings className="w-5 h-5" />
+            <CardHeader className="p-2 sm:p-3">
+              <CardTitle className="flex items-center gap-1 text-sm sm:text-base">
+                <Settings className="w-4 h-4" />
                 Configurações da API NFE.io
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-xs sm:text-sm">
                 Configure os dados de acesso para integração com a NFE.io
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="apiKey">API Key NFE.io</Label>
+            <CardContent className="p-2 sm:p-3 space-y-3 sm:space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-3">
+                <div className="space-y-1">
+                  <Label htmlFor="apiKey" className="text-xs sm:text-sm">API Key NFE.io</Label>
                   <Input
                     id="apiKey"
                     type="password"
                     placeholder="Sua API Key da NFE.io"
                     value={config.apiKey}
                     onChange={(e) => setConfig({...config, apiKey: e.target.value})}
+                    className="h-8 sm:h-10 text-xs sm:text-sm"
                   />
                 </div>
                 
-                <div className="space-y-2">
-                  <Label htmlFor="empresaId">ID da Empresa</Label>
+                <div className="space-y-1">
+                  <Label htmlFor="empresaId" className="text-xs sm:text-sm">ID da Empresa</Label>
                   <Input
                     id="empresaId"
                     placeholder="ID da sua empresa na NFE.io"
                     value={config.empresaId}
                     onChange={(e) => setConfig({...config, empresaId: e.target.value})}
+                    className="h-8 sm:h-10 text-xs sm:text-sm"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="ambiente">Ambiente</Label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-3">
+                <div className="space-y-1">
+                  <Label htmlFor="ambiente" className="text-xs sm:text-sm">Ambiente</Label>
                   <select
                     id="ambiente"
-                    className="w-full p-2 border rounded-md"
+                    className="w-full p-1 sm:p-2 border rounded-md h-8 sm:h-10 text-xs sm:text-sm"
                     value={config.ambiente}
                     onChange={(e) => setConfig({...config, ambiente: e.target.value})}
                   >
@@ -103,11 +107,11 @@ const IntegracaoNotaFiscal = () => {
                   </select>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="modelo">Modelo da Nota</Label>
+                <div className="space-y-1">
+                  <Label htmlFor="modelo" className="text-xs sm:text-sm">Modelo da Nota</Label>
                   <select
                     id="modelo"
-                    className="w-full p-2 border rounded-md"
+                    className="w-full p-1 sm:p-2 border rounded-md h-8 sm:h-10 text-xs sm:text-sm"
                     value={config.modelo}
                     onChange={(e) => setConfig({...config, modelo: e.target.value})}
                   >
@@ -117,10 +121,10 @@ const IntegracaoNotaFiscal = () => {
                 </div>
               </div>
 
-              <div className="flex items-center justify-between p-4 border rounded-lg">
-                <div className="space-y-1">
-                  <Label>Integração Ativa</Label>
-                  <p className="text-sm text-gray-600">Ative para começar a emitir notas fiscais</p>
+              <div className="flex items-center justify-between p-2 sm:p-3 border rounded-lg">
+                <div className="space-y-0.5">
+                  <Label className="text-xs sm:text-sm">Integração Ativa</Label>
+                  <p className="text-xs text-gray-600">Ative para começar a emitir notas fiscais</p>
                 </div>
                 <Switch
                   checked={config.ativo}
@@ -128,10 +132,10 @@ const IntegracaoNotaFiscal = () => {
                 />
               </div>
 
-              <div className="flex items-center justify-between p-4 border rounded-lg">
-                <div className="space-y-1">
-                  <Label>Emissão Automática</Label>
-                  <p className="text-sm text-gray-600">Emitir nota fiscal automaticamente após a venda</p>
+              <div className="flex items-center justify-between p-2 sm:p-3 border rounded-lg">
+                <div className="space-y-0.5">
+                  <Label className="text-xs sm:text-sm">Emissão Automática</Label>
+                  <p className="text-xs text-gray-600">Emitir nota fiscal automaticamente após a venda</p>
                 </div>
                 <Switch
                   checked={config.emitirAutomaticamente}
@@ -139,7 +143,7 @@ const IntegracaoNotaFiscal = () => {
                 />
               </div>
 
-              <Button onClick={handleSaveConfig} className="w-full">
+              <Button onClick={handleSaveConfig} className="w-full h-8 sm:h-10 text-xs sm:text-sm">
                 Salvar Configurações
               </Button>
             </CardContent>
@@ -148,24 +152,24 @@ const IntegracaoNotaFiscal = () => {
 
         <TabsContent value="teste">
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <TestTube className="w-5 h-5" />
+            <CardHeader className="p-2 sm:p-3">
+              <CardTitle className="flex items-center gap-1 text-sm sm:text-base">
+                <TestTube className="w-4 h-4" />
                 Teste de Conexão
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-xs sm:text-sm">
                 Teste a conexão com a API da NFE.io
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <p className="text-sm text-yellow-800">
+            <CardContent className="p-2 sm:p-3 space-y-2 sm:space-y-3">
+              <div className="p-2 sm:p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <p className="text-xs sm:text-sm text-yellow-800">
                   Certifique-se de ter configurado a API Key e ID da Empresa antes de testar a conexão.
                 </p>
               </div>
               
-              <Button onClick={handleTestConnection} className="w-full">
-                <Key className="w-4 h-4 mr-2" />
+              <Button onClick={handleTestConnection} className="w-full h-8 sm:h-10 text-xs sm:text-sm">
+                <Key className="w-3 h-3 mr-1" />
                 Testar Conexão com NFE.io
               </Button>
             </CardContent>
@@ -174,17 +178,17 @@ const IntegracaoNotaFiscal = () => {
 
         <TabsContent value="historico">
           <Card>
-            <CardHeader>
-              <CardTitle>Histórico de Notas Fiscais</CardTitle>
-              <CardDescription>
+            <CardHeader className="p-2 sm:p-3">
+              <CardTitle className="text-sm sm:text-base">Histórico de Notas Fiscais</CardTitle>
+              <CardDescription className="text-xs sm:text-sm">
                 Acompanhe as notas fiscais emitidas pelo sistema
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="text-center py-8 text-gray-500">
-                <FileText className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                <p>Nenhuma nota fiscal encontrada</p>
-                <p className="text-sm">As notas emitidas aparecerão aqui</p>
+            <CardContent className="p-2 sm:p-3">
+              <div className="text-center py-4 sm:py-6 text-gray-500">
+                <FileText className="w-8 h-8 sm:w-12 sm:h-12 mx-auto mb-2 opacity-50" />
+                <p className="text-xs sm:text-sm">Nenhuma nota fiscal encontrada</p>
+                <p className="text-xs">As notas emitidas aparecerão aqui</p>
               </div>
             </CardContent>
           </Card>
