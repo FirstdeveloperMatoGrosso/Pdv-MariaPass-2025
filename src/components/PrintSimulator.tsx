@@ -57,178 +57,316 @@ const PrintSimulator: React.FC<PrintSimulatorProps> = ({
   };
 
   const handleGeneratePDFFromButton = () => {
-    // Criar PDF no formato 58mm (aproximadamente 58x297mm para impressora térmica)
+    // Criar PDF no formato 58mm (otimizado para impressora térmica)
     const doc = new jsPDF({
       unit: 'mm',
-      format: [58, 297] // Largura 58mm, altura variável
+      format: [58, 200] // Largura fixa 58mm, altura ajustável
     });
     
     const currentDate = new Date().toLocaleString('pt-BR');
     const generatedNSU = nsu || `NSU${Date.now().toString().slice(-8)}`;
     
     if (printMode === 'individual') {
-      // Gerar PDF com fichas individuais para impressora térmica
+      // Gerar PDF com fichas individuais seguindo o modelo visual
       cart.forEach((item, index) => {
         if (index > 0) doc.addPage();
         
         const validationData = generateValidationData(item.id);
         const barcodeNumber = generateBarcode(validationData);
         
-        let yPos = 8;
+        let yPos = 5;
+        const pageWidth = 58;
+        const margin = 3;
+        const contentWidth = pageWidth - (margin * 2);
         
-        // Cabeçalho centralizado
+        // Logo/Cabeçalho - Imitando o gradiente azul
+        doc.setFillColor(59, 130, 246); // Azul similar ao gradiente
+        doc.rect(margin, yPos, contentWidth, 12, 'F');
+        
+        // Texto "MP" centralizado no cabeçalho
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.text('MP', pageWidth/2, yPos + 8, { align: 'center' });
+        
+        yPos += 15;
+        
+        // Nome da empresa
+        doc.setTextColor(0, 0, 0);
         doc.setFontSize(10);
         doc.setFont('helvetica', 'bold');
-        doc.text('MARIAPASS', 29, yPos, { align: 'center' });
-        yPos += 6;
+        doc.text('MARIAPASS', pageWidth/2, yPos, { align: 'center' });
+        yPos += 5;
         
         doc.setFontSize(7);
         doc.setFont('helvetica', 'normal');
-        doc.text('Ficha Individual de Produto', 29, yPos, { align: 'center' });
+        doc.text('Ficha Individual de Produto', pageWidth/2, yPos, { align: 'center' });
         yPos += 8;
         
         // Linha separadora
-        doc.setDrawColor(0, 0, 0);
-        doc.line(4, yPos, 54, yPos);
-        yPos += 6;
+        doc.setDrawColor(200, 200, 200);
+        doc.setLineWidth(0.2);
+        doc.line(margin, yPos, pageWidth - margin, yPos);
+        yPos += 5;
         
-        // Informações da ficha
+        // Informações da ficha - Layout compacto
         doc.setFontSize(6);
-        doc.text(`Ficha: #${orderId}-${index + 1}`, 4, yPos);
-        yPos += 4;
-        doc.text(`Data: ${currentDate}`, 4, yPos);
-        yPos += 4;
-        doc.text(`ID: ${item.id}`, 4, yPos);
-        yPos += 4;
-        doc.text(`Pagto: ${paymentMethod}`, 4, yPos);
-        yPos += 4;
-        doc.text(`NSU: ${generatedNSU}`, 4, yPos);
+        doc.setFont('helvetica', 'normal');
+        doc.text(`Ficha: #${orderId}-${index + 1}`, margin, yPos);
+        yPos += 3;
+        doc.text(`Data: ${currentDate}`, margin, yPos);
+        yPos += 3;
+        doc.text(`ID: ${item.id}`, margin, yPos);
+        yPos += 3;
+        doc.text(`Pagto: ${paymentMethod}`, margin, yPos);
+        yPos += 3;
+        doc.text(`NSU: ${generatedNSU}`, margin, yPos);
         yPos += 6;
         
-        // Nome do produto centralizado
+        // Área do produto - Imitando o card azul
+        doc.setFillColor(239, 246, 255); // Azul claro
+        doc.setDrawColor(191, 219, 254); // Borda azul
+        doc.rect(margin, yPos, contentWidth, 18, 'FD');
+        
+        // Ícone do produto (simulado com texto)
+        doc.setFontSize(8);
+        doc.setTextColor(37, 99, 235); // Azul do ícone
+        doc.text('📦', pageWidth/2, yPos + 5, { align: 'center' });
+        
+        // Nome do produto
+        yPos += 8;
         doc.setFontSize(8);
         doc.setFont('helvetica', 'bold');
-        const productName = item.nome.length > 20 ? item.nome.substring(0, 20) + '...' : item.nome;
-        doc.text(productName, 29, yPos, { align: 'center' });
-        yPos += 6;
+        doc.setTextColor(0, 0, 0);
+        const productName = item.nome.length > 18 ? item.nome.substring(0, 18) + '...' : item.nome;
+        doc.text(productName, pageWidth/2, yPos, { align: 'center' });
         
-        doc.setFontSize(7);
-        doc.setFont('helvetica', 'normal');
-        doc.text(`Qtd: ${item.quantity}`, 29, yPos, { align: 'center' });
+        // Quantidade e valor
         yPos += 4;
-        
-        doc.setFont('helvetica', 'bold');
-        doc.text(`R$ ${(item.preco * item.quantity).toFixed(2)}`, 29, yPos, { align: 'center' });
-        yPos += 8;
-        
-        // QR Code (simulado com hash devido ao tamanho)
         doc.setFontSize(6);
         doc.setFont('helvetica', 'normal');
-        doc.text('QR Code:', 29, yPos, { align: 'center' });
+        doc.setTextColor(107, 114, 128);
+        doc.text(`Quantidade: ${item.quantity}`, pageWidth/2, yPos, { align: 'center' });
+        
         yPos += 4;
-        doc.text(`${validationData.hash_validacao}`, 29, yPos, { align: 'center' });
+        doc.setFontSize(7);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(34, 197, 94); // Verde
+        doc.text(`R$ ${(item.preco * item.quantity).toFixed(2)}`, pageWidth/2, yPos, { align: 'center' });
+        
         yPos += 8;
         
-        // Código de barras (texto)
-        doc.text('Codigo:', 29, yPos, { align: 'center' });
+        // QR Code área
+        doc.setFontSize(6);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(0, 0, 0);
+        doc.text('QR Code de Validação:', pageWidth/2, yPos, { align: 'center' });
         yPos += 4;
+        
+        // Simulação do QR Code com hash
+        doc.setFillColor(255, 255, 255);
+        doc.setDrawColor(0, 0, 0);
+        doc.rect(pageWidth/2 - 8, yPos, 16, 16, 'FD');
+        
+        // Grid simulando QR code
+        for(let i = 0; i < 8; i++) {
+          for(let j = 0; j < 8; j++) {
+            if(Math.random() > 0.5) {
+              doc.setFillColor(0, 0, 0);
+              doc.rect(pageWidth/2 - 8 + i*2, yPos + j*2, 2, 2, 'F');
+            }
+          }
+        }
+        
+        yPos += 18;
         doc.setFontSize(5);
-        doc.text(barcodeNumber, 29, yPos, { align: 'center' });
-        yPos += 8;
+        doc.setTextColor(107, 114, 128);
+        doc.text(`Hash: ${validationData.hash_validacao}`, pageWidth/2, yPos, { align: 'center' });
+        yPos += 6;
         
-        // Linha separadora
-        doc.line(4, yPos, 54, yPos);
+        // Código de barras
+        doc.setFontSize(6);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(0, 0, 0);
+        doc.text('Código de Barras EAN-13:', pageWidth/2, yPos, { align: 'center' });
+        yPos += 4;
+        
+        // Simulação visual do código de barras
+        doc.setFillColor(255, 255, 255);
+        doc.setDrawColor(0, 0, 0);
+        doc.rect(margin, yPos, contentWidth, 8, 'FD');
+        
+        // Barras do código
+        const barWidth = contentWidth / barcodeNumber.length;
+        for(let i = 0; i < barcodeNumber.length; i++) {
+          const digit = parseInt(barcodeNumber[i]);
+          if(digit % 2 === 0) {
+            doc.setFillColor(0, 0, 0);
+            doc.rect(margin + (i * barWidth), yPos + 1, barWidth * 0.8, 6, 'F');
+          }
+        }
+        
+        yPos += 10;
+        doc.setFontSize(5);
+        doc.setFont('helvetica', 'normal');
+        doc.text(barcodeNumber, pageWidth/2, yPos, { align: 'center' });
+        yPos += 6;
+        
+        // Linha separadora final
+        doc.line(margin, yPos, pageWidth - margin, yPos);
         yPos += 4;
         
         // Rodapé
         doc.setFontSize(5);
-        doc.text('Obrigado pela preferencia!', 29, yPos, { align: 'center' });
+        doc.setTextColor(107, 114, 128);
+        doc.text('Obrigado pela preferência!', pageWidth/2, yPos, { align: 'center' });
         yPos += 3;
-        doc.text('Retire este item no balcao', 29, yPos, { align: 'center' });
+        doc.text('Retire este item no balcão', pageWidth/2, yPos, { align: 'center' });
         yPos += 3;
-        doc.text(`Val: ${validationData.timestamp}`, 29, yPos, { align: 'center' });
+        doc.text(`Validação: ${validationData.timestamp}`, pageWidth/2, yPos, { align: 'center' });
       });
     } else {
-      // Gerar PDF consolidado para impressora térmica
+      // Gerar PDF consolidado seguindo o modelo visual
       const validationData = generateValidationData();
       const barcodeNumber = generateBarcode(validationData);
       
-      let yPos = 8;
+      let yPos = 5;
+      const pageWidth = 58;
+      const margin = 3;
+      const contentWidth = pageWidth - (margin * 2);
       
-      // Cabeçalho centralizado
+      // Logo/Cabeçalho - Imitando o gradiente azul
+      doc.setFillColor(59, 130, 246);
+      doc.rect(margin, yPos, contentWidth, 12, 'F');
+      
+      // Texto "MP" centralizado no cabeçalho
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text('MP', pageWidth/2, yPos + 8, { align: 'center' });
+      
+      yPos += 15;
+      
+      // Nome da empresa
+      doc.setTextColor(0, 0, 0);
       doc.setFontSize(10);
       doc.setFont('helvetica', 'bold');
-      doc.text('MARIAPASS', 29, yPos, { align: 'center' });
-      yPos += 6;
+      doc.text('MARIAPASS', pageWidth/2, yPos, { align: 'center' });
+      yPos += 5;
       
       doc.setFontSize(7);
       doc.setFont('helvetica', 'normal');
-      doc.text('Sistema de Pedidos', 29, yPos, { align: 'center' });
+      doc.text('Sistema de Pedidos', pageWidth/2, yPos, { align: 'center' });
       yPos += 8;
       
       // Linha separadora
-      doc.setDrawColor(0, 0, 0);
-      doc.line(4, yPos, 54, yPos);
-      yPos += 6;
+      doc.setDrawColor(200, 200, 200);
+      doc.setLineWidth(0.2);
+      doc.line(margin, yPos, pageWidth - margin, yPos);
+      yPos += 5;
       
       // Informações da ficha
       doc.setFontSize(6);
-      doc.text(`Ficha: #${orderId}`, 4, yPos);
-      yPos += 4;
-      doc.text(`Data: ${currentDate}`, 4, yPos);
-      yPos += 4;
-      doc.text(`Pagto: ${paymentMethod}`, 4, yPos);
-      yPos += 4;
-      doc.text(`NSU: ${generatedNSU}`, 4, yPos);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Ficha: #${orderId}`, margin, yPos);
+      yPos += 3;
+      doc.text(`Data: ${currentDate}`, margin, yPos);
+      yPos += 3;
+      doc.text(`Pagto: ${paymentMethod}`, margin, yPos);
+      yPos += 3;
+      doc.text(`NSU: ${generatedNSU}`, margin, yPos);
       yPos += 6;
       
-      // Lista de produtos
+      // Lista de produtos compacta
       doc.setFontSize(6);
       cart.forEach(item => {
         const itemName = item.nome.length > 15 ? item.nome.substring(0, 15) + '...' : item.nome;
-        doc.text(`${item.quantity}x ${itemName}`, 4, yPos);
-        doc.text(`R$ ${(item.preco * item.quantity).toFixed(2)}`, 54, yPos, { align: 'right' });
-        yPos += 4;
+        doc.text(`${item.quantity}x ${itemName}`, margin, yPos);
+        doc.text(`R$ ${(item.preco * item.quantity).toFixed(2)}`, pageWidth - margin, yPos, { align: 'right' });
+        yPos += 3;
       });
       
       yPos += 2;
       // Linha separadora
-      doc.line(4, yPos, 54, yPos);
+      doc.line(margin, yPos, pageWidth - margin, yPos);
       yPos += 4;
       
       // Total
       doc.setFontSize(8);
       doc.setFont('helvetica', 'bold');
-      doc.text('TOTAL:', 4, yPos);
-      doc.text(`R$ ${total.toFixed(2)}`, 54, yPos, { align: 'right' });
+      doc.text('TOTAL:', margin, yPos);
+      doc.setTextColor(34, 197, 94); // Verde
+      doc.text(`R$ ${total.toFixed(2)}`, pageWidth - margin, yPos, { align: 'right' });
       yPos += 8;
       
-      // QR Code (simulado com hash devido ao tamanho)
+      // QR Code área
+      doc.setTextColor(0, 0, 0);
       doc.setFontSize(6);
-      doc.setFont('helvetica', 'normal');
-      doc.text('QR Code:', 29, yPos, { align: 'center' });
+      doc.setFont('helvetica', 'bold');
+      doc.text('QR Code de Validação:', pageWidth/2, yPos, { align: 'center' });
       yPos += 4;
-      doc.text(`${validationData.hash_validacao}`, 29, yPos, { align: 'center' });
-      yPos += 8;
       
-      // Código de barras (texto)
-      doc.text('Codigo:', 29, yPos, { align: 'center' });
-      yPos += 4;
+      // Simulação do QR Code
+      doc.setFillColor(255, 255, 255);
+      doc.setDrawColor(0, 0, 0);
+      doc.rect(pageWidth/2 - 8, yPos, 16, 16, 'FD');
+      
+      // Grid simulando QR code
+      for(let i = 0; i < 8; i++) {
+        for(let j = 0; j < 8; j++) {
+          if(Math.random() > 0.5) {
+            doc.setFillColor(0, 0, 0);
+            doc.rect(pageWidth/2 - 8 + i*2, yPos + j*2, 2, 2, 'F');
+          }
+        }
+      }
+      
+      yPos += 18;
       doc.setFontSize(5);
-      doc.text(barcodeNumber, 29, yPos, { align: 'center' });
-      yPos += 8;
+      doc.setTextColor(107, 114, 128);
+      doc.text(`Hash: ${validationData.hash_validacao}`, pageWidth/2, yPos, { align: 'center' });
+      yPos += 6;
       
-      // Linha separadora
-      doc.line(4, yPos, 54, yPos);
+      // Código de barras
+      doc.setFontSize(6);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(0, 0, 0);
+      doc.text('Código EAN-13:', pageWidth/2, yPos, { align: 'center' });
+      yPos += 4;
+      
+      // Simulação visual do código de barras
+      doc.setFillColor(255, 255, 255);
+      doc.setDrawColor(0, 0, 0);
+      doc.rect(margin, yPos, contentWidth, 8, 'FD');
+      
+      // Barras do código
+      const barWidth = contentWidth / barcodeNumber.length;
+      for(let i = 0; i < barcodeNumber.length; i++) {
+        const digit = parseInt(barcodeNumber[i]);
+        if(digit % 2 === 0) {
+          doc.setFillColor(0, 0, 0);
+          doc.rect(margin + (i * barWidth), yPos + 1, barWidth * 0.8, 6, 'F');
+        }
+      }
+      
+      yPos += 10;
+      doc.setFontSize(5);
+      doc.setFont('helvetica', 'normal');
+      doc.text(barcodeNumber, pageWidth/2, yPos, { align: 'center' });
+      yPos += 6;
+      
+      // Linha separadora final
+      doc.line(margin, yPos, pageWidth - margin, yPos);
       yPos += 4;
       
       // Rodapé
       doc.setFontSize(5);
-      doc.text('Obrigado pela preferencia!', 29, yPos, { align: 'center' });
+      doc.setTextColor(107, 114, 128);
+      doc.text('Obrigado pela preferência!', pageWidth/2, yPos, { align: 'center' });
       yPos += 3;
-      doc.text('Retire seu pedido no balcao', 29, yPos, { align: 'center' });
+      doc.text('Retire seu pedido no balcão', pageWidth/2, yPos, { align: 'center' });
       yPos += 3;
-      doc.text(`Val: ${validationData.timestamp}`, 29, yPos, { align: 'center' });
+      doc.text(`Validação: ${validationData.timestamp}`, pageWidth/2, yPos, { align: 'center' });
     }
     
     // Salvar o PDF
