@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -173,23 +174,23 @@ const Vendas: React.FC = () => {
     switch (forma.toLowerCase()) {
       case 'cartao_credito':
       case 'cartao_debito':
-        return <CreditCard className="w-4 h-4" />;
+        return <CreditCard className="w-3 h-3 sm:w-4 sm:h-4" />;
       case 'pix':
-        return <Hash className="w-4 h-4" />;
+        return <Hash className="w-3 h-3 sm:w-4 sm:h-4" />;
       case 'pulseira':
-        return <Package className="w-4 h-4" />;
+        return <Package className="w-3 h-3 sm:w-4 sm:h-4" />;
       default:
-        return <CreditCard className="w-4 h-4" />;
+        return <CreditCard className="w-3 h-3 sm:w-4 sm:h-4" />;
     }
   };
 
   if (error) {
     return (
-      <div className="min-h-screen p-4 flex items-center justify-center">
+      <div className="min-h-screen p-2 sm:p-4 flex items-center justify-center">
         <Card className="w-full max-w-md">
-          <CardContent className="p-6 text-center">
-            <p className="text-red-600 mb-4">Erro ao carregar vendas: {error.message}</p>
-            <Button onClick={() => refetch()}>Tentar Novamente</Button>
+          <CardContent className="p-4 sm:p-6 text-center">
+            <p className="text-red-600 mb-4 text-sm">Erro ao carregar vendas: {error.message}</p>
+            <Button onClick={() => refetch()} size="sm">Tentar Novamente</Button>
           </CardContent>
         </Card>
       </div>
@@ -197,64 +198,64 @@ const Vendas: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen p-4 space-y-4">
+    <div className="min-h-screen p-2 sm:p-4 space-y-2 sm:space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
         <div className="flex items-center space-x-2">
-          <ShoppingCart className="w-6 h-6 text-green-600" />
-          <h1 className="text-2xl font-bold text-gray-800">Vendas Realizadas</h1>
+          <ShoppingCart className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
+          <h1 className="text-lg sm:text-2xl font-bold text-gray-800">Vendas Realizadas</h1>
         </div>
         <Button variant="outline" size="sm">
-          <Download className="w-4 h-4 mr-2" />
-          Exportar
+          <Download className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+          <span className="text-xs sm:text-sm">Exportar</span>
         </Button>
       </div>
 
       {/* Resumo */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4">
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Total de Vendas</CardTitle>
+          <CardHeader className="pb-1 p-3 sm:pb-2 sm:p-4">
+            <CardTitle className="text-xs sm:text-sm font-medium text-gray-600">Total de Vendas</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalVendas}</div>
+          <CardContent className="p-3 sm:p-4 pt-0">
+            <div className="text-lg sm:text-2xl font-bold">{totalVendas}</div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Faturamento Total</CardTitle>
+          <CardHeader className="pb-1 p-3 sm:pb-2 sm:p-4">
+            <CardTitle className="text-xs sm:text-sm font-medium text-gray-600">Faturamento Total</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">{formatCurrency(faturamentoTotal)}</div>
+          <CardContent className="p-3 sm:p-4 pt-0">
+            <div className="text-lg sm:text-2xl font-bold text-green-600">{formatCurrency(faturamentoTotal)}</div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Ticket Médio</CardTitle>
+          <CardHeader className="pb-1 p-3 sm:pb-2 sm:p-4">
+            <CardTitle className="text-xs sm:text-sm font-medium text-gray-600">Ticket Médio</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-600">{formatCurrency(ticketMedio)}</div>
+          <CardContent className="p-3 sm:p-4 pt-0">
+            <div className="text-lg sm:text-2xl font-bold text-blue-600">{formatCurrency(ticketMedio)}</div>
           </CardContent>
         </Card>
       </div>
 
       {/* Filtros */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Filter className="w-5 h-5" />
+        <CardHeader className="p-3 sm:p-4">
+          <CardTitle className="flex items-center space-x-2 text-sm sm:text-base">
+            <Filter className="w-4 h-4 sm:w-5 sm:h-5" />
             <span>Filtros</span>
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Período</label>
+        <CardContent className="p-3 sm:p-4 pt-0 space-y-3 sm:space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+            <div className="space-y-1 sm:space-y-2">
+              <label className="text-xs sm:text-sm font-medium">Período</label>
               <Select value={filtroData} onValueChange={setFiltroData}>
-                <SelectTrigger>
-                  <Calendar className="w-4 h-4 mr-2" />
+                <SelectTrigger className="h-8 sm:h-10">
+                  <Calendar className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -266,10 +267,10 @@ const Vendas: React.FC = () => {
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Forma de Pagamento</label>
+            <div className="space-y-1 sm:space-y-2">
+              <label className="text-xs sm:text-sm font-medium">Forma de Pagamento</label>
               <Select value={filtroFormaPagamento} onValueChange={setFiltroFormaPagamento}>
-                <SelectTrigger>
+                <SelectTrigger className="h-8 sm:h-10">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -283,15 +284,15 @@ const Vendas: React.FC = () => {
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Buscar</label>
+            <div className="space-y-1 sm:space-y-2">
+              <label className="text-xs sm:text-sm font-medium">Buscar</label>
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Search className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 w-3 h-3 sm:w-4 sm:h-4 text-gray-400" />
                 <Input
                   placeholder="Número da venda ou produto..."
                   value={busca}
                   onChange={(e) => setBusca(e.target.value)}
-                  className="pl-10"
+                  className="pl-8 sm:pl-10 h-8 sm:h-10 text-xs sm:text-sm"
                 />
               </div>
             </div>
@@ -301,81 +302,81 @@ const Vendas: React.FC = () => {
 
       {/* Lista de Vendas */}
       <Card>
-        <CardHeader>
-          <CardTitle>Histórico de Vendas</CardTitle>
+        <CardHeader className="p-3 sm:p-4">
+          <CardTitle className="text-sm sm:text-base">Histórico de Vendas</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-2 sm:p-4">
           {isLoading ? (
-            <div className="text-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto"></div>
-              <p className="mt-2 text-sm text-gray-600">Carregando vendas...</p>
+            <div className="text-center py-6 sm:py-8">
+              <div className="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 border-green-600 mx-auto"></div>
+              <p className="mt-2 text-xs sm:text-sm text-gray-600">Carregando vendas...</p>
             </div>
           ) : vendas.length === 0 ? (
-            <div className="text-center py-8">
-              <ShoppingCart className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-500">Nenhuma venda encontrada para os filtros selecionados.</p>
+            <div className="text-center py-6 sm:py-8">
+              <ShoppingCart className="w-8 h-8 sm:w-12 sm:h-12 text-gray-300 mx-auto mb-3 sm:mb-4" />
+              <p className="text-gray-500 text-xs sm:text-sm">Nenhuma venda encontrada para os filtros selecionados.</p>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2 sm:space-y-3">
               {vendas.map((venda) => (
-                <div key={venda.id} className="border rounded-lg p-4 hover:bg-gray-50">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
+                <div key={venda.id} className="border rounded-lg p-2 sm:p-4 hover:bg-gray-50">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div className="flex items-center space-x-2 sm:space-x-4">
                       <div className="flex-shrink-0">
                         {venda.produto_imagem ? (
                           <img 
                             src={venda.produto_imagem} 
                             alt={venda.produto_nome}
-                            className="w-16 h-16 object-cover rounded-lg border"
+                            className="w-12 h-12 sm:w-16 sm:h-16 object-cover rounded-lg border"
                             onError={(e) => {
                               e.currentTarget.src = '/placeholder.svg';
                             }}
                           />
                         ) : (
-                          <div className="w-16 h-16 bg-gray-100 rounded-lg border flex items-center justify-center">
-                            <ImageIcon className="w-6 h-6 text-gray-400" />
+                          <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gray-100 rounded-lg border flex items-center justify-center">
+                            <ImageIcon className="w-4 h-4 sm:w-6 sm:h-6 text-gray-400" />
                           </div>
                         )}
                       </div>
                       
-                      <div className="flex-1">
-                        <h4 className="font-medium text-lg">{venda.produto_nome}</h4>
-                        <div className="flex items-center space-x-2 mt-1">
-                          <p className="text-sm text-gray-600">
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-medium text-sm sm:text-lg truncate">{venda.produto_nome}</h4>
+                        <div className="flex flex-wrap items-center gap-1 sm:gap-2 mt-1">
+                          <p className="text-xs sm:text-sm text-gray-600">
                             Venda: {venda.numero_autorizacao}
                           </p>
                           {venda.nsu && (
-                            <Badge variant="outline" className="text-xs">
+                            <Badge variant="outline" className="text-[10px] sm:text-xs">
                               NSU: {venda.nsu}
                             </Badge>
                           )}
                         </div>
-                        <p className="text-xs text-gray-500 mt-1">
+                        <p className="text-[10px] sm:text-xs text-gray-500 mt-1">
                           {formatDate(venda.data_venda)}
                         </p>
                       </div>
                     </div>
 
-                    <div className="text-right space-y-2">
-                      <div className="flex items-center justify-end space-x-2">
+                    <div className="flex flex-col sm:text-right space-y-1 sm:space-y-2">
+                      <div className="flex flex-wrap items-center gap-1 sm:gap-2 sm:justify-end">
                         <div className="flex items-center space-x-1">
                           {getPaymentIcon(venda.forma_pagamento)}
-                          <Badge className={getFormaPagamentoBadge(venda.forma_pagamento)}>
+                          <Badge className={getFormaPagamentoBadge(venda.forma_pagamento) + " text-[10px] sm:text-xs"}>
                             {venda.forma_pagamento.replace('_', ' ').toUpperCase()}
                           </Badge>
                         </div>
                         {venda.bandeira && (
-                          <Badge variant="outline" className="text-xs">
+                          <Badge variant="outline" className="text-[10px] sm:text-xs">
                             {venda.bandeira.toUpperCase()}
                           </Badge>
                         )}
                       </div>
                       
                       <div className="space-y-1">
-                        <p className="text-sm">
+                        <p className="text-xs sm:text-sm">
                           Qtd: {venda.quantidade} x {formatCurrency(venda.valor_unitario)}
                         </p>
-                        <p className="font-bold text-lg text-green-600">
+                        <p className="font-bold text-sm sm:text-lg text-green-600">
                           Total: {formatCurrency(venda.valor_total)}
                         </p>
                       </div>
@@ -386,39 +387,40 @@ const Vendas: React.FC = () => {
                             size="sm" 
                             variant="outline"
                             onClick={() => setSelectedVenda(venda)}
+                            className="w-full sm:w-auto text-xs"
                           >
-                            <Eye className="w-4 h-4 mr-1" />
+                            <Eye className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
                             Detalhes
                           </Button>
                         </DialogTrigger>
-                        <DialogContent className="max-w-md">
+                        <DialogContent className="max-w-sm sm:max-w-md mx-2">
                           <DialogHeader>
-                            <DialogTitle>Detalhes da Venda</DialogTitle>
+                            <DialogTitle className="text-sm sm:text-base">Detalhes da Venda</DialogTitle>
                           </DialogHeader>
                           {selectedVenda && (
-                            <div className="space-y-4">
-                              <div className="flex items-center space-x-3">
+                            <div className="space-y-3 sm:space-y-4">
+                              <div className="flex items-center space-x-2 sm:space-x-3">
                                 {selectedVenda.produto_imagem ? (
                                   <img 
                                     src={selectedVenda.produto_imagem} 
                                     alt={selectedVenda.produto_nome}
-                                    className="w-20 h-20 object-cover rounded-lg border"
+                                    className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-lg border"
                                     onError={(e) => {
                                       e.currentTarget.src = '/placeholder.svg';
                                     }}
                                   />
                                 ) : (
-                                  <div className="w-20 h-20 bg-gray-100 rounded-lg border flex items-center justify-center">
-                                    <ImageIcon className="w-8 h-8 text-gray-400" />
+                                  <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gray-100 rounded-lg border flex items-center justify-center">
+                                    <ImageIcon className="w-6 h-6 sm:w-8 sm:h-8 text-gray-400" />
                                   </div>
                                 )}
-                                <div>
-                                  <h3 className="font-semibold">{selectedVenda.produto_nome}</h3>
-                                  <p className="text-sm text-gray-600">{selectedVenda.numero_autorizacao}</p>
+                                <div className="min-w-0 flex-1">
+                                  <h3 className="font-semibold text-sm sm:text-base truncate">{selectedVenda.produto_nome}</h3>
+                                  <p className="text-xs sm:text-sm text-gray-600 truncate">{selectedVenda.numero_autorizacao}</p>
                                 </div>
                               </div>
                               
-                              <div className="grid grid-cols-2 gap-4 text-sm">
+                              <div className="grid grid-cols-2 gap-3 sm:gap-4 text-xs sm:text-sm">
                                 <div>
                                   <p className="font-medium">Quantidade:</p>
                                   <p>{selectedVenda.quantidade}</p>
@@ -433,23 +435,23 @@ const Vendas: React.FC = () => {
                                 </div>
                                 <div>
                                   <p className="font-medium">Forma Pagamento:</p>
-                                  <p>{selectedVenda.forma_pagamento.replace('_', ' ')}</p>
+                                  <p className="text-xs">{selectedVenda.forma_pagamento.replace('_', ' ')}</p>
                                 </div>
                                 {selectedVenda.nsu && (
                                   <div>
                                     <p className="font-medium">NSU:</p>
-                                    <p>{selectedVenda.nsu}</p>
+                                    <p className="text-xs">{selectedVenda.nsu}</p>
                                   </div>
                                 )}
                                 {selectedVenda.bandeira && (
                                   <div>
                                     <p className="font-medium">Bandeira:</p>
-                                    <p>{selectedVenda.bandeira}</p>
+                                    <p className="text-xs">{selectedVenda.bandeira}</p>
                                   </div>
                                 )}
                                 <div className="col-span-2">
                                   <p className="font-medium">Data/Hora:</p>
-                                  <p>{formatDate(selectedVenda.data_venda)}</p>
+                                  <p className="text-xs">{formatDate(selectedVenda.data_venda)}</p>
                                 </div>
                               </div>
                             </div>
