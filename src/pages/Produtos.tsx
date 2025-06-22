@@ -176,15 +176,15 @@ const Produtos: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen p-2 sm:p-4 space-y-4">
+    <div className="min-h-screen p-1 sm:p-2 space-y-1 sm:space-y-2">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
         <div className="flex items-center space-x-2">
-          <Package className="w-6 h-6 text-blue-600" />
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-800">Produtos</h1>
+          <Package className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
+          <h1 className="text-lg sm:text-2xl font-bold text-gray-800">Produtos</h1>
         </div>
-        <div className="flex gap-2 w-full sm:w-auto">
-          <Button asChild>
+        <div className="flex gap-1 w-full sm:w-auto">
+          <Button asChild size="sm" className="h-7 text-xs">
             <CategoryForm onSuccess={handleCategorySuccess} />
           </Button>
           <ProductForm onSuccess={handleProductSuccess} />
@@ -192,32 +192,32 @@ const Produtos: React.FC = () => {
       </div>
 
       {/* Filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2 text-lg">
-            <Filter className="w-5 h-5" />
+      <Card className="border shadow-sm">
+        <CardHeader className="p-2 pb-0">
+          <CardTitle className="flex items-center space-x-2 text-sm sm:text-base">
+            <Filter className="w-4 h-4 sm:w-5 sm:h-5" />
             <span>Filtros</span>
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Buscar</label>
+        <CardContent className="p-2 pt-1">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-1 sm:gap-2">
+            <div className="space-y-0.5">
+              <label className="text-xs sm:text-sm font-medium">Buscar</label>
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-3 h-3 sm:w-4 sm:h-4 text-gray-400" />
                 <Input
                   placeholder="Nome ou código de barras..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  className="pl-7 sm:pl-8 h-7 sm:h-8 text-xs sm:text-sm"
                 />
               </div>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Categoria</label>
+            <div className="space-y-0.5">
+              <label className="text-xs sm:text-sm font-medium">Categoria</label>
               <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                <SelectTrigger>
+                <SelectTrigger className="h-7 sm:h-8 text-xs sm:text-sm">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -231,10 +231,10 @@ const Produtos: React.FC = () => {
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Status</label>
+            <div className="space-y-0.5">
+              <label className="text-xs sm:text-sm font-medium">Status</label>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger>
+                <SelectTrigger className="h-7 sm:h-8 text-xs sm:text-sm">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

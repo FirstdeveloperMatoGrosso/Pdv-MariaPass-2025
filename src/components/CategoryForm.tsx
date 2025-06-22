@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -82,8 +81,8 @@ const CategoryForm: React.FC<CategoryFormProps> = ({ onSuccess }) => {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="flex items-center space-x-2">
-          <Plus className="w-4 h-4" />
+        <Button className="flex items-center space-x-1 h-7 text-xs px-2">
+          <Plus className="w-3 h-3" />
           <span>Nova Categoria</span>
         </Button>
       </DialogTrigger>
