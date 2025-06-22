@@ -15,7 +15,7 @@ import {
 interface CashPaymentProps {
   valor: number;
   recargaId: string;
-  onPaymentSuccess: () => void;
+  onPaymentSuccess: (paymentData?: { method: string; nsu?: string }) => void;
   onCancel: () => void;
 }
 
@@ -37,18 +37,21 @@ const CashPayment: React.FC<CashPaymentProps> = ({
       return;
     }
     
+    const nsu = `CASH${Date.now().toString().slice(-8)}`;
+    
     console.log('💵 Pagamento em dinheiro confirmado:', {
       pedido: recargaId,
       valor_total: valor,
       valor_recebido: valorRecebidoNum,
-      troco: troco
+      troco: troco,
+      nsu: nsu
     });
     
     setPagamentoConfirmado(true);
     
     // Simular um pequeno delay para dar feedback visual
     setTimeout(() => {
-      onPaymentSuccess();
+      onPaymentSuccess({ method: 'Dinheiro', nsu });
     }, 1500);
   };
 

@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Printer, Check, X, FileText, Package } from 'lucide-react';
+import QRCodeGenerator from './QRCodeGenerator';
 
 interface CartItem {
   id: string;
@@ -15,10 +16,19 @@ interface PrintSimulatorProps {
   orderId: string;
   cart: CartItem[];
   total: number;
+  paymentMethod?: string;
+  nsu?: string;
   onClose: () => void;
 }
 
-const PrintSimulator: React.FC<PrintSimulatorProps> = ({ orderId, cart, total, onClose }) => {
+const PrintSimulator: React.FC<PrintSimulatorProps> = ({ 
+  orderId, 
+  cart, 
+  total, 
+  paymentMethod = 'Pulseira',
+  nsu,
+  onClose 
+}) => {
   const [isPrinting, setIsPrinting] = useState(false);
   const [printComplete, setPrintComplete] = useState(false);
   const [printMode, setPrintMode] = useState<'consolidated' | 'individual' | null>(null);
@@ -47,74 +57,166 @@ const PrintSimulator: React.FC<PrintSimulatorProps> = ({ orderId, cart, total, o
   };
 
   const currentDate = new Date().toLocaleString('pt-BR');
+  const generateNSU = () => nsu || `NSU${Date.now().toString().slice(-8)}`;
+  
+  // Gerar dados para QR Code e código de barras
+  const generateValidationData = (itemId?: string) => {
+    const baseData = {
+      pedido: orderId,
+      data: new Date().toISOString(),
+      valor: total,
+      forma_pagamento: paymentMethod,
+      nsu: generateNSU()
+    };
+    
+    if (itemId) {
+      return { ...baseData, produto_id: itemId };
+    }
+    
+    return baseData;
+  };
 
-  const renderIndividualFicha = (item: CartItem, index: number) => (
-    <div key={item.id} className="bg-gray-50 border-2 border-dashed border-gray-300 p-4 rounded-lg font-mono text-sm mb-4">
-      <div className="text-center space-y-2 border-b border-gray-300 pb-4 mb-4">
-        <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg mx-auto flex items-center justify-center text-white font-bold text-xl">
-          MP
+  const generateBarcode = (data: any) => {
+    // Simular código de barras baseado nos dados
+    const dataString = JSON.stringify(data);
+    const hash = dataString.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    return `7891234${hash.toString().padStart(6, '0').slice(-6)}`;
+  };
+
+  const renderIndividualFicha = (item: CartItem, index: number) => {
+    const validationData = generateValidationData(item.id);
+    const barcodeNumber = generateBarcode(validationData);
+    
+    return (
+      <div key={item.id} className="bg-gray-50 border-2 border-dashed border-gray-300 p-4 rounded-lg font-mono text-sm mb-4">
+        <div className="text-center space-y-2 border-b border-gray-300 pb-4 mb-4">
+          <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg mx-auto flex items-center justify-center text-white font-bold text-xl">
+            MP
+          </div>
+          <h3 className="font-bold text-lg">MARIAPASS</h3>
+          <p className="text-xs text-gray-600">Ficha Individual de Produto</p>
         </div>
-        <h3 className="font-bold text-lg">MARIAPASS</h3>
-        <p className="text-xs text-gray-600">Ficha Individual de Produto</p>
-      </div>
-      
-      <div className="space-y-1">
-        <p><strong>Ficha:</strong> #{orderId}-{index + 1}</p>
-        <p><strong>Data:</strong> {currentDate}</p>
-        <hr className="my-2 border-gray-400" />
         
-        <div className="text-center py-4">
-          <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
-            <Package className="w-8 h-8 mx-auto mb-2 text-blue-600" />
-            <p className="font-bold text-lg">{item.nome}</p>
-            <p className="text-sm text-gray-600">Quantidade: {item.quantity}</p>
-            <p className="font-semibold text-green-600">R$ {(item.preco * item.quantity).toFixed(2)}</p>
+        <div className="space-y-1">
+          <p><strong>Ficha:</strong> #{orderId}-{index + 1}</p>
+          <p><strong>Data:</strong> {currentDate}</p>
+          <p><strong>ID Produto:</strong> {item.id}</p>
+          <p><strong>Forma Pagamento:</strong> {paymentMethod}</p>
+          <p><strong>NSU:</strong> {generateNSU()}</p>
+          <hr className="my-2 border-gray-400" />
+          
+          <div className="text-center py-4">
+            <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
+              <Package className="w-8 h-8 mx-auto mb-2 text-blue-600" />
+              <p className="font-bold text-lg">{item.nome}</p>
+              <p className="text-sm text-gray-600">Quantidade: {item.quantity}</p>
+              <p className="font-semibold text-green-600">R$ {(item.preco * item.quantity).toFixed(2)}</p>
+            </div>
+          </div>
+          
+          {/* QR Code de Validação */}
+          <div className="text-center py-2">
+            <p className="text-xs font-bold mb-2">QR Code de Validação:</p>
+            <div className="flex justify-center">
+              <QRCodeGenerator 
+                text={JSON.stringify(validationData)}
+                size={80}
+              />
+            </div>
+          </div>
+          
+          {/* Código de Barras */}
+          <div className="text-center py-2">
+            <p className="text-xs font-bold mb-1">Código de Barras:</p>
+            <div className="bg-white p-2 border border-gray-300 rounded">
+              <div className="flex justify-center items-center space-x-0.5 mb-1">
+                {barcodeNumber.split('').map((digit, i) => (
+                  <div key={i} className="flex flex-col">
+                    <div className="w-0.5 bg-black" style={{ height: `${15 + (parseInt(digit) % 3) * 3}px` }}></div>
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs font-mono">{barcodeNumber}</p>
+            </div>
+          </div>
+          
+          <div className="text-center mt-4 pt-2 border-t border-gray-300">
+            <p className="text-xs">Obrigado pela preferência!</p>
+            <p className="text-xs">Retire este item no balcão</p>
           </div>
         </div>
-        
-        <div className="text-center mt-4 pt-2 border-t border-gray-300">
-          <p className="text-xs">Obrigado pela preferência!</p>
-          <p className="text-xs">Retire este item no balcão</p>
-        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
-  const renderConsolidatedFicha = () => (
-    <div className="bg-gray-50 border-2 border-dashed border-gray-300 p-4 rounded-lg font-mono text-sm">
-      <div className="text-center space-y-2 border-b border-gray-300 pb-4 mb-4">
-        <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg mx-auto flex items-center justify-center text-white font-bold text-xl">
-          MP
-        </div>
-        <h3 className="font-bold text-lg">MARIAPASS</h3>
-        <p className="text-xs text-gray-600">Sistema de Pedidos</p>
-      </div>
-      
-      <div className="space-y-1">
-        <p><strong>Ficha:</strong> #{orderId}</p>
-        <p><strong>Data:</strong> {currentDate}</p>
-        <hr className="my-2 border-gray-400" />
-        
-        {cart.map(item => (
-          <div key={item.id} className="flex justify-between">
-            <span>{item.quantity}x {item.nome}</span>
-            <span>R$ {(item.preco * item.quantity).toFixed(2)}</span>
+  const renderConsolidatedFicha = () => {
+    const validationData = generateValidationData();
+    const barcodeNumber = generateBarcode(validationData);
+    
+    return (
+      <div className="bg-gray-50 border-2 border-dashed border-gray-300 p-4 rounded-lg font-mono text-sm">
+        <div className="text-center space-y-2 border-b border-gray-300 pb-4 mb-4">
+          <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg mx-auto flex items-center justify-center text-white font-bold text-xl">
+            MP
           </div>
-        ))}
-        
-        <hr className="my-2 border-gray-400" />
-        <div className="flex justify-between font-bold">
-          <span>TOTAL:</span>
-          <span>R$ {total.toFixed(2)}</span>
+          <h3 className="font-bold text-lg">MARIAPASS</h3>
+          <p className="text-xs text-gray-600">Sistema de Pedidos</p>
         </div>
         
-        <div className="text-center mt-4 pt-2 border-t border-gray-300">
-          <p className="text-xs">Obrigado pela preferência!</p>
-          <p className="text-xs">Retire seu pedido no balcão</p>
+        <div className="space-y-1">
+          <p><strong>Ficha:</strong> #{orderId}</p>
+          <p><strong>Data:</strong> {currentDate}</p>
+          <p><strong>Forma Pagamento:</strong> {paymentMethod}</p>
+          <p><strong>NSU:</strong> {generateNSU()}</p>
+          <hr className="my-2 border-gray-400" />
+          
+          {cart.map(item => (
+            <div key={item.id} className="flex justify-between text-xs">
+              <span>{item.quantity}x {item.nome} (ID: {item.id})</span>
+              <span>R$ {(item.preco * item.quantity).toFixed(2)}</span>
+            </div>
+          ))}
+          
+          <hr className="my-2 border-gray-400" />
+          <div className="flex justify-between font-bold">
+            <span>TOTAL:</span>
+            <span>R$ {total.toFixed(2)}</span>
+          </div>
+          
+          {/* QR Code de Validação */}
+          <div className="text-center py-2">
+            <p className="text-xs font-bold mb-2">QR Code de Validação:</p>
+            <div className="flex justify-center">
+              <QRCodeGenerator 
+                text={JSON.stringify(validationData)}
+                size={80}
+              />
+            </div>
+          </div>
+          
+          {/* Código de Barras */}
+          <div className="text-center py-2">
+            <p className="text-xs font-bold mb-1">Código de Barras:</p>
+            <div className="bg-white p-2 border border-gray-300 rounded">
+              <div className="flex justify-center items-center space-x-0.5 mb-1">
+                {barcodeNumber.split('').map((digit, i) => (
+                  <div key={i} className="flex flex-col">
+                    <div className="w-0.5 bg-black" style={{ height: `${15 + (parseInt(digit) % 3) * 3}px` }}></div>
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs font-mono">{barcodeNumber}</p>
+            </div>
+          </div>
+          
+          <div className="text-center mt-4 pt-2 border-t border-gray-300">
+            <p className="text-xs">Obrigado pela preferência!</p>
+            <p className="text-xs">Retire seu pedido no balcão</p>
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   if (!printMode) {
     return (
@@ -165,6 +267,8 @@ const PrintSimulator: React.FC<PrintSimulatorProps> = ({ orderId, cart, total, o
               <p>• {cart.length} produtos diferentes</p>
               <p>• Total de itens: {cart.reduce((acc, item) => acc + item.quantity, 0)}</p>
               <p>• Valor total: R$ {total.toFixed(2)}</p>
+              <p>• Forma de pagamento: {paymentMethod}</p>
+              {nsu && <p>• NSU: {nsu}</p>}
             </div>
           </div>
         </CardContent>

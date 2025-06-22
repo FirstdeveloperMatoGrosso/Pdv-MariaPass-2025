@@ -49,6 +49,7 @@ const Index: React.FC = () => {
   const [showBarcodeModal, setShowBarcodeModal] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('todas');
   const [quantityInputs, setQuantityInputs] = useState<{ [key: string]: string }>({});
+  const [paymentData, setPaymentData] = useState<{ method: string; nsu?: string } | null>(null);
 
   // Buscar produtos do Supabase
   const {
@@ -439,10 +440,11 @@ const Index: React.FC = () => {
     }
   };
 
-  const handlePaymentSuccess = () => {
+  const handlePaymentSuccess = (paymentInfo?: { method: string; nsu?: string }) => {
     setShowPagSeguroPix(false);
     setShowPixPayment(false);
     setShowCashPayment(false);
+    setPaymentData(paymentInfo || { method: 'PIX' });
     setShowPrintSimulator(true);
   };
 
@@ -464,6 +466,7 @@ const Index: React.FC = () => {
 
     setCart([]);
     setCurrentOrderId('');
+    setPaymentData(null);
   };
 
   const handleBarcodeProductScanned = (product: any) => {
@@ -796,6 +799,8 @@ const Index: React.FC = () => {
             orderId={currentOrderId}
             cart={cart}
             total={getTotalPrice()}
+            paymentMethod={paymentData?.method}
+            nsu={paymentData?.nsu}
             onClose={handlePrintClose}
           />
         </div>
