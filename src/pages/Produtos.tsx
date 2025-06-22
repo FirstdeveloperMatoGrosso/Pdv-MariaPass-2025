@@ -43,7 +43,6 @@ const Produtos: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('todas');
   const [statusFilter, setStatusFilter] = useState('todos');
-  const [showForm, setShowForm] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [showDetails, setShowDetails] = useState(false);
   const { toast } = useToast();
@@ -139,10 +138,6 @@ const Produtos: React.FC = () => {
     setShowDetails(true);
   };
 
-  const handleFormClose = () => {
-    setShowForm(false);
-  };
-
   if (error) {
     return (
       <div className="min-h-screen p-4 flex items-center justify-center">
@@ -164,10 +159,11 @@ const Produtos: React.FC = () => {
           <Package className="w-6 h-6 text-blue-600" />
           <h1 className="text-xl sm:text-2xl font-bold text-gray-800">Produtos</h1>
         </div>
-        <Button onClick={() => setShowForm(true)} className="w-full sm:w-auto">
-          <Plus className="w-4 h-4 mr-2" />
-          Novo Produto
-        </Button>
+        <ProductForm
+          onSuccess={() => {
+            queryClient.invalidateQueries({ queryKey: ['produtos'] });
+          }}
+        />
       </div>
 
       {/* Filters */}
@@ -319,17 +315,6 @@ const Produtos: React.FC = () => {
           ))
         )}
       </div>
-
-      {/* Product Form Modal */}
-      {showForm && (
-        <ProductForm
-          onClose={handleFormClose}
-          onSuccess={() => {
-            handleFormClose();
-            queryClient.invalidateQueries({ queryKey: ['produtos'] });
-          }}
-        />
-      )}
 
       {/* Product Details Modal */}
       <ProductDetailsModal
