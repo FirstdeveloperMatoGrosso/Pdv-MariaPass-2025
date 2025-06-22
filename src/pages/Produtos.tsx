@@ -43,6 +43,7 @@ const Produtos: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('todas');
   const [statusFilter, setStatusFilter] = useState('todos');
+  const [showForm, setShowForm] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [showDetails, setShowDetails] = useState(false);
   const { toast } = useToast();
@@ -51,17 +52,12 @@ const Produtos: React.FC = () => {
   const { data: produtos = [], isLoading, error } = useQuery({
     queryKey: ['produtos'],
     queryFn: async () => {
-      console.log('Fetching produtos...');
       const { data, error } = await supabase
         .from('produtos')
         .select('*')
         .order('created_at', { ascending: false });
       
-      if (error) {
-        console.error('Error fetching produtos:', error);
-        throw error;
-      }
-      console.log('Produtos fetched:', data);
+      if (error) throw error;
       return data || [];
     },
   });
@@ -69,26 +65,13 @@ const Produtos: React.FC = () => {
   const { data: categorias = [] } = useQuery({
     queryKey: ['categorias'],
     queryFn: async () => {
-      console.log('Fetching categorias...');
       const { data, error } = await supabase
         .from('categorias')
         .select('nome')
         .order('nome', { ascending: true });
       
-      if (error) {
-        console.error('Error fetching categorias:', error);
-        return [];
-      }
-      
-      console.log('Raw categorias data:', data);
-      
-      // Extract only the nome values as strings
-      const categoryNames = (data || [])
-        .map(item => item?.nome)
-        .filter((nome): nome is string => typeof nome === 'string' && nome.trim() !== '');
-      
-      console.log('Processed category names:', categoryNames);
-      return categoryNames;
+      if (error) throw error;
+      return data?.map(cat => cat.nome) || [];
     },
   });
 
@@ -141,6 +124,7 @@ const Produtos: React.FC = () => {
   };
 
   const handleEdit = (product: Product) => {
+    // TODO: Implementar edição de produto
     toast({ title: "Funcionalidade de edição será implementada em breve" });
   };
 
@@ -153,6 +137,10 @@ const Produtos: React.FC = () => {
   const handleViewDetails = (product: Product) => {
     setSelectedProduct(product);
     setShowDetails(true);
+  };
+
+  const handleFormClose = () => {
+    setShowForm(false);
   };
 
   if (error) {
@@ -176,11 +164,10 @@ const Produtos: React.FC = () => {
           <Package className="w-6 h-6 text-blue-600" />
           <h1 className="text-xl sm:text-2xl font-bold text-gray-800">Produtos</h1>
         </div>
-        <ProductForm
-          onSuccess={() => {
-            queryClient.invalidateQueries({ queryKey: ['produtos'] });
-          }}
-        />
+        <Button onClick={() => setShowForm(true)} className="w-full sm:w-auto">
+          <Plus className="w-4 h-4 mr-2" />
+          Novo Produto
+        </Button>
       </div>
 
       {/* Filters */}
@@ -214,10 +201,8 @@ const Produtos: React.FC = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="todas">Todas as categorias</SelectItem>
-                  {categorias.map((categoria, index) => (
-                    <SelectItem key={`categoria-${index}-${categoria}`} value={categoria}>
-                      {categoria}
-                    </SelectItem>
+                  {categorias.map((categoria) => (
+                    <SelectItem key={categoria} value={categoria}>{categoria}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -241,15 +226,15 @@ const Produtos: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Products Grid - Cards menores */}
-      <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12 xl:grid-cols-16 gap-1">
+      {/* Products Grid - Responsivo para mostrar 5 produtos */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
         {isLoading ? (
-          Array.from({ length: 32 }).map((_, index) => (
+          Array.from({ length: 10 }).map((_, index) => (
             <Card key={index} className="animate-pulse">
-              <CardContent className="p-0.5">
-                <div className="h-8 bg-gray-200 rounded mb-0.5"></div>
-                <div className="h-1 bg-gray-200 rounded mb-0.5"></div>
-                <div className="h-1 bg-gray-200 rounded w-1/2"></div>
+              <CardContent className="p-3 sm:p-4">
+                <div className="h-24 sm:h-32 bg-gray-200 rounded mb-4"></div>
+                <div className="h-4 bg-gray-200 rounded mb-2"></div>
+                <div className="h-4 bg-gray-200 rounded w-2/3"></div>
               </CardContent>
             </Card>
           ))
@@ -260,8 +245,8 @@ const Produtos: React.FC = () => {
           </div>
         ) : (
           filteredProducts.map((product) => (
-            <Card key={product.id} className="overflow-hidden hover:shadow-md transition-shadow">
-              <div className="aspect-square bg-gray-50 flex items-center justify-center h-8">
+            <Card key={product.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+              <div className="aspect-square bg-gray-50 flex items-center justify-center">
                 {product.imagem_url ? (
                   <img 
                     src={product.imagem_url} 
@@ -272,58 +257,60 @@ const Produtos: React.FC = () => {
                     }}
                   />
                 ) : (
-                  <ImageIcon className="w-2 h-2 text-gray-300" />
+                  <ImageIcon className="w-8 h-8 sm:w-12 sm:h-12 text-gray-300" />
                 )}
               </div>
               
-              <CardContent className="p-0.5">
-                <div className="space-y-0.5">
+              <CardContent className="p-3 sm:p-4">
+                <div className="space-y-2 sm:space-y-3">
                   <div>
-                    <h3 className="font-medium text-xs truncate leading-tight" title={product.nome}>
+                    <h3 className="font-semibold text-sm sm:text-lg truncate" title={product.nome}>
                       {product.nome}
                     </h3>
-                    <p className="text-xs text-gray-600 truncate leading-tight">
+                    <p className="text-xs sm:text-sm text-gray-600 truncate">
                       {product.categoria}
                     </p>
                   </div>
                   
                   <div className="flex items-center justify-between">
-                    <div className="text-xs font-bold text-green-600">
+                    <div className="text-sm sm:text-xl font-bold text-green-600">
                       {formatCurrency(product.preco)}
                     </div>
-                    <Badge className={`text-xs px-0.5 py-0 ${getStatusBadge(product.status)}`}>
+                    <Badge className={`text-xs ${getStatusBadge(product.status)}`}>
                       {product.status}
                     </Badge>
                   </div>
                   
-                  <div className="text-xs text-gray-600">
-                    Est: {product.estoque}
+                  <div className="text-xs sm:text-sm text-gray-600">
+                    Estoque: {product.estoque} un.
                   </div>
                   
-                  <div className="flex space-x-0.5">
+                  <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => handleViewDetails(product)}
-                      className="flex-1 text-xs h-4 px-0.5 py-0"
+                      className="flex-1 text-xs"
                     >
-                      <Eye className="w-2 h-2" />
+                      <Eye className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                      <span className="hidden sm:inline">Detalhes</span>
+                      <span className="sm:hidden">Ver</span>
                     </Button>
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => handleEdit(product)}
-                      className="h-4 px-0.5 py-0"
+                      className="px-2 sm:px-3"
                     >
-                      <Edit className="w-2 h-2" />
+                      <Edit className="w-3 h-3 sm:w-4 sm:h-4" />
                     </Button>
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => handleDelete(product.id)}
-                      className="text-red-600 hover:text-red-700 h-4 px-0.5 py-0"
+                      className="text-red-600 hover:text-red-700 px-2 sm:px-3"
                     >
-                      <Trash2 className="w-2 h-2" />
+                      <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
                     </Button>
                   </div>
                 </div>
@@ -332,6 +319,17 @@ const Produtos: React.FC = () => {
           ))
         )}
       </div>
+
+      {/* Product Form Modal */}
+      {showForm && (
+        <ProductForm
+          onClose={handleFormClose}
+          onSuccess={() => {
+            handleFormClose();
+            queryClient.invalidateQueries({ queryKey: ['produtos'] });
+          }}
+        />
+      )}
 
       {/* Product Details Modal */}
       <ProductDetailsModal
