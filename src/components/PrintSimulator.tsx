@@ -56,189 +56,186 @@ const PrintSimulator: React.FC<PrintSimulatorProps> = ({
     setCurrentPrintingItem(0);
   };
 
-  const handleGeneratePDF = () => {
-    const doc = new jsPDF();
+  const handleGeneratePDFFromButton = () => {
+    // Criar PDF no formato 58mm (aproximadamente 58x297mm para impressora térmica)
+    const doc = new jsPDF({
+      unit: 'mm',
+      format: [58, 297] // Largura 58mm, altura variável
+    });
+    
     const currentDate = new Date().toLocaleString('pt-BR');
     const generatedNSU = nsu || `NSU${Date.now().toString().slice(-8)}`;
     
-    // Configurações de cores
-    const primaryBlue = [31, 41, 55] as [number, number, number];
-    const lightGray = [248, 250, 252] as [number, number, number];
-    const greenAccent = [16, 185, 129] as [number, number, number];
-    
     if (printMode === 'individual') {
-      // Gerar PDF com fichas individuais
+      // Gerar PDF com fichas individuais para impressora térmica
       cart.forEach((item, index) => {
         if (index > 0) doc.addPage();
         
         const validationData = generateValidationData(item.id);
+        const barcodeNumber = generateBarcode(validationData);
         
-        // Cabeçalho
-        doc.setFillColor(...primaryBlue);
-        doc.rect(0, 0, 210, 30, 'F');
+        let yPos = 8;
         
-        doc.setTextColor(255, 255, 255);
-        doc.setFontSize(16);
-        doc.setFont('helvetica', 'bold');
-        doc.text('MARIAPASS', 20, 20);
-        
+        // Cabeçalho centralizado
         doc.setFontSize(10);
-        doc.text(`Ficha Individual de Produto`, 120, 20);
+        doc.setFont('helvetica', 'bold');
+        doc.text('MARIAPASS', 29, yPos, { align: 'center' });
+        yPos += 6;
         
-        // Informações da ficha
-        doc.setTextColor(0, 0, 0);
-        doc.setFontSize(12);
+        doc.setFontSize(7);
         doc.setFont('helvetica', 'normal');
-        
-        let yPos = 50;
-        doc.text(`Ficha: #${orderId}-${index + 1}`, 20, yPos);
+        doc.text('Ficha Individual de Produto', 29, yPos, { align: 'center' });
         yPos += 8;
-        doc.text(`Data: ${currentDate}`, 20, yPos);
-        yPos += 8;
-        doc.text(`ID Produto: ${item.id}`, 20, yPos);
-        yPos += 8;
-        doc.text(`Forma Pagamento: ${paymentMethod}`, 20, yPos);
-        yPos += 8;
-        doc.text(`NSU: ${generatedNSU}`, 20, yPos);
         
         // Linha separadora
-        doc.setDrawColor(200, 200, 200);
-        doc.line(20, yPos + 5, 190, yPos + 5);
+        doc.setDrawColor(0, 0, 0);
+        doc.line(4, yPos, 54, yPos);
+        yPos += 6;
         
-        yPos += 20;
+        // Informações da ficha
+        doc.setFontSize(6);
+        doc.text(`Ficha: #${orderId}-${index + 1}`, 4, yPos);
+        yPos += 4;
+        doc.text(`Data: ${currentDate}`, 4, yPos);
+        yPos += 4;
+        doc.text(`ID: ${item.id}`, 4, yPos);
+        yPos += 4;
+        doc.text(`Pagto: ${paymentMethod}`, 4, yPos);
+        yPos += 4;
+        doc.text(`NSU: ${generatedNSU}`, 4, yPos);
+        yPos += 6;
         
-        // Informações do produto
-        doc.setFontSize(14);
+        // Nome do produto centralizado
+        doc.setFontSize(8);
         doc.setFont('helvetica', 'bold');
-        doc.text(item.nome, 20, yPos);
-        yPos += 10;
+        const productName = item.nome.length > 20 ? item.nome.substring(0, 20) + '...' : item.nome;
+        doc.text(productName, 29, yPos, { align: 'center' });
+        yPos += 6;
         
-        doc.setFontSize(12);
+        doc.setFontSize(7);
         doc.setFont('helvetica', 'normal');
-        doc.text(`Quantidade: ${item.quantity}`, 20, yPos);
+        doc.text(`Qtd: ${item.quantity}`, 29, yPos, { align: 'center' });
+        yPos += 4;
+        
+        doc.setFont('helvetica', 'bold');
+        doc.text(`R$ ${(item.preco * item.quantity).toFixed(2)}`, 29, yPos, { align: 'center' });
         yPos += 8;
         
-        doc.setTextColor(...greenAccent);
-        doc.setFont('helvetica', 'bold');
-        doc.text(`R$ ${(item.preco * item.quantity).toFixed(2)}`, 20, yPos);
-        
-        yPos += 20;
-        
-        // QR Code (simulado com texto)
-        doc.setTextColor(0, 0, 0);
-        doc.setFontSize(10);
+        // QR Code (simulado com hash devido ao tamanho)
+        doc.setFontSize(6);
         doc.setFont('helvetica', 'normal');
-        doc.text('QR Code de Validação:', 20, yPos);
+        doc.text('QR Code:', 29, yPos, { align: 'center' });
+        yPos += 4;
+        doc.text(`${validationData.hash_validacao}`, 29, yPos, { align: 'center' });
         yPos += 8;
-        doc.text(`Hash: ${validationData.hash_validacao}`, 20, yPos);
         
-        yPos += 15;
-        
-        // Código de barras (simulado)
-        const barcodeNumber = generateBarcode(validationData);
-        doc.text('Código de Barras EAN-13:', 20, yPos);
+        // Código de barras (texto)
+        doc.text('Codigo:', 29, yPos, { align: 'center' });
+        yPos += 4;
+        doc.setFontSize(5);
+        doc.text(barcodeNumber, 29, yPos, { align: 'center' });
         yPos += 8;
-        doc.setFont('helvetica', 'bold');
-        doc.text(barcodeNumber, 20, yPos);
+        
+        // Linha separadora
+        doc.line(4, yPos, 54, yPos);
+        yPos += 4;
         
         // Rodapé
-        yPos = 250;
-        doc.setFontSize(8);
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(100, 100, 100);
-        doc.text('Obrigado pela preferência!', 20, yPos);
-        doc.text('Retire este item no balcão', 20, yPos + 5);
-        doc.text(`Validação: ${validationData.timestamp}`, 20, yPos + 10);
+        doc.setFontSize(5);
+        doc.text('Obrigado pela preferencia!', 29, yPos, { align: 'center' });
+        yPos += 3;
+        doc.text('Retire este item no balcao', 29, yPos, { align: 'center' });
+        yPos += 3;
+        doc.text(`Val: ${validationData.timestamp}`, 29, yPos, { align: 'center' });
       });
     } else {
-      // Gerar PDF consolidado
+      // Gerar PDF consolidado para impressora térmica
       const validationData = generateValidationData();
+      const barcodeNumber = generateBarcode(validationData);
       
-      // Cabeçalho
-      doc.setFillColor(...primaryBlue);
-      doc.rect(0, 0, 210, 30, 'F');
+      let yPos = 8;
       
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(16);
-      doc.setFont('helvetica', 'bold');
-      doc.text('MARIAPASS', 20, 20);
-      
+      // Cabeçalho centralizado
       doc.setFontSize(10);
-      doc.text('Sistema de Pedidos', 120, 20);
+      doc.setFont('helvetica', 'bold');
+      doc.text('MARIAPASS', 29, yPos, { align: 'center' });
+      yPos += 6;
+      
+      doc.setFontSize(7);
+      doc.setFont('helvetica', 'normal');
+      doc.text('Sistema de Pedidos', 29, yPos, { align: 'center' });
+      yPos += 8;
+      
+      // Linha separadora
+      doc.setDrawColor(0, 0, 0);
+      doc.line(4, yPos, 54, yPos);
+      yPos += 6;
       
       // Informações da ficha
-      doc.setTextColor(0, 0, 0);
-      doc.setFontSize(12);
-      doc.setFont('helvetica', 'normal');
-      
-      let yPos = 50;
-      doc.text(`Ficha: #${orderId}`, 20, yPos);
-      yPos += 8;
-      doc.text(`Data: ${currentDate}`, 20, yPos);
-      yPos += 8;
-      doc.text(`Forma Pagamento: ${paymentMethod}`, 20, yPos);
-      yPos += 8;
-      doc.text(`NSU: ${generatedNSU}`, 20, yPos);
-      
-      // Linha separadora
-      doc.setDrawColor(200, 200, 200);
-      doc.line(20, yPos + 5, 190, yPos + 5);
-      
-      yPos += 20;
+      doc.setFontSize(6);
+      doc.text(`Ficha: #${orderId}`, 4, yPos);
+      yPos += 4;
+      doc.text(`Data: ${currentDate}`, 4, yPos);
+      yPos += 4;
+      doc.text(`Pagto: ${paymentMethod}`, 4, yPos);
+      yPos += 4;
+      doc.text(`NSU: ${generatedNSU}`, 4, yPos);
+      yPos += 6;
       
       // Lista de produtos
-      doc.setFontSize(10);
+      doc.setFontSize(6);
       cart.forEach(item => {
-        doc.text(`${item.quantity}x ${item.nome} (ID: ${item.id})`, 20, yPos);
-        doc.text(`R$ ${(item.preco * item.quantity).toFixed(2)}`, 150, yPos);
-        yPos += 6;
+        const itemName = item.nome.length > 15 ? item.nome.substring(0, 15) + '...' : item.nome;
+        doc.text(`${item.quantity}x ${itemName}`, 4, yPos);
+        doc.text(`R$ ${(item.preco * item.quantity).toFixed(2)}`, 54, yPos, { align: 'right' });
+        yPos += 4;
       });
       
+      yPos += 2;
       // Linha separadora
-      doc.line(20, yPos + 2, 190, yPos + 2);
-      yPos += 10;
+      doc.line(4, yPos, 54, yPos);
+      yPos += 4;
       
       // Total
-      doc.setFontSize(12);
+      doc.setFontSize(8);
       doc.setFont('helvetica', 'bold');
-      doc.text('TOTAL:', 20, yPos);
-      doc.setTextColor(...greenAccent);
-      doc.text(`R$ ${total.toFixed(2)}`, 150, yPos);
+      doc.text('TOTAL:', 4, yPos);
+      doc.text(`R$ ${total.toFixed(2)}`, 54, yPos, { align: 'right' });
+      yPos += 8;
       
-      yPos += 20;
-      
-      // QR Code (simulado com texto)
-      doc.setTextColor(0, 0, 0);
-      doc.setFontSize(10);
+      // QR Code (simulado com hash devido ao tamanho)
+      doc.setFontSize(6);
       doc.setFont('helvetica', 'normal');
-      doc.text('QR Code de Validação:', 20, yPos);
+      doc.text('QR Code:', 29, yPos, { align: 'center' });
+      yPos += 4;
+      doc.text(`${validationData.hash_validacao}`, 29, yPos, { align: 'center' });
       yPos += 8;
-      doc.text(`Hash: ${validationData.hash_validacao}`, 20, yPos);
       
-      yPos += 15;
-      
-      // Código de barras (simulado)
-      const barcodeNumber = generateBarcode(validationData);
-      doc.text('Código de Barras EAN-13:', 20, yPos);
+      // Código de barras (texto)
+      doc.text('Codigo:', 29, yPos, { align: 'center' });
+      yPos += 4;
+      doc.setFontSize(5);
+      doc.text(barcodeNumber, 29, yPos, { align: 'center' });
       yPos += 8;
-      doc.setFont('helvetica', 'bold');
-      doc.text(barcodeNumber, 20, yPos);
+      
+      // Linha separadora
+      doc.line(4, yPos, 54, yPos);
+      yPos += 4;
       
       // Rodapé
-      yPos = 250;
-      doc.setFontSize(8);
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(100, 100, 100);
-      doc.text('Obrigado pela preferência!', 20, yPos);
-      doc.text('Retire seu pedido no balcão', 20, yPos + 5);
-      doc.text(`Validação: ${validationData.timestamp}`, 20, yPos + 10);
+      doc.setFontSize(5);
+      doc.text('Obrigado pela preferencia!', 29, yPos, { align: 'center' });
+      yPos += 3;
+      doc.text('Retire seu pedido no balcao', 29, yPos, { align: 'center' });
+      yPos += 3;
+      doc.text(`Val: ${validationData.timestamp}`, 29, yPos, { align: 'center' });
     }
     
     // Salvar o PDF
-    const fileName = `ficha-${orderId}-${new Date().toISOString().split('T')[0]}.pdf`;
+    const fileName = `ficha-58mm-${orderId}-${new Date().toISOString().split('T')[0]}.pdf`;
     doc.save(fileName);
     
-    console.log('PDF da ficha gerado com sucesso:', fileName);
+    console.log('PDF da ficha 58mm gerado com sucesso:', fileName);
   };
 
   const currentDate = new Date().toLocaleString('pt-BR');
@@ -584,7 +581,7 @@ const PrintSimulator: React.FC<PrintSimulatorProps> = ({
 
             <div className="flex gap-2">
               <Button 
-                onClick={handleGeneratePDF}
+                onClick={handleGeneratePDFFromButton}
                 className="flex-1 bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600"
               >
                 <Download className="w-4 h-4 mr-2" />
