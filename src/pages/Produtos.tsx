@@ -44,7 +44,6 @@ const Produtos: React.FC = () => {
   const [categoryFilter, setCategoryFilter] = useState('todas');
   const [statusFilter, setStatusFilter] = useState('todos');
   const [showForm, setShowForm] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [showDetails, setShowDetails] = useState(false);
   const { toast } = useToast();
@@ -125,8 +124,8 @@ const Produtos: React.FC = () => {
   };
 
   const handleEdit = (product: Product) => {
-    setEditingProduct(product);
-    setShowForm(true);
+    // TODO: Implementar edição de produto
+    toast({ title: "Funcionalidade de edição será implementada em breve" });
   };
 
   const handleDelete = (id: string) => {
@@ -142,7 +141,6 @@ const Produtos: React.FC = () => {
 
   const handleFormClose = () => {
     setShowForm(false);
-    setEditingProduct(null);
   };
 
   if (error) {
@@ -325,7 +323,6 @@ const Produtos: React.FC = () => {
       {/* Product Form Modal */}
       {showForm && (
         <ProductForm
-          product={editingProduct}
           onClose={handleFormClose}
           onSuccess={() => {
             handleFormClose();
