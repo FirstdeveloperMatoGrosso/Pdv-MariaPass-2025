@@ -82,17 +82,13 @@ const Produtos: React.FC = () => {
       
       console.log('Raw categorias data:', data);
       
-      // Safely extract only the nome field and ensure they are strings
-      const categoryNames = data
-        ?.map(item => {
-          if (typeof item === 'string') {
-            return item;
-          } else if (item && typeof item === 'object' && 'nome' in item) {
-            return String(item.nome);
-          }
-          return null;
-        })
-        .filter((nome): nome is string => nome !== null && typeof nome === 'string') || [];
+      // Garantir que retornamos apenas strings
+      const categoryNames = data?.map(item => {
+        if (typeof item === 'object' && item !== null && 'nome' in item) {
+          return String(item.nome);
+        }
+        return String(item);
+      }).filter(nome => nome && nome !== 'null' && nome !== 'undefined') || [];
       
       console.log('Processed category names:', categoryNames);
       return categoryNames;
@@ -221,9 +217,14 @@ const Produtos: React.FC = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="todas">Todas as categorias</SelectItem>
-                  {categorias.map((categoria: string) => (
-                    <SelectItem key={categoria} value={categoria}>{categoria}</SelectItem>
-                  ))}
+                  {categorias.map((categoria, index) => {
+                    console.log('Rendering categoria:', categoria, typeof categoria);
+                    return (
+                      <SelectItem key={`categoria-${index}`} value={categoria}>
+                        {categoria}
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
             </div>
@@ -246,15 +247,15 @@ const Produtos: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Products Grid - Cards menores e mais compactos */}
-      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-1 sm:gap-2">
+      {/* Products Grid - Cards ainda menores */}
+      <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 xl:grid-cols-12 gap-1 sm:gap-1.5">
         {isLoading ? (
-          Array.from({ length: 16 }).map((_, index) => (
+          Array.from({ length: 24 }).map((_, index) => (
             <Card key={index} className="animate-pulse">
-              <CardContent className="p-1 sm:p-2">
-                <div className="h-12 sm:h-16 bg-gray-200 rounded mb-1"></div>
-                <div className="h-2 bg-gray-200 rounded mb-1"></div>
-                <div className="h-2 bg-gray-200 rounded w-1/2"></div>
+              <CardContent className="p-1">
+                <div className="h-10 sm:h-12 bg-gray-200 rounded mb-1"></div>
+                <div className="h-1.5 bg-gray-200 rounded mb-0.5"></div>
+                <div className="h-1.5 bg-gray-200 rounded w-1/2"></div>
               </CardContent>
             </Card>
           ))
@@ -266,7 +267,7 @@ const Produtos: React.FC = () => {
         ) : (
           filteredProducts.map((product) => (
             <Card key={product.id} className="overflow-hidden hover:shadow-md transition-shadow">
-              <div className="aspect-square bg-gray-50 flex items-center justify-center">
+              <div className="aspect-square bg-gray-50 flex items-center justify-center h-10 sm:h-12">
                 {product.imagem_url ? (
                   <img 
                     src={product.imagem_url} 
@@ -277,17 +278,17 @@ const Produtos: React.FC = () => {
                     }}
                   />
                 ) : (
-                  <ImageIcon className="w-4 h-4 sm:w-6 sm:h-6 text-gray-300" />
+                  <ImageIcon className="w-3 h-3 sm:w-4 sm:h-4 text-gray-300" />
                 )}
               </div>
               
-              <CardContent className="p-1 sm:p-2">
-                <div className="space-y-1">
+              <CardContent className="p-1">
+                <div className="space-y-0.5">
                   <div>
-                    <h3 className="font-medium text-xs truncate" title={product.nome}>
+                    <h3 className="font-medium text-xs truncate leading-tight" title={product.nome}>
                       {product.nome}
                     </h3>
-                    <p className="text-xs text-gray-600 truncate">
+                    <p className="text-xs text-gray-600 truncate leading-tight">
                       {product.categoria}
                     </p>
                   </div>
@@ -296,7 +297,7 @@ const Produtos: React.FC = () => {
                     <div className="text-xs font-bold text-green-600">
                       {formatCurrency(product.preco)}
                     </div>
-                    <Badge className={`text-xs px-1 py-0 ${getStatusBadge(product.status)}`}>
+                    <Badge className={`text-xs px-0.5 py-0 text-xs ${getStatusBadge(product.status)}`}>
                       {product.status}
                     </Badge>
                   </div>
@@ -305,30 +306,30 @@ const Produtos: React.FC = () => {
                     Est: {product.estoque}
                   </div>
                   
-                  <div className="flex space-x-1">
+                  <div className="flex space-x-0.5">
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => handleViewDetails(product)}
-                      className="flex-1 text-xs h-6 px-1"
+                      className="flex-1 text-xs h-5 px-0.5 py-0"
                     >
-                      <Eye className="w-3 h-3" />
+                      <Eye className="w-2.5 h-2.5" />
                     </Button>
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => handleEdit(product)}
-                      className="h-6 px-1"
+                      className="h-5 px-0.5 py-0"
                     >
-                      <Edit className="w-3 h-3" />
+                      <Edit className="w-2.5 h-2.5" />
                     </Button>
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => handleDelete(product.id)}
-                      className="text-red-600 hover:text-red-700 h-6 px-1"
+                      className="text-red-600 hover:text-red-700 h-5 px-0.5 py-0"
                     >
-                      <Trash2 className="w-3 h-3" />
+                      <Trash2 className="w-2.5 h-2.5" />
                     </Button>
                   </div>
                 </div>
