@@ -103,6 +103,11 @@ const Produtos: React.FC = () => {
     queryClient.invalidateQueries({ queryKey: ['produtos'] });
   };
 
+  const handleProductSuccess = () => {
+    queryClient.invalidateQueries({ queryKey: ['produtos'] });
+    toast({ title: "Produto criado com sucesso!" });
+  };
+
   const filteredProducts = produtos.filter((product: Product) => {
     const matchesSearch = product.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          product.codigo_barras?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -172,10 +177,7 @@ const Produtos: React.FC = () => {
         </div>
         <div className="flex gap-2 w-full sm:w-auto">
           <CategoryForm onSuccess={handleCategorySuccess} />
-          <Button onClick={() => setShowForm(true)} className="flex-1 sm:flex-none">
-            <Plus className="w-4 h-4 mr-2" />
-            Novo Produto
-          </Button>
+          <ProductForm onSuccess={handleProductSuccess} />
         </div>
       </div>
 
@@ -326,16 +328,6 @@ const Produtos: React.FC = () => {
           ))
         )}
       </div>
-
-      {/* Product Form Modal */}
-      {showForm && (
-        <ProductForm
-          onSuccess={() => {
-            handleFormClose();
-            queryClient.invalidateQueries({ queryKey: ['produtos'] });
-          }}
-        />
-      )}
 
       {/* Product Details Modal */}
       <ProductDetailsModal
