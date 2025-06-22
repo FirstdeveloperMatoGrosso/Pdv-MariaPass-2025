@@ -38,67 +38,67 @@ const IntegracaoNotaFiscal = () => {
   };
 
   return (
-    <div className="p-1 sm:p-2 md:p-3 space-y-1 sm:space-y-2 md:space-y-3">
-      <div className="flex flex-col gap-1 sm:gap-2 mb-1 sm:mb-2 md:mb-3">
-        <div className="flex items-center gap-1 sm:gap-2">
-          <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
+    <div className="p-1 space-y-1 min-h-screen">
+      <div className="flex flex-col gap-1 mb-1">
+        <div className="flex items-center gap-1">
+          <FileText className="w-4 h-4 text-blue-600" />
           <div>
-            <h1 className="text-base sm:text-lg md:text-xl font-bold">Integração Nota Fiscal</h1>
-            <p className="text-xs sm:text-sm text-gray-600">Configuração da integração com NFE.io</p>
+            <h1 className="text-sm font-bold">Integração Nota Fiscal</h1>
+            <p className="text-xs text-gray-600">Configuração da integração com NFE.io</p>
           </div>
         </div>
       </div>
 
-      <Tabs defaultValue="configuracao" className="space-y-1 sm:space-y-2 md:space-y-3">
-        <TabsList className="grid w-full grid-cols-3 h-7 sm:h-8 md:h-10">
-          <TabsTrigger value="configuracao" className="text-xs sm:text-sm">Config</TabsTrigger>
-          <TabsTrigger value="teste" className="text-xs sm:text-sm">Teste</TabsTrigger>
-          <TabsTrigger value="historico" className="text-xs sm:text-sm">Histórico</TabsTrigger>
+      <Tabs defaultValue="configuracao" className="space-y-1">
+        <TabsList className="grid w-full grid-cols-3 h-7">
+          <TabsTrigger value="configuracao" className="text-xs">Config</TabsTrigger>
+          <TabsTrigger value="teste" className="text-xs">Teste</TabsTrigger>
+          <TabsTrigger value="historico" className="text-xs">Histórico</TabsTrigger>
         </TabsList>
 
         <TabsContent value="configuracao">
           <Card>
-            <CardHeader className="p-1 sm:p-2 md:p-3">
-              <CardTitle className="flex items-center gap-1 text-sm sm:text-base">
-                <Settings className="w-3 h-3 sm:w-4 sm:h-4" />
+            <CardHeader className="p-2">
+              <CardTitle className="flex items-center gap-1 text-sm">
+                <Settings className="w-3 h-3" />
                 Configurações da API NFE.io
               </CardTitle>
-              <CardDescription className="text-xs sm:text-sm">
+              <CardDescription className="text-xs">
                 Configure os dados de acesso para integração com a NFE.io
               </CardDescription>
             </CardHeader>
-            <CardContent className="p-1 sm:p-2 md:p-3 space-y-2 sm:space-y-3 md:space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-1 sm:gap-2 md:gap-3">
+            <CardContent className="p-2 space-y-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                 <div className="space-y-1">
-                  <Label htmlFor="apiKey" className="text-xs sm:text-sm">API Key NFE.io</Label>
+                  <Label htmlFor="apiKey" className="text-xs">API Key NFE.io</Label>
                   <Input
                     id="apiKey"
                     type="password"
                     placeholder="Sua API Key da NFE.io"
                     value={config.apiKey}
                     onChange={(e) => setConfig({...config, apiKey: e.target.value})}
-                    className="h-7 sm:h-8 md:h-10 text-xs sm:text-sm"
+                    className="h-7 text-xs"
                   />
                 </div>
                 
                 <div className="space-y-1">
-                  <Label htmlFor="empresaId" className="text-xs sm:text-sm">ID da Empresa</Label>
+                  <Label htmlFor="empresaId" className="text-xs">ID da Empresa</Label>
                   <Input
                     id="empresaId"
                     placeholder="ID da sua empresa na NFE.io"
                     value={config.empresaId}
                     onChange={(e) => setConfig({...config, empresaId: e.target.value})}
-                    className="h-7 sm:h-8 md:h-10 text-xs sm:text-sm"
+                    className="h-7 text-xs"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-1 sm:gap-2 md:gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                 <div className="space-y-1">
-                  <Label htmlFor="ambiente" className="text-xs sm:text-sm">Ambiente</Label>
+                  <Label htmlFor="ambiente" className="text-xs">Ambiente</Label>
                   <select
                     id="ambiente"
-                    className="w-full p-1 sm:p-2 border rounded-md h-7 sm:h-8 md:h-10 text-xs sm:text-sm"
+                    className="w-full p-1 border rounded-md h-7 text-xs"
                     value={config.ambiente}
                     onChange={(e) => setConfig({...config, ambiente: e.target.value})}
                   >
@@ -108,10 +108,10 @@ const IntegracaoNotaFiscal = () => {
                 </div>
 
                 <div className="space-y-1">
-                  <Label htmlFor="modelo" className="text-xs sm:text-sm">Modelo da Nota</Label>
+                  <Label htmlFor="modelo" className="text-xs">Modelo da Nota</Label>
                   <select
                     id="modelo"
-                    className="w-full p-1 sm:p-2 border rounded-md h-7 sm:h-8 md:h-10 text-xs sm:text-sm"
+                    className="w-full p-1 border rounded-md h-7 text-xs"
                     value={config.modelo}
                     onChange={(e) => setConfig({...config, modelo: e.target.value})}
                   >
@@ -121,9 +121,9 @@ const IntegracaoNotaFiscal = () => {
                 </div>
               </div>
 
-              <div className="flex items-center justify-between p-1 sm:p-2 md:p-3 border rounded-lg">
+              <div className="flex items-center justify-between p-2 border rounded-lg">
                 <div className="space-y-0.5">
-                  <Label className="text-xs sm:text-sm">Integração Ativa</Label>
+                  <Label className="text-xs">Integração Ativa</Label>
                   <p className="text-xs text-gray-600">Ative para começar a emitir notas fiscais</p>
                 </div>
                 <Switch
@@ -132,9 +132,9 @@ const IntegracaoNotaFiscal = () => {
                 />
               </div>
 
-              <div className="flex items-center justify-between p-1 sm:p-2 md:p-3 border rounded-lg">
+              <div className="flex items-center justify-between p-2 border rounded-lg">
                 <div className="space-y-0.5">
-                  <Label className="text-xs sm:text-sm">Emissão Automática</Label>
+                  <Label className="text-xs">Emissão Automática</Label>
                   <p className="text-xs text-gray-600">Emitir nota fiscal automaticamente após a venda</p>
                 </div>
                 <Switch
@@ -143,32 +143,34 @@ const IntegracaoNotaFiscal = () => {
                 />
               </div>
 
-              <Button onClick={handleSaveConfig} className="w-full h-7 sm:h-8 md:h-10 text-xs sm:text-sm">
-                Salvar Configurações
-              </Button>
+              <div className="pt-1">
+                <Button onClick={handleSaveConfig} className="w-full h-7 text-xs">
+                  Salvar Configurações
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
 
         <TabsContent value="teste">
           <Card>
-            <CardHeader className="p-1 sm:p-2 md:p-3">
-              <CardTitle className="flex items-center gap-1 text-sm sm:text-base">
-                <TestTube className="w-3 h-3 sm:w-4 sm:h-4" />
+            <CardHeader className="p-2">
+              <CardTitle className="flex items-center gap-1 text-sm">
+                <TestTube className="w-3 h-3" />
                 Teste de Conexão
               </CardTitle>
-              <CardDescription className="text-xs sm:text-sm">
+              <CardDescription className="text-xs">
                 Teste a conexão com a API da NFE.io
               </CardDescription>
             </CardHeader>
-            <CardContent className="p-1 sm:p-2 md:p-3 space-y-1 sm:space-y-2 md:space-y-3">
-              <div className="p-1 sm:p-2 md:p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <p className="text-xs sm:text-sm text-yellow-800">
+            <CardContent className="p-2 space-y-2">
+              <div className="p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <p className="text-xs text-yellow-800">
                   Certifique-se de ter configurado a API Key e ID da Empresa antes de testar a conexão.
                 </p>
               </div>
               
-              <Button onClick={handleTestConnection} className="w-full h-7 sm:h-8 md:h-10 text-xs sm:text-sm">
+              <Button onClick={handleTestConnection} className="w-full h-7 text-xs">
                 <Key className="w-3 h-3 mr-1" />
                 Testar Conexão com NFE.io
               </Button>
@@ -178,16 +180,16 @@ const IntegracaoNotaFiscal = () => {
 
         <TabsContent value="historico">
           <Card>
-            <CardHeader className="p-1 sm:p-2 md:p-3">
-              <CardTitle className="text-sm sm:text-base">Histórico de Notas Fiscais</CardTitle>
-              <CardDescription className="text-xs sm:text-sm">
+            <CardHeader className="p-2">
+              <CardTitle className="text-sm">Histórico de Notas Fiscais</CardTitle>
+              <CardDescription className="text-xs">
                 Acompanhe as notas fiscais emitidas pelo sistema
               </CardDescription>
             </CardHeader>
-            <CardContent className="p-1 sm:p-2 md:p-3">
-              <div className="text-center py-3 sm:py-4 md:py-6 text-gray-500">
-                <FileText className="w-6 h-6 sm:w-8 sm:h-8 md:w-12 md:h-12 mx-auto mb-2 opacity-50" />
-                <p className="text-xs sm:text-sm">Nenhuma nota fiscal encontrada</p>
+            <CardContent className="p-2">
+              <div className="text-center py-4 text-gray-500">
+                <FileText className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                <p className="text-xs">Nenhuma nota fiscal encontrada</p>
                 <p className="text-xs">As notas emitidas aparecerão aqui</p>
               </div>
             </CardContent>
