@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -69,8 +70,13 @@ const Produtos: React.FC = () => {
         .select('nome')
         .order('nome', { ascending: true });
       
-      if (error) throw error;
-      return data?.map(cat => cat.nome) || [];
+      if (error) {
+        console.log('Erro ao buscar categorias:', error);
+        return [];
+      }
+      
+      // Garantir que retornamos apenas strings
+      return data?.map(cat => cat.nome).filter(nome => typeof nome === 'string') || [];
     },
   });
 
@@ -197,7 +203,7 @@ const Produtos: React.FC = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="todas">Todas as categorias</SelectItem>
-                  {categorias.map((categoria) => (
+                  {categorias.map((categoria: string) => (
                     <SelectItem key={categoria} value={categoria}>{categoria}</SelectItem>
                   ))}
                 </SelectContent>
@@ -222,15 +228,15 @@ const Produtos: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Products Grid - Responsivo para mostrar 5 produtos */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
+      {/* Products Grid - Cards menores */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-3">
         {isLoading ? (
-          Array.from({ length: 10 }).map((_, index) => (
+          Array.from({ length: 12 }).map((_, index) => (
             <Card key={index} className="animate-pulse">
-              <CardContent className="p-3 sm:p-4">
-                <div className="h-24 sm:h-32 bg-gray-200 rounded mb-4"></div>
-                <div className="h-4 bg-gray-200 rounded mb-2"></div>
-                <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+              <CardContent className="p-2 sm:p-3">
+                <div className="h-16 sm:h-20 bg-gray-200 rounded mb-2"></div>
+                <div className="h-3 bg-gray-200 rounded mb-1"></div>
+                <div className="h-3 bg-gray-200 rounded w-2/3"></div>
               </CardContent>
             </Card>
           ))
@@ -241,7 +247,7 @@ const Produtos: React.FC = () => {
           </div>
         ) : (
           filteredProducts.map((product) => (
-            <Card key={product.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+            <Card key={product.id} className="overflow-hidden hover:shadow-md transition-shadow">
               <div className="aspect-square bg-gray-50 flex items-center justify-center">
                 {product.imagem_url ? (
                   <img 
@@ -253,60 +259,58 @@ const Produtos: React.FC = () => {
                     }}
                   />
                 ) : (
-                  <ImageIcon className="w-8 h-8 sm:w-12 sm:h-12 text-gray-300" />
+                  <ImageIcon className="w-6 h-6 sm:w-8 sm:h-8 text-gray-300" />
                 )}
               </div>
               
-              <CardContent className="p-3 sm:p-4">
-                <div className="space-y-2 sm:space-y-3">
+              <CardContent className="p-2 sm:p-3">
+                <div className="space-y-1 sm:space-y-2">
                   <div>
-                    <h3 className="font-semibold text-sm sm:text-lg truncate" title={product.nome}>
+                    <h3 className="font-medium text-xs sm:text-sm truncate" title={product.nome}>
                       {product.nome}
                     </h3>
-                    <p className="text-xs sm:text-sm text-gray-600 truncate">
+                    <p className="text-xs text-gray-600 truncate">
                       {product.categoria}
                     </p>
                   </div>
                   
                   <div className="flex items-center justify-between">
-                    <div className="text-sm sm:text-xl font-bold text-green-600">
+                    <div className="text-xs sm:text-sm font-bold text-green-600">
                       {formatCurrency(product.preco)}
                     </div>
-                    <Badge className={`text-xs ${getStatusBadge(product.status)}`}>
+                    <Badge className={`text-xs px-1 py-0 ${getStatusBadge(product.status)}`}>
                       {product.status}
                     </Badge>
                   </div>
                   
-                  <div className="text-xs sm:text-sm text-gray-600">
-                    Estoque: {product.estoque} un.
+                  <div className="text-xs text-gray-600">
+                    Est: {product.estoque}
                   </div>
                   
-                  <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
+                  <div className="flex space-x-1">
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => handleViewDetails(product)}
-                      className="flex-1 text-xs"
+                      className="flex-1 text-xs h-7 px-1"
                     >
-                      <Eye className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
-                      <span className="hidden sm:inline">Detalhes</span>
-                      <span className="sm:hidden">Ver</span>
+                      <Eye className="w-3 h-3" />
                     </Button>
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => handleEdit(product)}
-                      className="px-2 sm:px-3"
+                      className="h-7 px-1"
                     >
-                      <Edit className="w-3 h-3 sm:w-4 sm:h-4" />
+                      <Edit className="w-3 h-3" />
                     </Button>
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => handleDelete(product.id)}
-                      className="text-red-600 hover:text-red-700 px-2 sm:px-3"
+                      className="text-red-600 hover:text-red-700 h-7 px-1"
                     >
-                      <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
+                      <Trash2 className="w-3 h-3" />
                     </Button>
                   </div>
                 </div>
