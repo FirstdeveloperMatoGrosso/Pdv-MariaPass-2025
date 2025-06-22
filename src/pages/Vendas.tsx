@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -250,7 +249,7 @@ const Vendas: React.FC = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="p-3 sm:p-4 pt-0 space-y-3 sm:space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             <div className="space-y-1 sm:space-y-2">
               <label className="text-xs sm:text-sm font-medium">Período</label>
               <Select value={filtroData} onValueChange={setFiltroData}>
@@ -300,172 +299,156 @@ const Vendas: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Lista de Vendas */}
-      <Card>
-        <CardHeader className="p-3 sm:p-4">
-          <CardTitle className="text-sm sm:text-base">Histórico de Vendas</CardTitle>
-        </CardHeader>
-        <CardContent className="p-2 sm:p-4">
-          {isLoading ? (
-            <div className="text-center py-6 sm:py-8">
-              <div className="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 border-green-600 mx-auto"></div>
-              <p className="mt-2 text-xs sm:text-sm text-gray-600">Carregando vendas...</p>
-            </div>
-          ) : vendas.length === 0 ? (
-            <div className="text-center py-6 sm:py-8">
-              <ShoppingCart className="w-8 h-8 sm:w-12 sm:h-12 text-gray-300 mx-auto mb-3 sm:mb-4" />
-              <p className="text-gray-500 text-xs sm:text-sm">Nenhuma venda encontrada para os filtros selecionados.</p>
-            </div>
-          ) : (
-            <div className="space-y-2 sm:space-y-3">
-              {vendas.map((venda) => (
-                <div key={venda.id} className="border rounded-lg p-2 sm:p-4 hover:bg-gray-50">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                    <div className="flex items-center space-x-2 sm:space-x-4">
-                      <div className="flex-shrink-0">
-                        {venda.produto_imagem ? (
-                          <img 
-                            src={venda.produto_imagem} 
-                            alt={venda.produto_nome}
-                            className="w-12 h-12 sm:w-16 sm:h-16 object-cover rounded-lg border"
-                            onError={(e) => {
-                              e.currentTarget.src = '/placeholder.svg';
-                            }}
-                          />
-                        ) : (
-                          <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gray-100 rounded-lg border flex items-center justify-center">
-                            <ImageIcon className="w-4 h-4 sm:w-6 sm:h-6 text-gray-400" />
-                          </div>
-                        )}
-                      </div>
-                      
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-medium text-sm sm:text-lg truncate">{venda.produto_nome}</h4>
-                        <div className="flex flex-wrap items-center gap-1 sm:gap-2 mt-1">
-                          <p className="text-xs sm:text-sm text-gray-600">
-                            Venda: {venda.numero_autorizacao}
-                          </p>
-                          {venda.nsu && (
-                            <Badge variant="outline" className="text-[10px] sm:text-xs">
-                              NSU: {venda.nsu}
-                            </Badge>
-                          )}
-                        </div>
-                        <p className="text-[10px] sm:text-xs text-gray-500 mt-1">
-                          {formatDate(venda.data_venda)}
-                        </p>
-                      </div>
+      {/* Lista de Vendas - Grid responsivo como produtos */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2 sm:gap-3">
+        {isLoading ? (
+          Array.from({ length: 16 }).map((_, index) => (
+            <Card key={index} className="animate-pulse">
+              <CardContent className="p-2">
+                <div className="h-16 bg-gray-200 rounded mb-2"></div>
+                <div className="h-3 bg-gray-200 rounded mb-1"></div>
+                <div className="h-3 bg-gray-200 rounded w-2/3"></div>
+              </CardContent>
+            </Card>
+          ))
+        ) : vendas.length === 0 ? (
+          <div className="col-span-full text-center py-8">
+            <ShoppingCart className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+            <p className="text-gray-500">Nenhuma venda encontrada para os filtros selecionados.</p>
+          </div>
+        ) : (
+          vendas.map((venda) => (
+            <Card key={venda.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+              <div className="aspect-square bg-gray-50 flex items-center justify-center h-16">
+                {venda.produto_imagem ? (
+                  <img 
+                    src={venda.produto_imagem} 
+                    alt={venda.produto_nome}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.src = '/placeholder.svg';
+                    }}
+                  />
+                ) : (
+                  <ImageIcon className="w-6 h-6 text-gray-300" />
+                )}
+              </div>
+              
+              <CardContent className="p-2">
+                <div className="space-y-1">
+                  <div>
+                    <h3 className="font-semibold text-xs truncate" title={venda.produto_nome}>
+                      {venda.produto_nome}
+                    </h3>
+                    <p className="text-xs text-gray-600 truncate">
+                      {venda.numero_autorizacao}
+                    </p>
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm font-bold text-green-600">
+                      {formatCurrency(venda.valor_total)}
                     </div>
-
-                    <div className="flex flex-col sm:text-right space-y-1 sm:space-y-2">
-                      <div className="flex flex-wrap items-center gap-1 sm:gap-2 sm:justify-end">
-                        <div className="flex items-center space-x-1">
-                          {getPaymentIcon(venda.forma_pagamento)}
-                          <Badge className={getFormaPagamentoBadge(venda.forma_pagamento) + " text-[10px] sm:text-xs"}>
-                            {venda.forma_pagamento.replace('_', ' ').toUpperCase()}
-                          </Badge>
-                        </div>
-                        {venda.bandeira && (
-                          <Badge variant="outline" className="text-[10px] sm:text-xs">
-                            {venda.bandeira.toUpperCase()}
-                          </Badge>
-                        )}
-                      </div>
-                      
-                      <div className="space-y-1">
-                        <p className="text-xs sm:text-sm">
-                          Qtd: {venda.quantidade} x {formatCurrency(venda.valor_unitario)}
-                        </p>
-                        <p className="font-bold text-sm sm:text-lg text-green-600">
-                          Total: {formatCurrency(venda.valor_total)}
-                        </p>
-                      </div>
-                      
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <Button 
-                            size="sm" 
-                            variant="outline"
-                            onClick={() => setSelectedVenda(venda)}
-                            className="w-full sm:w-auto text-xs"
-                          >
-                            <Eye className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
-                            Detalhes
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent className="max-w-sm sm:max-w-md mx-2">
-                          <DialogHeader>
-                            <DialogTitle className="text-sm sm:text-base">Detalhes da Venda</DialogTitle>
-                          </DialogHeader>
-                          {selectedVenda && (
-                            <div className="space-y-3 sm:space-y-4">
-                              <div className="flex items-center space-x-2 sm:space-x-3">
-                                {selectedVenda.produto_imagem ? (
-                                  <img 
-                                    src={selectedVenda.produto_imagem} 
-                                    alt={selectedVenda.produto_nome}
-                                    className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-lg border"
-                                    onError={(e) => {
-                                      e.currentTarget.src = '/placeholder.svg';
-                                    }}
-                                  />
-                                ) : (
-                                  <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gray-100 rounded-lg border flex items-center justify-center">
-                                    <ImageIcon className="w-6 h-6 sm:w-8 sm:h-8 text-gray-400" />
-                                  </div>
-                                )}
-                                <div className="min-w-0 flex-1">
-                                  <h3 className="font-semibold text-sm sm:text-base truncate">{selectedVenda.produto_nome}</h3>
-                                  <p className="text-xs sm:text-sm text-gray-600 truncate">{selectedVenda.numero_autorizacao}</p>
-                                </div>
-                              </div>
-                              
-                              <div className="grid grid-cols-2 gap-3 sm:gap-4 text-xs sm:text-sm">
-                                <div>
-                                  <p className="font-medium">Quantidade:</p>
-                                  <p>{selectedVenda.quantidade}</p>
-                                </div>
-                                <div>
-                                  <p className="font-medium">Valor Unitário:</p>
-                                  <p>{formatCurrency(selectedVenda.valor_unitario)}</p>
-                                </div>
-                                <div>
-                                  <p className="font-medium">Valor Total:</p>
-                                  <p className="font-bold text-green-600">{formatCurrency(selectedVenda.valor_total)}</p>
-                                </div>
-                                <div>
-                                  <p className="font-medium">Forma Pagamento:</p>
-                                  <p className="text-xs">{selectedVenda.forma_pagamento.replace('_', ' ')}</p>
-                                </div>
-                                {selectedVenda.nsu && (
-                                  <div>
-                                    <p className="font-medium">NSU:</p>
-                                    <p className="text-xs">{selectedVenda.nsu}</p>
-                                  </div>
-                                )}
-                                {selectedVenda.bandeira && (
-                                  <div>
-                                    <p className="font-medium">Bandeira:</p>
-                                    <p className="text-xs">{selectedVenda.bandeira}</p>
-                                  </div>
-                                )}
-                                <div className="col-span-2">
-                                  <p className="font-medium">Data/Hora:</p>
-                                  <p className="text-xs">{formatDate(selectedVenda.data_venda)}</p>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                        </DialogContent>
-                      </Dialog>
+                    <div className="flex items-center space-x-1">
+                      {getPaymentIcon(venda.forma_pagamento)}
                     </div>
                   </div>
+                  
+                  <Badge className={`text-xs px-1 py-0 w-full justify-center ${getFormaPagamentoBadge(venda.forma_pagamento)}`}>
+                    {venda.forma_pagamento.replace('_', ' ').toUpperCase()}
+                  </Badge>
+                  
+                  <div className="text-xs text-gray-600">
+                    Qtd: {venda.quantidade}
+                  </div>
+                  
+                  <div className="text-xs text-gray-500 truncate">
+                    {formatDate(venda.data_venda)}
+                  </div>
+                  
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setSelectedVenda(venda)}
+                        className="w-full text-xs h-6"
+                      >
+                        <Eye className="w-3 h-3 mr-1" />
+                        Ver
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-sm sm:max-w-md mx-2">
+                      <DialogHeader>
+                        <DialogTitle className="text-sm sm:text-base">Detalhes da Venda</DialogTitle>
+                      </DialogHeader>
+                      {selectedVenda && (
+                        <div className="space-y-3 sm:space-y-4">
+                          <div className="flex items-center space-x-2 sm:space-x-3">
+                            {selectedVenda.produto_imagem ? (
+                              <img 
+                                src={selectedVenda.produto_imagem} 
+                                alt={selectedVenda.produto_nome}
+                                className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-lg border"
+                                onError={(e) => {
+                                  e.currentTarget.src = '/placeholder.svg';
+                                }}
+                              />
+                            ) : (
+                              <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gray-100 rounded-lg border flex items-center justify-center">
+                                <ImageIcon className="w-6 h-6 sm:w-8 sm:h-8 text-gray-400" />
+                              </div>
+                            )}
+                            <div className="min-w-0 flex-1">
+                              <h3 className="font-semibold text-sm sm:text-base truncate">{selectedVenda.produto_nome}</h3>
+                              <p className="text-xs sm:text-sm text-gray-600 truncate">{selectedVenda.numero_autorizacao}</p>
+                            </div>
+                          </div>
+                          
+                          <div className="grid grid-cols-2 gap-3 sm:gap-4 text-xs sm:text-sm">
+                            <div>
+                              <p className="font-medium">Quantidade:</p>
+                              <p>{selectedVenda.quantidade}</p>
+                            </div>
+                            <div>
+                              <p className="font-medium">Valor Unitário:</p>
+                              <p>{formatCurrency(selectedVenda.valor_unitario)}</p>
+                            </div>
+                            <div>
+                              <p className="font-medium">Valor Total:</p>
+                              <p className="font-bold text-green-600">{formatCurrency(selectedVenda.valor_total)}</p>
+                            </div>
+                            <div>
+                              <p className="font-medium">Forma Pagamento:</p>
+                              <p className="text-xs">{selectedVenda.forma_pagamento.replace('_', ' ')}</p>
+                            </div>
+                            {selectedVenda.nsu && (
+                              <div>
+                                <p className="font-medium">NSU:</p>
+                                <p className="text-xs">{selectedVenda.nsu}</p>
+                              </div>
+                            )}
+                            {selectedVenda.bandeira && (
+                              <div>
+                                <p className="font-medium">Bandeira:</p>
+                                <p className="text-xs">{selectedVenda.bandeira}</p>
+                              </div>
+                            )}
+                            <div className="col-span-2">
+                              <p className="font-medium">Data/Hora:</p>
+                              <p className="text-xs">{formatDate(selectedVenda.data_venda)}</p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </DialogContent>
+                  </Dialog>
                 </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+              </CardContent>
+            </Card>
+          ))
+        )}
+      </div>
     </div>
   );
 };
