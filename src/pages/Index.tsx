@@ -15,6 +15,7 @@ import AlertContainer from '../components/AlertContainer';
 import PaymentMethodSelector from '../components/PaymentMethodSelector';
 import PagSeguroPix from '../components/PagSeguroPix';
 import PixPayment from '../components/PixPayment';
+import CashPayment from '../components/CashPayment';
 import { useSystemAlert } from '@/hooks/useSystemAlert';
 
 interface TotemProduct {
@@ -42,6 +43,7 @@ const Index: React.FC = () => {
   const [showPaymentMethod, setShowPaymentMethod] = useState(false);
   const [showPagSeguroPix, setShowPagSeguroPix] = useState(false);
   const [showPixPayment, setShowPixPayment] = useState(false);
+  const [showCashPayment, setShowCashPayment] = useState(false);
   const [showPrintSimulator, setShowPrintSimulator] = useState(false);
   const [currentOrderId, setCurrentOrderId] = useState('');
   const [showBarcodeModal, setShowBarcodeModal] = useState(false);
@@ -417,10 +419,12 @@ const Index: React.FC = () => {
     });
   };
 
-  const handlePaymentMethodSelect = (method: 'pagseguro' | 'pix' | 'stone') => {
+  const handlePaymentMethodSelect = (method: 'pagseguro' | 'pix' | 'stone' | 'dinheiro') => {
     setShowPaymentMethod(false);
     
-    if (method === 'pagseguro') {
+    if (method === 'dinheiro') {
+      setShowCashPayment(true);
+    } else if (method === 'pagseguro') {
       setShowPagSeguroPix(true);
     } else if (method === 'pix') {
       setShowPixPayment(true);
@@ -438,6 +442,7 @@ const Index: React.FC = () => {
   const handlePaymentSuccess = () => {
     setShowPagSeguroPix(false);
     setShowPixPayment(false);
+    setShowCashPayment(false);
     setShowPrintSimulator(true);
   };
 
@@ -445,6 +450,7 @@ const Index: React.FC = () => {
     setShowPaymentMethod(false);
     setShowPagSeguroPix(false);
     setShowPixPayment(false);
+    setShowCashPayment(false);
     setCurrentOrderId('');
   };
 
@@ -746,6 +752,17 @@ const Index: React.FC = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <PaymentMethodSelector
             onSelectMethod={handlePaymentMethodSelect}
+            onCancel={handlePaymentCancel}
+          />
+        </div>
+      )}
+
+      {showCashPayment && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <CashPayment
+            valor={getTotalPrice()}
+            recargaId={currentOrderId}
+            onPaymentSuccess={handlePaymentSuccess}
             onCancel={handlePaymentCancel}
           />
         </div>

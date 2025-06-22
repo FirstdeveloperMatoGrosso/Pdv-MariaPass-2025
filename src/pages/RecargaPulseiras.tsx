@@ -28,6 +28,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import PulseiraReader from '@/components/PulseiraReader';
 import PixPayment from '@/components/PixPayment';
 import PaymentProviderSelector from '@/components/PaymentProviderSelector';
+import CashPayment from '@/components/CashPayment';
 
 interface PulseiraRecarga {
   id: string;
@@ -65,6 +66,7 @@ const RecargaPulseiras: React.FC = () => {
   const [rechargeAmount, setRechargeAmount] = useState('');
   const [showPixPayment, setShowPixPayment] = useState(false);
   const [showPaymentSelector, setShowPaymentSelector] = useState(false);
+  const [showCashPayment, setShowCashPayment] = useState(false);
   const [currentRecargaId, setCurrentRecargaId] = useState('');
   const queryClient = useQueryClient();
 
@@ -206,9 +208,10 @@ const RecargaPulseiras: React.FC = () => {
   };
 
   const handlePaymentSuccess = () => {
-    console.log('✅ Pagamento PIX concluído com sucesso');
+    console.log('✅ Pagamento concluído com sucesso');
     setShowPixPayment(false);
     setShowPaymentSelector(false);
+    setShowCashPayment(false);
     setCurrentRecargaId('');
     
     // Invalidar queries para atualizar os dados
@@ -219,9 +222,10 @@ const RecargaPulseiras: React.FC = () => {
   };
 
   const handlePaymentCancel = () => {
-    console.log('❌ Pagamento PIX cancelado');
+    console.log('❌ Pagamento cancelado');
     setShowPixPayment(false);
     setShowPaymentSelector(false);
+    setShowCashPayment(false);
     setCurrentRecargaId('');
   };
 
@@ -459,6 +463,18 @@ const RecargaPulseiras: React.FC = () => {
       {showPaymentSelector && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <PaymentProviderSelector
+            valor={parseFloat(rechargeAmount) || 0}
+            recargaId={currentRecargaId}
+            onPaymentSuccess={handlePaymentSuccess}
+            onCancel={handlePaymentCancel}
+          />
+        </div>
+      )}
+
+      {/* Cash Payment Modal */}
+      {showCashPayment && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <CashPayment
             valor={parseFloat(rechargeAmount) || 0}
             recargaId={currentRecargaId}
             onPaymentSuccess={handlePaymentSuccess}

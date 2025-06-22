@@ -6,10 +6,12 @@ import { Badge } from '@/components/ui/badge';
 import { 
   CreditCard, 
   Building,
-  ArrowLeft
+  ArrowLeft,
+  Banknote
 } from 'lucide-react';
 import PixPayment from './PixPayment';
 import PagSeguroPix from './PagSeguroPix';
+import CashPayment from './CashPayment';
 
 interface PaymentProviderSelectorProps {
   valor: number;
@@ -24,9 +26,17 @@ const PaymentProviderSelector: React.FC<PaymentProviderSelectorProps> = ({
   onPaymentSuccess, 
   onCancel 
 }) => {
-  const [selectedProvider, setSelectedProvider] = useState<'pagseguro' | 'default' | null>(null);
+  const [selectedProvider, setSelectedProvider] = useState<'pagseguro' | 'default' | 'cash' | null>(null);
 
   const providers = [
+    {
+      id: 'cash' as const,
+      name: 'Dinheiro',
+      description: 'Pagamento em espécie',
+      icon: Banknote,
+      color: 'bg-green-500 hover:bg-green-600',
+      badge: 'Imediato'
+    },
     {
       id: 'pagseguro' as const,
       name: 'PagSeguro',
@@ -44,6 +54,28 @@ const PaymentProviderSelector: React.FC<PaymentProviderSelectorProps> = ({
       badge: 'Básico'
     }
   ];
+
+  if (selectedProvider === 'cash') {
+    return (
+      <div className="space-y-3">
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={() => setSelectedProvider(null)}
+          className="flex items-center space-x-1 text-sm"
+        >
+          <ArrowLeft className="w-3 h-3" />
+          <span>Voltar à seleção</span>
+        </Button>
+        <CashPayment 
+          valor={valor}
+          recargaId={recargaId}
+          onPaymentSuccess={onPaymentSuccess}
+          onCancel={onCancel}
+        />
+      </div>
+    );
+  }
 
   if (selectedProvider === 'pagseguro') {
     return (
@@ -93,7 +125,7 @@ const PaymentProviderSelector: React.FC<PaymentProviderSelectorProps> = ({
     <Card className="w-full max-w-md mx-auto">
       <CardHeader className="p-3">
         <CardTitle className="text-center text-base">
-          Escolha o método de pagamento PIX
+          Escolha o método de pagamento
         </CardTitle>
         <p className="text-center text-sm text-gray-600">
           Valor: <span className="font-bold text-green-600">R$ {valor.toFixed(2)}</span>
