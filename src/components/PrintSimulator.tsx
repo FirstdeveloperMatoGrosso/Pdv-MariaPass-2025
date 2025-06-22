@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Printer, Check, X, FileText, Package } from 'lucide-react';
-import QRCodeGenerator from './QRCodeGenerator';
+import SimpleQRCode from './SimpleQRCode';
 
 interface CartItem {
   id: string;
@@ -118,7 +117,7 @@ const PrintSimulator: React.FC<PrintSimulatorProps> = ({
           <div className="text-center py-2">
             <p className="text-xs font-bold mb-2">QR Code de Validação:</p>
             <div className="flex justify-center">
-              <QRCodeGenerator 
+              <SimpleQRCode 
                 text={JSON.stringify(validationData)}
                 size={80}
               />
@@ -187,7 +186,7 @@ const PrintSimulator: React.FC<PrintSimulatorProps> = ({
           <div className="text-center py-2">
             <p className="text-xs font-bold mb-2">QR Code de Validação:</p>
             <div className="flex justify-center">
-              <QRCodeGenerator 
+              <SimpleQRCode 
                 text={JSON.stringify(validationData)}
                 size={80}
               />
