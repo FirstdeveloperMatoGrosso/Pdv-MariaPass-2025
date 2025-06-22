@@ -184,7 +184,9 @@ const Produtos: React.FC = () => {
           <h1 className="text-xl sm:text-2xl font-bold text-gray-800">Produtos</h1>
         </div>
         <div className="flex gap-2 w-full sm:w-auto">
-          <CategoryForm onSuccess={handleCategorySuccess} />
+          <Button asChild>
+            <CategoryForm onSuccess={handleCategorySuccess} />
+          </Button>
           <ProductForm onSuccess={handleProductSuccess} />
         </div>
       </div>
