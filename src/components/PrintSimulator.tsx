@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Printer, Check, X, FileText, Package, Download } from 'lucide-react';
 import SimpleQRCode from './SimpleQRCode';
+import jsPDF from 'jspdf';
 
 interface CartItem {
   id: string;
@@ -56,26 +57,188 @@ const PrintSimulator: React.FC<PrintSimulatorProps> = ({
   };
 
   const handleGeneratePDF = () => {
-    // Aqui você pode implementar a lógica para gerar PDF
-    // Por enquanto, vamos simular a geração do PDF
-    console.log('Gerando PDF das fichas...');
+    const doc = new jsPDF();
+    const currentDate = new Date().toLocaleString('pt-BR');
+    const generatedNSU = nsu || `NSU${Date.now().toString().slice(-8)}`;
     
-    // Simular dados para o PDF
-    const pdfData = {
-      orderId,
-      cart,
-      total,
-      paymentMethod,
-      nsu,
-      date: new Date().toLocaleString('pt-BR'),
-      printMode: printMode || 'consolidated'
-    };
+    // Configurações de cores
+    const primaryBlue = [31, 41, 55] as [number, number, number];
+    const lightGray = [248, 250, 252] as [number, number, number];
+    const greenAccent = [16, 185, 129] as [number, number, number];
     
-    console.log('Dados do PDF:', pdfData);
+    if (printMode === 'individual') {
+      // Gerar PDF com fichas individuais
+      cart.forEach((item, index) => {
+        if (index > 0) doc.addPage();
+        
+        const validationData = generateValidationData(item.id);
+        
+        // Cabeçalho
+        doc.setFillColor(...primaryBlue);
+        doc.rect(0, 0, 210, 30, 'F');
+        
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(16);
+        doc.setFont('helvetica', 'bold');
+        doc.text('MARIAPASS', 20, 20);
+        
+        doc.setFontSize(10);
+        doc.text(`Ficha Individual de Produto`, 120, 20);
+        
+        // Informações da ficha
+        doc.setTextColor(0, 0, 0);
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'normal');
+        
+        let yPos = 50;
+        doc.text(`Ficha: #${orderId}-${index + 1}`, 20, yPos);
+        yPos += 8;
+        doc.text(`Data: ${currentDate}`, 20, yPos);
+        yPos += 8;
+        doc.text(`ID Produto: ${item.id}`, 20, yPos);
+        yPos += 8;
+        doc.text(`Forma Pagamento: ${paymentMethod}`, 20, yPos);
+        yPos += 8;
+        doc.text(`NSU: ${generatedNSU}`, 20, yPos);
+        
+        // Linha separadora
+        doc.setDrawColor(200, 200, 200);
+        doc.line(20, yPos + 5, 190, yPos + 5);
+        
+        yPos += 20;
+        
+        // Informações do produto
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.text(item.nome, 20, yPos);
+        yPos += 10;
+        
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'normal');
+        doc.text(`Quantidade: ${item.quantity}`, 20, yPos);
+        yPos += 8;
+        
+        doc.setTextColor(...greenAccent);
+        doc.setFont('helvetica', 'bold');
+        doc.text(`R$ ${(item.preco * item.quantity).toFixed(2)}`, 20, yPos);
+        
+        yPos += 20;
+        
+        // QR Code (simulado com texto)
+        doc.setTextColor(0, 0, 0);
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.text('QR Code de Validação:', 20, yPos);
+        yPos += 8;
+        doc.text(`Hash: ${validationData.hash_validacao}`, 20, yPos);
+        
+        yPos += 15;
+        
+        // Código de barras (simulado)
+        const barcodeNumber = generateBarcode(validationData);
+        doc.text('Código de Barras EAN-13:', 20, yPos);
+        yPos += 8;
+        doc.setFont('helvetica', 'bold');
+        doc.text(barcodeNumber, 20, yPos);
+        
+        // Rodapé
+        yPos = 250;
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(100, 100, 100);
+        doc.text('Obrigado pela preferência!', 20, yPos);
+        doc.text('Retire este item no balcão', 20, yPos + 5);
+        doc.text(`Validação: ${validationData.timestamp}`, 20, yPos + 10);
+      });
+    } else {
+      // Gerar PDF consolidado
+      const validationData = generateValidationData();
+      
+      // Cabeçalho
+      doc.setFillColor(...primaryBlue);
+      doc.rect(0, 0, 210, 30, 'F');
+      
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(16);
+      doc.setFont('helvetica', 'bold');
+      doc.text('MARIAPASS', 20, 20);
+      
+      doc.setFontSize(10);
+      doc.text('Sistema de Pedidos', 120, 20);
+      
+      // Informações da ficha
+      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'normal');
+      
+      let yPos = 50;
+      doc.text(`Ficha: #${orderId}`, 20, yPos);
+      yPos += 8;
+      doc.text(`Data: ${currentDate}`, 20, yPos);
+      yPos += 8;
+      doc.text(`Forma Pagamento: ${paymentMethod}`, 20, yPos);
+      yPos += 8;
+      doc.text(`NSU: ${generatedNSU}`, 20, yPos);
+      
+      // Linha separadora
+      doc.setDrawColor(200, 200, 200);
+      doc.line(20, yPos + 5, 190, yPos + 5);
+      
+      yPos += 20;
+      
+      // Lista de produtos
+      doc.setFontSize(10);
+      cart.forEach(item => {
+        doc.text(`${item.quantity}x ${item.nome} (ID: ${item.id})`, 20, yPos);
+        doc.text(`R$ ${(item.preco * item.quantity).toFixed(2)}`, 150, yPos);
+        yPos += 6;
+      });
+      
+      // Linha separadora
+      doc.line(20, yPos + 2, 190, yPos + 2);
+      yPos += 10;
+      
+      // Total
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text('TOTAL:', 20, yPos);
+      doc.setTextColor(...greenAccent);
+      doc.text(`R$ ${total.toFixed(2)}`, 150, yPos);
+      
+      yPos += 20;
+      
+      // QR Code (simulado com texto)
+      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.text('QR Code de Validação:', 20, yPos);
+      yPos += 8;
+      doc.text(`Hash: ${validationData.hash_validacao}`, 20, yPos);
+      
+      yPos += 15;
+      
+      // Código de barras (simulado)
+      const barcodeNumber = generateBarcode(validationData);
+      doc.text('Código de Barras EAN-13:', 20, yPos);
+      yPos += 8;
+      doc.setFont('helvetica', 'bold');
+      doc.text(barcodeNumber, 20, yPos);
+      
+      // Rodapé
+      yPos = 250;
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(100, 100, 100);
+      doc.text('Obrigado pela preferência!', 20, yPos);
+      doc.text('Retire seu pedido no balcão', 20, yPos + 5);
+      doc.text(`Validação: ${validationData.timestamp}`, 20, yPos + 10);
+    }
     
-    // Aqui você pode integrar com uma biblioteca de PDF como jsPDF
-    // Por enquanto, vamos apenas mostrar uma mensagem
-    alert('PDF das fichas gerado com sucesso!');
+    // Salvar o PDF
+    const fileName = `ficha-${orderId}-${new Date().toISOString().split('T')[0]}.pdf`;
+    doc.save(fileName);
+    
+    console.log('PDF da ficha gerado com sucesso:', fileName);
   };
 
   const currentDate = new Date().toLocaleString('pt-BR');
@@ -422,8 +585,7 @@ const PrintSimulator: React.FC<PrintSimulatorProps> = ({
             <div className="flex gap-2">
               <Button 
                 onClick={handleGeneratePDF}
-                variant="outline"
-                className="flex-1 bg-gradient-to-r from-blue-50 to-purple-50 hover:from-blue-100 hover:to-purple-100 border-blue-200"
+                className="flex-1 bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600"
               >
                 <Download className="w-4 h-4 mr-2" />
                 Gerar PDF
