@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -26,6 +25,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import ProductForm from '@/components/ProductForm';
 import ProductDetailsModal from '@/components/ProductDetailsModal';
+import CategoryForm from '@/components/CategoryForm';
 
 interface Product {
   id: string;
@@ -89,7 +89,7 @@ const Produtos: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['produtos'] });
       toast({ title: "Produto excluído com sucesso!" });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast({
         title: "Erro ao excluir produto",
         description: error.message,
@@ -97,6 +97,11 @@ const Produtos: React.FC = () => {
       });
     },
   });
+
+  const handleCategorySuccess = () => {
+    queryClient.invalidateQueries({ queryKey: ['categorias'] });
+    queryClient.invalidateQueries({ queryKey: ['produtos'] });
+  };
 
   const filteredProducts = produtos.filter((product: Product) => {
     const matchesSearch = product.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -165,10 +170,13 @@ const Produtos: React.FC = () => {
           <Package className="w-6 h-6 text-blue-600" />
           <h1 className="text-xl sm:text-2xl font-bold text-gray-800">Produtos</h1>
         </div>
-        <Button onClick={() => setShowForm(true)} className="w-full sm:w-auto">
-          <Plus className="w-4 h-4 mr-2" />
-          Novo Produto
-        </Button>
+        <div className="flex gap-2 w-full sm:w-auto">
+          <CategoryForm onSuccess={handleCategorySuccess} />
+          <Button onClick={() => setShowForm(true)} className="flex-1 sm:flex-none">
+            <Plus className="w-4 h-4 mr-2" />
+            Novo Produto
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
