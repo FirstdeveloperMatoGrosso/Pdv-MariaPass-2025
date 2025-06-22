@@ -82,13 +82,10 @@ const Produtos: React.FC = () => {
       
       console.log('Raw categorias data:', data);
       
-      // Garantir que retornamos apenas strings
-      const categoryNames = data?.map(item => {
-        if (typeof item === 'object' && item !== null && 'nome' in item) {
-          return String(item.nome);
-        }
-        return String(item);
-      }).filter(nome => nome && nome !== 'null' && nome !== 'undefined') || [];
+      // Extract only the nome values as strings
+      const categoryNames = (data || [])
+        .map(item => item?.nome)
+        .filter((nome): nome is string => typeof nome === 'string' && nome.trim() !== '');
       
       console.log('Processed category names:', categoryNames);
       return categoryNames;
@@ -217,14 +214,11 @@ const Produtos: React.FC = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="todas">Todas as categorias</SelectItem>
-                  {categorias.map((categoria, index) => {
-                    console.log('Rendering categoria:', categoria, typeof categoria);
-                    return (
-                      <SelectItem key={`categoria-${index}`} value={categoria}>
-                        {categoria}
-                      </SelectItem>
-                    );
-                  })}
+                  {categorias.map((categoria, index) => (
+                    <SelectItem key={`categoria-${index}-${categoria}`} value={categoria}>
+                      {categoria}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -247,15 +241,15 @@ const Produtos: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Products Grid - Cards ainda menores */}
-      <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 xl:grid-cols-12 gap-1 sm:gap-1.5">
+      {/* Products Grid - Cards menores */}
+      <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12 xl:grid-cols-16 gap-1">
         {isLoading ? (
-          Array.from({ length: 24 }).map((_, index) => (
+          Array.from({ length: 32 }).map((_, index) => (
             <Card key={index} className="animate-pulse">
-              <CardContent className="p-1">
-                <div className="h-10 sm:h-12 bg-gray-200 rounded mb-1"></div>
-                <div className="h-1.5 bg-gray-200 rounded mb-0.5"></div>
-                <div className="h-1.5 bg-gray-200 rounded w-1/2"></div>
+              <CardContent className="p-0.5">
+                <div className="h-8 bg-gray-200 rounded mb-0.5"></div>
+                <div className="h-1 bg-gray-200 rounded mb-0.5"></div>
+                <div className="h-1 bg-gray-200 rounded w-1/2"></div>
               </CardContent>
             </Card>
           ))
@@ -267,7 +261,7 @@ const Produtos: React.FC = () => {
         ) : (
           filteredProducts.map((product) => (
             <Card key={product.id} className="overflow-hidden hover:shadow-md transition-shadow">
-              <div className="aspect-square bg-gray-50 flex items-center justify-center h-10 sm:h-12">
+              <div className="aspect-square bg-gray-50 flex items-center justify-center h-8">
                 {product.imagem_url ? (
                   <img 
                     src={product.imagem_url} 
@@ -278,11 +272,11 @@ const Produtos: React.FC = () => {
                     }}
                   />
                 ) : (
-                  <ImageIcon className="w-3 h-3 sm:w-4 sm:h-4 text-gray-300" />
+                  <ImageIcon className="w-2 h-2 text-gray-300" />
                 )}
               </div>
               
-              <CardContent className="p-1">
+              <CardContent className="p-0.5">
                 <div className="space-y-0.5">
                   <div>
                     <h3 className="font-medium text-xs truncate leading-tight" title={product.nome}>
@@ -297,7 +291,7 @@ const Produtos: React.FC = () => {
                     <div className="text-xs font-bold text-green-600">
                       {formatCurrency(product.preco)}
                     </div>
-                    <Badge className={`text-xs px-0.5 py-0 text-xs ${getStatusBadge(product.status)}`}>
+                    <Badge className={`text-xs px-0.5 py-0 ${getStatusBadge(product.status)}`}>
                       {product.status}
                     </Badge>
                   </div>
@@ -311,25 +305,25 @@ const Produtos: React.FC = () => {
                       size="sm"
                       variant="outline"
                       onClick={() => handleViewDetails(product)}
-                      className="flex-1 text-xs h-5 px-0.5 py-0"
+                      className="flex-1 text-xs h-4 px-0.5 py-0"
                     >
-                      <Eye className="w-2.5 h-2.5" />
+                      <Eye className="w-2 h-2" />
                     </Button>
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => handleEdit(product)}
-                      className="h-5 px-0.5 py-0"
+                      className="h-4 px-0.5 py-0"
                     >
-                      <Edit className="w-2.5 h-2.5" />
+                      <Edit className="w-2 h-2" />
                     </Button>
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => handleDelete(product.id)}
-                      className="text-red-600 hover:text-red-700 h-5 px-0.5 py-0"
+                      className="text-red-600 hover:text-red-700 h-4 px-0.5 py-0"
                     >
-                      <Trash2 className="w-2.5 h-2.5" />
+                      <Trash2 className="w-2 h-2" />
                     </Button>
                   </div>
                 </div>
