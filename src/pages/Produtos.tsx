@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -52,12 +51,17 @@ const Produtos: React.FC = () => {
   const { data: produtos = [], isLoading, error } = useQuery({
     queryKey: ['produtos'],
     queryFn: async () => {
+      console.log('Fetching produtos...');
       const { data, error } = await supabase
         .from('produtos')
         .select('*')
         .order('created_at', { ascending: false });
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching produtos:', error);
+        throw error;
+      }
+      console.log('Produtos fetched:', data);
       return data || [];
     },
   });
@@ -65,18 +69,33 @@ const Produtos: React.FC = () => {
   const { data: categorias = [] } = useQuery({
     queryKey: ['categorias'],
     queryFn: async () => {
+      console.log('Fetching categorias...');
       const { data, error } = await supabase
         .from('categorias')
         .select('nome')
         .order('nome', { ascending: true });
       
       if (error) {
-        console.log('Erro ao buscar categorias:', error);
+        console.error('Error fetching categorias:', error);
         return [];
       }
       
-      // Garantir que retornamos apenas strings
-      return data?.map(cat => cat.nome).filter(nome => typeof nome === 'string') || [];
+      console.log('Raw categorias data:', data);
+      
+      // Safely extract only the nome field and ensure they are strings
+      const categoryNames = data
+        ?.map(item => {
+          if (typeof item === 'string') {
+            return item;
+          } else if (item && typeof item === 'object' && 'nome' in item) {
+            return String(item.nome);
+          }
+          return null;
+        })
+        .filter((nome): nome is string => nome !== null && typeof nome === 'string') || [];
+      
+      console.log('Processed category names:', categoryNames);
+      return categoryNames;
     },
   });
 
@@ -129,7 +148,6 @@ const Produtos: React.FC = () => {
   };
 
   const handleEdit = (product: Product) => {
-    // TODO: Implementar edição de produto
     toast({ title: "Funcionalidade de edição será implementada em breve" });
   };
 
@@ -228,15 +246,15 @@ const Produtos: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Products Grid - Cards menores */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-3">
+      {/* Products Grid - Cards menores e mais compactos */}
+      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-1 sm:gap-2">
         {isLoading ? (
-          Array.from({ length: 12 }).map((_, index) => (
+          Array.from({ length: 16 }).map((_, index) => (
             <Card key={index} className="animate-pulse">
-              <CardContent className="p-2 sm:p-3">
-                <div className="h-16 sm:h-20 bg-gray-200 rounded mb-2"></div>
-                <div className="h-3 bg-gray-200 rounded mb-1"></div>
-                <div className="h-3 bg-gray-200 rounded w-2/3"></div>
+              <CardContent className="p-1 sm:p-2">
+                <div className="h-12 sm:h-16 bg-gray-200 rounded mb-1"></div>
+                <div className="h-2 bg-gray-200 rounded mb-1"></div>
+                <div className="h-2 bg-gray-200 rounded w-1/2"></div>
               </CardContent>
             </Card>
           ))
@@ -259,14 +277,14 @@ const Produtos: React.FC = () => {
                     }}
                   />
                 ) : (
-                  <ImageIcon className="w-6 h-6 sm:w-8 sm:h-8 text-gray-300" />
+                  <ImageIcon className="w-4 h-4 sm:w-6 sm:h-6 text-gray-300" />
                 )}
               </div>
               
-              <CardContent className="p-2 sm:p-3">
-                <div className="space-y-1 sm:space-y-2">
+              <CardContent className="p-1 sm:p-2">
+                <div className="space-y-1">
                   <div>
-                    <h3 className="font-medium text-xs sm:text-sm truncate" title={product.nome}>
+                    <h3 className="font-medium text-xs truncate" title={product.nome}>
                       {product.nome}
                     </h3>
                     <p className="text-xs text-gray-600 truncate">
@@ -275,7 +293,7 @@ const Produtos: React.FC = () => {
                   </div>
                   
                   <div className="flex items-center justify-between">
-                    <div className="text-xs sm:text-sm font-bold text-green-600">
+                    <div className="text-xs font-bold text-green-600">
                       {formatCurrency(product.preco)}
                     </div>
                     <Badge className={`text-xs px-1 py-0 ${getStatusBadge(product.status)}`}>
@@ -292,7 +310,7 @@ const Produtos: React.FC = () => {
                       size="sm"
                       variant="outline"
                       onClick={() => handleViewDetails(product)}
-                      className="flex-1 text-xs h-7 px-1"
+                      className="flex-1 text-xs h-6 px-1"
                     >
                       <Eye className="w-3 h-3" />
                     </Button>
@@ -300,7 +318,7 @@ const Produtos: React.FC = () => {
                       size="sm"
                       variant="outline"
                       onClick={() => handleEdit(product)}
-                      className="h-7 px-1"
+                      className="h-6 px-1"
                     >
                       <Edit className="w-3 h-3" />
                     </Button>
@@ -308,7 +326,7 @@ const Produtos: React.FC = () => {
                       size="sm"
                       variant="outline"
                       onClick={() => handleDelete(product.id)}
-                      className="text-red-600 hover:text-red-700 h-7 px-1"
+                      className="text-red-600 hover:text-red-700 h-6 px-1"
                     >
                       <Trash2 className="w-3 h-3" />
                     </Button>
