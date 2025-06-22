@@ -40,6 +40,14 @@ interface Product {
   imagem_url: string | null;
 }
 
+interface Categoria {
+  id: string;
+  nome: string;
+  descricao: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 const Produtos: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('todas');
@@ -68,11 +76,11 @@ const Produtos: React.FC = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('categorias')
-        .select('nome')
+        .select('*')
         .order('nome', { ascending: true });
       
       if (error) throw error;
-      return data?.map(cat => cat.nome) || [];
+      return data || [];
     },
   });
 
@@ -212,8 +220,10 @@ const Produtos: React.FC = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="todas">Todas as categorias</SelectItem>
-                  {categorias.map((categoria) => (
-                    <SelectItem key={categoria} value={categoria}>{categoria}</SelectItem>
+                  {categorias.map((categoria: Categoria) => (
+                    <SelectItem key={categoria.id} value={categoria.nome}>
+                      {categoria.nome}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
