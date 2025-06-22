@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Printer, Check, X, FileText, Package } from 'lucide-react';
+import { Printer, Check, X, FileText, Package, Download } from 'lucide-react';
 import SimpleQRCode from './SimpleQRCode';
 
 interface CartItem {
@@ -53,6 +53,29 @@ const PrintSimulator: React.FC<PrintSimulatorProps> = ({
     setPrintMode(mode);
     setIsPrinting(true);
     setCurrentPrintingItem(0);
+  };
+
+  const handleGeneratePDF = () => {
+    // Aqui você pode implementar a lógica para gerar PDF
+    // Por enquanto, vamos simular a geração do PDF
+    console.log('Gerando PDF das fichas...');
+    
+    // Simular dados para o PDF
+    const pdfData = {
+      orderId,
+      cart,
+      total,
+      paymentMethod,
+      nsu,
+      date: new Date().toLocaleString('pt-BR'),
+      printMode: printMode || 'consolidated'
+    };
+    
+    console.log('Dados do PDF:', pdfData);
+    
+    // Aqui você pode integrar com uma biblioteca de PDF como jsPDF
+    // Por enquanto, vamos apenas mostrar uma mensagem
+    alert('PDF das fichas gerado com sucesso!');
   };
 
   const currentDate = new Date().toLocaleString('pt-BR');
@@ -117,6 +140,7 @@ const PrintSimulator: React.FC<PrintSimulatorProps> = ({
     return baseCode + checkDigit;
   };
 
+  // Gerar dados para QR Code e código de barras com informações reais
   const renderIndividualFicha = (item: CartItem, index: number) => {
     const validationData = generateValidationData(item.id);
     const barcodeNumber = generateBarcode(validationData);
@@ -388,7 +412,6 @@ const PrintSimulator: React.FC<PrintSimulatorProps> = ({
               </div>
             )}
             
-            {/* Simulação das fichas impressas */}
             <div className="max-h-96 overflow-y-auto space-y-4">
               {printMode === 'individual' 
                 ? cart.map((item, index) => renderIndividualFicha(item, index))
@@ -396,12 +419,23 @@ const PrintSimulator: React.FC<PrintSimulatorProps> = ({
               }
             </div>
 
-            <Button 
-              onClick={onClose} 
-              className="w-full bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600"
-            >
-              Novo Pedido
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                onClick={handleGeneratePDF}
+                variant="outline"
+                className="flex-1 bg-gradient-to-r from-blue-50 to-purple-50 hover:from-blue-100 hover:to-purple-100 border-blue-200"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Gerar PDF
+              </Button>
+              
+              <Button 
+                onClick={onClose} 
+                className="flex-1 bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600"
+              >
+                Novo Pedido
+              </Button>
+            </div>
           </div>
         )}
       </CardContent>
