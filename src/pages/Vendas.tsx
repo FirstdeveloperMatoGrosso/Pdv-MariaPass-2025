@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -210,51 +211,51 @@ const Vendas: React.FC = () => {
         </Button>
       </div>
 
-      {/* Resumo */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4">
-        <Card>
-          <CardHeader className="pb-1 p-3 sm:pb-2 sm:p-4">
+      {/* Resumo - Cards mais responsivos */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
+        <Card className="border shadow-sm">
+          <CardHeader className="pb-1 p-2 sm:p-3">
             <CardTitle className="text-xs sm:text-sm font-medium text-gray-600">Total de Vendas</CardTitle>
           </CardHeader>
-          <CardContent className="p-3 sm:p-4 pt-0">
-            <div className="text-lg sm:text-2xl font-bold">{totalVendas}</div>
+          <CardContent className="p-2 sm:p-3 pt-0">
+            <div className="text-base sm:text-xl lg:text-2xl font-bold">{totalVendas}</div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="pb-1 p-3 sm:pb-2 sm:p-4">
+        <Card className="border shadow-sm">
+          <CardHeader className="pb-1 p-2 sm:p-3">
             <CardTitle className="text-xs sm:text-sm font-medium text-gray-600">Faturamento Total</CardTitle>
           </CardHeader>
-          <CardContent className="p-3 sm:p-4 pt-0">
-            <div className="text-lg sm:text-2xl font-bold text-green-600">{formatCurrency(faturamentoTotal)}</div>
+          <CardContent className="p-2 sm:p-3 pt-0">
+            <div className="text-base sm:text-xl lg:text-2xl font-bold text-green-600">{formatCurrency(faturamentoTotal)}</div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="pb-1 p-3 sm:pb-2 sm:p-4">
+        <Card className="border shadow-sm sm:col-span-2 lg:col-span-1">
+          <CardHeader className="pb-1 p-2 sm:p-3">
             <CardTitle className="text-xs sm:text-sm font-medium text-gray-600">Ticket Médio</CardTitle>
           </CardHeader>
-          <CardContent className="p-3 sm:p-4 pt-0">
-            <div className="text-lg sm:text-2xl font-bold text-blue-600">{formatCurrency(ticketMedio)}</div>
+          <CardContent className="p-2 sm:p-3 pt-0">
+            <div className="text-base sm:text-xl lg:text-2xl font-bold text-blue-600">{formatCurrency(ticketMedio)}</div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Filtros */}
-      <Card>
-        <CardHeader className="p-3 sm:p-4">
+      {/* Filtros - Espaçamento reduzido */}
+      <Card className="border shadow-sm">
+        <CardHeader className="p-2 sm:p-3 pb-1">
           <CardTitle className="flex items-center space-x-2 text-sm sm:text-base">
             <Filter className="w-4 h-4 sm:w-5 sm:h-5" />
             <span>Filtros</span>
           </CardTitle>
         </CardHeader>
-        <CardContent className="p-3 sm:p-4 pt-0 space-y-3 sm:space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-            <div className="space-y-1 sm:space-y-2">
-              <label className="text-xs sm:text-sm font-medium">Período</label>
+        <CardContent className="p-2 sm:p-3 pt-0">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
+            <div className="space-y-1">
+              <label className="text-xs sm:text-sm font-medium text-gray-700">Período</label>
               <Select value={filtroData} onValueChange={setFiltroData}>
-                <SelectTrigger className="h-8 sm:h-10">
-                  <Calendar className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                <SelectTrigger className="h-8 sm:h-9 text-xs sm:text-sm">
+                  <Calendar className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -266,10 +267,10 @@ const Vendas: React.FC = () => {
               </Select>
             </div>
 
-            <div className="space-y-1 sm:space-y-2">
-              <label className="text-xs sm:text-sm font-medium">Forma de Pagamento</label>
+            <div className="space-y-1">
+              <label className="text-xs sm:text-sm font-medium text-gray-700">Forma de Pagamento</label>
               <Select value={filtroFormaPagamento} onValueChange={setFiltroFormaPagamento}>
-                <SelectTrigger className="h-8 sm:h-10">
+                <SelectTrigger className="h-8 sm:h-9 text-xs sm:text-sm">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -283,15 +284,15 @@ const Vendas: React.FC = () => {
               </Select>
             </div>
 
-            <div className="space-y-1 sm:space-y-2">
-              <label className="text-xs sm:text-sm font-medium">Buscar</label>
+            <div className="space-y-1">
+              <label className="text-xs sm:text-sm font-medium text-gray-700">Buscar</label>
               <div className="relative">
-                <Search className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 w-3 h-3 sm:w-4 sm:h-4 text-gray-400" />
+                <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-3 h-3 sm:w-4 sm:h-4 text-gray-400" />
                 <Input
                   placeholder="Número da venda ou produto..."
                   value={busca}
                   onChange={(e) => setBusca(e.target.value)}
-                  className="pl-8 sm:pl-10 h-8 sm:h-10 text-xs sm:text-sm"
+                  className="pl-7 sm:pl-8 h-8 sm:h-9 text-xs sm:text-sm"
                 />
               </div>
             </div>
