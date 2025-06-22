@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -198,9 +197,9 @@ const Vendas: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen p-2 sm:p-4 space-y-2 sm:space-y-4">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+    <div className="min-h-screen p-1 sm:p-2 space-y-1 sm:space-y-2">
+      {/* Header - Reduzido espaçamento */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-2">
         <div className="flex items-center space-x-2">
           <ShoppingCart className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
           <h1 className="text-lg sm:text-2xl font-bold text-gray-800">Vendas Realizadas</h1>
@@ -211,50 +210,50 @@ const Vendas: React.FC = () => {
         </Button>
       </div>
 
-      {/* Resumo - Cards mais responsivos */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
+      {/* Resumo - Cards com menos espaçamento */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1 sm:gap-2">
         <Card className="border shadow-sm">
-          <CardHeader className="pb-1 p-2 sm:p-3">
+          <CardHeader className="pb-0 p-2">
             <CardTitle className="text-xs sm:text-sm font-medium text-gray-600">Total de Vendas</CardTitle>
           </CardHeader>
-          <CardContent className="p-2 sm:p-3 pt-0">
+          <CardContent className="p-2 pt-0">
             <div className="text-base sm:text-xl lg:text-2xl font-bold">{totalVendas}</div>
           </CardContent>
         </Card>
 
         <Card className="border shadow-sm">
-          <CardHeader className="pb-1 p-2 sm:p-3">
+          <CardHeader className="pb-0 p-2">
             <CardTitle className="text-xs sm:text-sm font-medium text-gray-600">Faturamento Total</CardTitle>
           </CardHeader>
-          <CardContent className="p-2 sm:p-3 pt-0">
+          <CardContent className="p-2 pt-0">
             <div className="text-base sm:text-xl lg:text-2xl font-bold text-green-600">{formatCurrency(faturamentoTotal)}</div>
           </CardContent>
         </Card>
 
         <Card className="border shadow-sm sm:col-span-2 lg:col-span-1">
-          <CardHeader className="pb-1 p-2 sm:p-3">
+          <CardHeader className="pb-0 p-2">
             <CardTitle className="text-xs sm:text-sm font-medium text-gray-600">Ticket Médio</CardTitle>
           </CardHeader>
-          <CardContent className="p-2 sm:p-3 pt-0">
+          <CardContent className="p-2 pt-0">
             <div className="text-base sm:text-xl lg:text-2xl font-bold text-blue-600">{formatCurrency(ticketMedio)}</div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Filtros - Espaçamento reduzido */}
+      {/* Filtros - Espaçamento muito reduzido */}
       <Card className="border shadow-sm">
-        <CardHeader className="p-2 sm:p-3 pb-1">
+        <CardHeader className="p-2 pb-0">
           <CardTitle className="flex items-center space-x-2 text-sm sm:text-base">
             <Filter className="w-4 h-4 sm:w-5 sm:h-5" />
             <span>Filtros</span>
           </CardTitle>
         </CardHeader>
-        <CardContent className="p-2 sm:p-3 pt-0">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
-            <div className="space-y-1">
+        <CardContent className="p-2 pt-1">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1 sm:gap-2">
+            <div className="space-y-0.5">
               <label className="text-xs sm:text-sm font-medium text-gray-700">Período</label>
               <Select value={filtroData} onValueChange={setFiltroData}>
-                <SelectTrigger className="h-8 sm:h-9 text-xs sm:text-sm">
+                <SelectTrigger className="h-7 sm:h-8 text-xs sm:text-sm">
                   <Calendar className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
                   <SelectValue />
                 </SelectTrigger>
@@ -267,10 +266,10 @@ const Vendas: React.FC = () => {
               </Select>
             </div>
 
-            <div className="space-y-1">
+            <div className="space-y-0.5">
               <label className="text-xs sm:text-sm font-medium text-gray-700">Forma de Pagamento</label>
               <Select value={filtroFormaPagamento} onValueChange={setFiltroFormaPagamento}>
-                <SelectTrigger className="h-8 sm:h-9 text-xs sm:text-sm">
+                <SelectTrigger className="h-7 sm:h-8 text-xs sm:text-sm">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -284,7 +283,7 @@ const Vendas: React.FC = () => {
               </Select>
             </div>
 
-            <div className="space-y-1">
+            <div className="space-y-0.5">
               <label className="text-xs sm:text-sm font-medium text-gray-700">Buscar</label>
               <div className="relative">
                 <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-3 h-3 sm:w-4 sm:h-4 text-gray-400" />
@@ -292,7 +291,7 @@ const Vendas: React.FC = () => {
                   placeholder="Número da venda ou produto..."
                   value={busca}
                   onChange={(e) => setBusca(e.target.value)}
-                  className="pl-7 sm:pl-8 h-8 sm:h-9 text-xs sm:text-sm"
+                  className="pl-7 sm:pl-8 h-7 sm:h-8 text-xs sm:text-sm"
                 />
               </div>
             </div>
@@ -300,27 +299,27 @@ const Vendas: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Lista de Vendas - Grid responsivo como produtos */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2 sm:gap-3">
+      {/* Lista de Vendas - Grade com menos espaçamento */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-1 sm:gap-2">
         {isLoading ? (
           Array.from({ length: 16 }).map((_, index) => (
             <Card key={index} className="animate-pulse">
-              <CardContent className="p-2">
-                <div className="h-16 bg-gray-200 rounded mb-2"></div>
-                <div className="h-3 bg-gray-200 rounded mb-1"></div>
-                <div className="h-3 bg-gray-200 rounded w-2/3"></div>
+              <CardContent className="p-1.5">
+                <div className="h-14 bg-gray-200 rounded mb-1.5"></div>
+                <div className="h-2.5 bg-gray-200 rounded mb-1"></div>
+                <div className="h-2.5 bg-gray-200 rounded w-2/3"></div>
               </CardContent>
             </Card>
           ))
         ) : vendas.length === 0 ? (
-          <div className="col-span-full text-center py-8">
+          <div className="col-span-full text-center py-6">
             <ShoppingCart className="w-12 h-12 text-gray-300 mx-auto mb-4" />
             <p className="text-gray-500">Nenhuma venda encontrada para os filtros selecionados.</p>
           </div>
         ) : (
           vendas.map((venda) => (
             <Card key={venda.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-              <div className="aspect-square bg-gray-50 flex items-center justify-center h-16">
+              <div className="aspect-square bg-gray-50 flex items-center justify-center h-14">
                 {venda.produto_imagem ? (
                   <img 
                     src={venda.produto_imagem} 
@@ -335,8 +334,8 @@ const Vendas: React.FC = () => {
                 )}
               </div>
               
-              <CardContent className="p-2">
-                <div className="space-y-1">
+              <CardContent className="p-1.5">
+                <div className="space-y-0.5">
                   <div>
                     <h3 className="font-semibold text-xs truncate" title={venda.produto_nome}>
                       {venda.produto_nome}
@@ -373,7 +372,7 @@ const Vendas: React.FC = () => {
                         size="sm"
                         variant="outline"
                         onClick={() => setSelectedVenda(venda)}
-                        className="w-full text-xs h-6"
+                        className="w-full text-xs h-5"
                       >
                         <Eye className="w-3 h-3 mr-1" />
                         Ver
