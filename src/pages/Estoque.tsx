@@ -320,7 +320,13 @@ const Estoque: React.FC = () => {
         },
         {
           label: 'Cancelar',
-          onClick: () => {},
+          onClick: () => {
+            // Fecha o alerta quando cancelar é clicado
+            const alertToRemove = alerts[0];
+            if (alertToRemove) {
+              removeAlert(alertToRemove.id);
+            }
+          },
           variant: 'outline'
         }
       ]
