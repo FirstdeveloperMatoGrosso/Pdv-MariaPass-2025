@@ -58,28 +58,63 @@ const PrintSimulator: React.FC<PrintSimulatorProps> = ({
   const currentDate = new Date().toLocaleString('pt-BR');
   const generateNSU = () => nsu || `NSU${Date.now().toString().slice(-8)}`;
   
-  // Gerar dados para QR Code e código de barras
+  // Gerar dados para QR Code e código de barras com informações reais
   const generateValidationData = (itemId?: string) => {
+    const timestamp = Date.now();
     const baseData = {
+      empresa: "MARIAPASS",
       pedido: orderId,
       data: new Date().toISOString(),
-      valor: total,
+      timestamp: timestamp,
+      valor_total: total,
       forma_pagamento: paymentMethod,
-      nsu: generateNSU()
+      nsu: generateNSU(),
+      hash_validacao: `MP${timestamp.toString().slice(-6)}`
     };
     
     if (itemId) {
-      return { ...baseData, produto_id: itemId };
+      const item = cart.find(i => i.id === itemId);
+      return { 
+        ...baseData, 
+        produto_id: itemId,
+        produto_nome: item?.nome,
+        produto_valor: item?.preco,
+        quantidade: item?.quantity,
+        tipo: 'individual'
+      };
     }
     
-    return baseData;
+    return {
+      ...baseData,
+      produtos: cart.map(item => ({
+        id: item.id,
+        nome: item.nome,
+        preco: item.preco,
+        quantidade: item.quantity
+      })),
+      tipo: 'consolidado'
+    };
   };
 
+  // Gerar código de barras real baseado no padrão EAN-13
   const generateBarcode = (data: any) => {
-    // Simular código de barras baseado nos dados
-    const dataString = JSON.stringify(data);
-    const hash = dataString.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    return `7891234${hash.toString().padStart(6, '0').slice(-6)}`;
+    const empresaCode = "789"; // Código da empresa
+    const timestamp = Date.now().toString();
+    const pedidoHash = orderId.replace(/[^0-9]/g, '').slice(-4) || "0000";
+    const valorHash = Math.floor(data.valor_total * 100).toString().padStart(4, '0').slice(-4);
+    
+    // Formar 12 dígitos base
+    const baseCode = empresaCode + pedidoHash + valorHash + timestamp.slice(-2);
+    
+    // Calcular dígito verificador EAN-13
+    let sum = 0;
+    for (let i = 0; i < 12; i++) {
+      const digit = parseInt(baseCode[i]);
+      sum += i % 2 === 0 ? digit : digit * 3;
+    }
+    const checkDigit = (10 - (sum % 10)) % 10;
+    
+    return baseCode + checkDigit;
   };
 
   const renderIndividualFicha = (item: CartItem, index: number) => {
@@ -122,26 +157,34 @@ const PrintSimulator: React.FC<PrintSimulatorProps> = ({
                 size={80}
               />
             </div>
+            <p className="text-xs text-gray-500 mt-1">Hash: {validationData.hash_validacao}</p>
           </div>
           
           {/* Código de Barras */}
           <div className="text-center py-2">
-            <p className="text-xs font-bold mb-1">Código de Barras:</p>
+            <p className="text-xs font-bold mb-1">Código de Barras EAN-13:</p>
             <div className="bg-white p-2 border border-gray-300 rounded">
               <div className="flex justify-center items-center space-x-0.5 mb-1">
                 {barcodeNumber.split('').map((digit, i) => (
                   <div key={i} className="flex flex-col">
-                    <div className="w-0.5 bg-black" style={{ height: `${15 + (parseInt(digit) % 3) * 3}px` }}></div>
+                    <div 
+                      className="w-1 bg-black" 
+                      style={{ 
+                        height: `${20 + (parseInt(digit) % 4) * 2}px`,
+                        marginRight: i % 2 === 0 ? '1px' : '0px'
+                      }}
+                    ></div>
                   </div>
                 ))}
               </div>
-              <p className="text-xs font-mono">{barcodeNumber}</p>
+              <p className="text-xs font-mono font-bold">{barcodeNumber}</p>
             </div>
           </div>
           
           <div className="text-center mt-4 pt-2 border-t border-gray-300">
             <p className="text-xs">Obrigado pela preferência!</p>
             <p className="text-xs">Retire este item no balcão</p>
+            <p className="text-xs text-gray-500">Validação: {validationData.timestamp}</p>
           </div>
         </div>
       </div>
@@ -191,26 +234,34 @@ const PrintSimulator: React.FC<PrintSimulatorProps> = ({
                 size={80}
               />
             </div>
+            <p className="text-xs text-gray-500 mt-1">Hash: {validationData.hash_validacao}</p>
           </div>
           
           {/* Código de Barras */}
           <div className="text-center py-2">
-            <p className="text-xs font-bold mb-1">Código de Barras:</p>
+            <p className="text-xs font-bold mb-1">Código de Barras EAN-13:</p>
             <div className="bg-white p-2 border border-gray-300 rounded">
               <div className="flex justify-center items-center space-x-0.5 mb-1">
                 {barcodeNumber.split('').map((digit, i) => (
                   <div key={i} className="flex flex-col">
-                    <div className="w-0.5 bg-black" style={{ height: `${15 + (parseInt(digit) % 3) * 3}px` }}></div>
+                    <div 
+                      className="w-1 bg-black" 
+                      style={{ 
+                        height: `${20 + (parseInt(digit) % 4) * 2}px`,
+                        marginRight: i % 2 === 0 ? '1px' : '0px'
+                      }}
+                    ></div>
                   </div>
                 ))}
               </div>
-              <p className="text-xs font-mono">{barcodeNumber}</p>
+              <p className="text-xs font-mono font-bold">{barcodeNumber}</p>
             </div>
           </div>
           
           <div className="text-center mt-4 pt-2 border-t border-gray-300">
             <p className="text-xs">Obrigado pela preferência!</p>
             <p className="text-xs">Retire seu pedido no balcão</p>
+            <p className="text-xs text-gray-500">Validação: {validationData.timestamp}</p>
           </div>
         </div>
       </div>
