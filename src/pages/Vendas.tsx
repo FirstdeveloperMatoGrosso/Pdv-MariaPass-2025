@@ -14,7 +14,9 @@ import {
   Package,
   CreditCard,
   Hash,
-  MapPin
+  MapPin,
+  Copy,
+  Check
 } from 'lucide-react';
 import {
   Select,
@@ -30,8 +32,13 @@ import { Dialog,
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
 import { useQuery } from '@tanstack/react-query';
+import ExportButton from '@/components/ExportButton';
+import { generateReportPDF } from '@/utils/pdfGenerator';
+import { toast } from 'sonner';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Separator } from '@/components/ui/separator';
+import SaleDetails from '@/components/SaleDetails';
 
 interface VendaRealizada {
   id: string;
@@ -52,7 +59,16 @@ const Vendas: React.FC = () => {
   const [filtroFormaPagamento, setFiltroFormaPagamento] = useState('todas');
   const [busca, setBusca] = useState('');
   const [selectedVenda, setSelectedVenda] = useState<VendaRealizada | null>(null);
-  const { toast } = useToast();
+  const [copied, setCopied] = useState(false);
+
+  const copyToClipboard = (text: string, e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
 
   // Buscar vendas realizadas
   const { data: vendas = [], isLoading, error, refetch } = useQuery({
@@ -154,7 +170,203 @@ const Vendas: React.FC = () => {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString('pt-BR');
+    const date = new Date(dateString);
+    return date.toLocaleString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const handleExportPDF = () => {
+    try {
+      const companyData = {
+        name: 'MariaPass',
+        address: 'Endereço da empresa, 123, Bairro, Cidade - UF',
+        cnpj: '00.000.000/0001-00',
+        email: 'contato@mariapass.com.br',
+        phone: '(00) 00000-0000'
+      };
+
+      const pdf = generateReportPDF(companyData, {
+        period: 'Período do Relatório',
+        salesData: {
+          total: faturamentoTotal,
+          orders: totalVendas,
+          avgTicket: ticketMedio
+        },
+        topProducts: vendas
+          .reduce((acc: any[], venda) => {
+            const existing = acc.find(item => item.name === venda.produto_nome);
+            if (existing) {
+              existing.quantity += venda.quantidade;
+              existing.revenue += venda.valor_total;
+            } else {
+              acc.push({
+                name: venda.produto_nome || 'Produto sem nome',
+                quantity: venda.quantidade,
+                revenue: venda.valor_total
+              });
+            }
+            return acc;
+          }, [])
+          .sort((a, b) => b.revenue - a.revenue)
+          .slice(0, 5),
+        recentOrders: vendas.slice(0, 5).map(venda => ({
+          id: venda.numero_autorizacao,
+          time: new Date(venda.data_venda).toLocaleTimeString('pt-BR'),
+          items: venda.quantidade,
+          total: venda.valor_total,
+          status: 'Concluído'
+        }))
+      });
+
+      const fileName = `relatorio-vendas-${new Date().toISOString().split('T')[0]}.pdf`;
+      pdf.save(fileName);
+      
+      toast.success('Relatório exportado com sucesso!');
+    } catch (error) {
+      console.error('Erro ao exportar relatório:', error);
+      toast.error('Erro ao exportar o relatório. Tente novamente.');
+    }
+  };
+
+  const handlePrint = () => {
+    try {
+      const companyData = {
+        name: 'MariaPass',
+        address: 'Endereço da empresa, 123, Bairro, Cidade - UF',
+        cnpj: '00.000.000/0001-00',
+        email: 'contato@mariapass.com.br',
+        phone: '(00) 00000-0000'
+      };
+
+      const pdf = generateReportPDF(companyData, {
+        period: 'Período do Relatório',
+        salesData: {
+          total: faturamentoTotal,
+          orders: totalVendas,
+          avgTicket: ticketMedio
+        },
+        topProducts: vendas
+          .reduce((acc: any[], venda) => {
+            const existing = acc.find(item => item.name === venda.produto_nome);
+            if (existing) {
+              existing.quantity += venda.quantidade;
+              existing.revenue += venda.valor_total;
+            } else {
+              acc.push({
+                name: venda.produto_nome || 'Produto sem nome',
+                quantity: venda.quantidade,
+                revenue: venda.valor_total
+              });
+            }
+            return acc;
+          }, [])
+          .sort((a, b) => b.revenue - a.revenue)
+          .slice(0, 5),
+        recentOrders: vendas.slice(0, 5).map(venda => ({
+          id: venda.numero_autorizacao,
+          time: new Date(venda.data_venda).toLocaleTimeString('pt-BR'),
+          items: venda.quantidade,
+          total: venda.valor_total,
+          status: 'Concluído'
+        }))
+      });
+      
+      // Abre a janela de impressão do navegador
+      const pdfBlob = pdf.output('blob');
+      const pdfUrl = URL.createObjectURL(pdfBlob);
+      
+      const printWindow = window.open(pdfUrl, '_blank');
+      if (printWindow) {
+        printWindow.onload = function() {
+          printWindow.print();
+        };
+      }
+      
+      toast.success('Abrindo visualização de impressão...');
+    } catch (error) {
+      console.error('Erro ao preparar impressão:', error);
+      toast.error('Erro ao preparar a impressão. Tente novamente.');
+    }
+  };
+
+  const handleShareWhatsApp = async () => {
+    try {
+      // Primeiro, gera o PDF em memória
+      const companyData = {
+        name: 'MariaPass',
+        address: 'Endereço da empresa, 123, Bairro, Cidade - UF',
+        cnpj: '00.000.000/0001-00',
+        email: 'contato@mariapass.com.br',
+        phone: '(00) 00000-0000'
+      };
+
+      const pdf = generateReportPDF(companyData, {
+        period: 'Período do Relatório',
+        salesData: {
+          total: faturamentoTotal,
+          orders: totalVendas,
+          avgTicket: ticketMedio
+        },
+        topProducts: vendas
+          .reduce((acc: any[], venda) => {
+            const existing = acc.find(item => item.name === venda.produto_nome);
+            if (existing) {
+              existing.quantity += venda.quantidade;
+              existing.revenue += venda.valor_total;
+            } else {
+              acc.push({
+                name: venda.produto_nome || 'Produto sem nome',
+                quantity: venda.quantidade,
+                revenue: venda.valor_total
+              });
+            }
+            return acc;
+          }, [])
+          .sort((a, b) => b.revenue - a.revenue)
+          .slice(0, 5),
+        recentOrders: vendas.slice(0, 5).map(venda => ({
+          id: venda.numero_autorizacao,
+          time: new Date(venda.data_venda).toLocaleTimeString('pt-BR'),
+          items: venda.quantidade,
+          total: venda.valor_total,
+          status: 'Concluído'
+        }))
+      });
+
+      // Converte o PDF para base64
+      const pdfBase64 = pdf.output('datauristring');
+      
+      // Mensagem para o WhatsApp
+      const message = `📊 *Relatório de Vendas*\n\n` +
+        `📅 Total de Vendas: ${totalVendas}\n` +
+        `💰 Faturamento Total: R$ ${faturamentoTotal.toFixed(2)}\n` +
+        `🎟️ Ticket Médio: R$ ${ticketMedio.toFixed(2)}\n\n` +
+        `_Gerado pelo Sistema MariaPass_`;
+      
+      const encodedMessage = encodeURIComponent(message);
+      
+      // Abre o WhatsApp Web com a mensagem (não é possível anexar o PDF diretamente)
+      // Em um ambiente mobile com o app instalado, isso abriria o app do WhatsApp
+      const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
+      
+      window.open(whatsappUrl, '_blank');
+      
+      // Informa ao usuário sobre a limitação do compartilhamento de PDF
+      toast.info('O PDF foi gerado, mas não pode ser enviado diretamente pelo navegador. Por favor, faça o download e envie manualmente pelo WhatsApp.');
+      
+      // Oferece para baixar o PDF também
+      const fileName = `relatorio-vendas-${new Date().toISOString().split('T')[0]}.pdf`;
+      pdf.save(fileName);
+      
+    } catch (error) {
+      console.error('Erro ao compartilhar via WhatsApp:', error);
+      toast.error('Erro ao preparar o compartilhamento. Tente novamente.');
+    }
   };
 
   const getFormaPagamentoBadge = (forma: string) => {
@@ -204,10 +416,11 @@ const Vendas: React.FC = () => {
           <ShoppingCart className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
           <h1 className="text-lg sm:text-2xl font-bold text-gray-800">Vendas Realizadas</h1>
         </div>
-        <Button variant="outline" size="sm">
-          <Download className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-          <span className="text-xs sm:text-sm">Exportar</span>
-        </Button>
+        <ExportButton 
+          onExportPDF={handleExportPDF}
+          onPrint={handlePrint}
+          onShareWhatsApp={handleShareWhatsApp}
+        />
       </div>
 
       {/* Resumo - Cards com menos espaçamento */}
@@ -378,67 +591,122 @@ const Vendas: React.FC = () => {
                         Ver
                       </Button>
                     </DialogTrigger>
-                    <DialogContent className="max-w-sm sm:max-w-md mx-2">
+                    <DialogContent className="max-w-md mx-2 sm:max-w-2xl">
                       <DialogHeader>
                         <DialogTitle className="text-sm sm:text-base">Detalhes da Venda</DialogTitle>
                       </DialogHeader>
                       {selectedVenda && (
-                        <div className="space-y-3 sm:space-y-4">
-                          <div className="flex items-center space-x-2 sm:space-x-3">
-                            {selectedVenda.produto_imagem ? (
-                              <img 
-                                src={selectedVenda.produto_imagem} 
-                                alt={selectedVenda.produto_nome}
-                                className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-lg border"
-                                onError={(e) => {
-                                  e.currentTarget.src = '/placeholder.svg';
-                                }}
+                        <div className="space-y-4">
+                          <Tabs defaultValue="detalhes" className="w-full">
+                            <TabsList className="grid w-full grid-cols-2">
+                              <TabsTrigger value="detalhes">Detalhes</TabsTrigger>
+                              <TabsTrigger value="verificacao">Verificação</TabsTrigger>
+                            </TabsList>
+                            
+                            <TabsContent value="detalhes" className="space-y-4">
+                              <div className="border rounded-lg p-3 bg-gray-50">
+                                <h3 className="font-medium text-sm mb-2">Informações do Produto</h3>
+                                <div className="flex items-start space-x-3">
+                                  {selectedVenda.produto_imagem ? (
+                                    <img 
+                                      src={selectedVenda.produto_imagem} 
+                                      alt={selectedVenda.produto_nome}
+                                      className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-lg border"
+                                      onError={(e) => {
+                                        e.currentTarget.src = '/placeholder.svg';
+                                      }}
+                                    />
+                                  ) : (
+                                    <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gray-100 rounded-lg border flex items-center justify-center">
+                                      <ImageIcon className="w-8 h-8 text-gray-400" />
+                                    </div>
+                                  )}
+                                  <div className="flex-1">
+                                    <h3 className="font-semibold text-sm sm:text-base">{selectedVenda.produto_nome}</h3>
+                                    <div className="flex items-center mt-1">
+                                      <p className="text-xs text-gray-600">{selectedVenda.numero_autorizacao}</p>
+                                      <Button 
+                                        variant="ghost" 
+                                        size="icon" 
+                                        className="h-4 w-4 ml-1 text-gray-500 hover:text-gray-700"
+                                        onClick={(e) => copyToClipboard(selectedVenda.numero_autorizacao, e)}
+                                      >
+                                        {copied ? (
+                                          <Check className="h-3 w-3 text-green-500" />
+                                        ) : (
+                                          <Copy className="h-3 w-3" />
+                                        )}
+                                      </Button>
+                                    </div>
+                                    <div className="mt-2">
+                                      <Badge variant="outline" className="text-xs">
+                                        {selectedVenda.forma_pagamento.replace('_', ' ').toUpperCase()}
+                                      </Badge>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="border rounded-lg p-3 bg-gray-50">
+                                  <h3 className="font-medium text-sm mb-2">Detalhes da Venda</h3>
+                                  <div className="space-y-2 text-sm">
+                                    <div className="flex justify-between">
+                                      <span className="text-gray-600">Quantidade:</span>
+                                      <span className="font-medium">{selectedVenda.quantidade}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                      <span className="text-gray-600">Valor Unitário:</span>
+                                      <span>{formatCurrency(selectedVenda.valor_unitario)}</span>
+                                    </div>
+                                    <Separator />
+                                    <div className="flex justify-between font-semibold">
+                                      <span>Total:</span>
+                                      <span className="text-green-600">{formatCurrency(selectedVenda.valor_total)}</span>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="border rounded-lg p-3 bg-gray-50">
+                                  <h3 className="font-medium text-sm mb-2">Informações Adicionais</h3>
+                                  <div className="space-y-2 text-sm">
+                                    <div className="flex justify-between">
+                                      <span className="text-gray-600">Data/Hora:</span>
+                                      <span>{formatDate(selectedVenda.data_venda)}</span>
+                                    </div>
+                                    {selectedVenda.nsu && (
+                                      <div className="flex justify-between">
+                                        <span className="text-gray-600">NSU:</span>
+                                        <span>{selectedVenda.nsu}</span>
+                                      </div>
+                                    )}
+                                    {selectedVenda.bandeira && (
+                                      <div className="flex justify-between">
+                                        <span className="text-gray-600">Bandeira:</span>
+                                        <span>{selectedVenda.bandeira}</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            </TabsContent>
+
+                            <TabsContent value="verificacao">
+                              <SaleDetails
+                                saleId={selectedVenda.id}
+                                productId={selectedVenda.id}
+                                productName={selectedVenda.produto_nome || 'Produto não especificado'}
+                                paymentMethod={selectedVenda.forma_pagamento}
+                                nsu={selectedVenda.nsu || selectedVenda.numero_autorizacao}
+                                hash={selectedVenda.numero_autorizacao}
+                                barcode={selectedVenda.id.padEnd(13, '0').substring(0, 13)}
+                                total={selectedVenda.valor_total}
+                                date={selectedVenda.data_venda}
+                                quantity={selectedVenda.quantidade}
+                                unitPrice={selectedVenda.valor_unitario}
                               />
-                            ) : (
-                              <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gray-100 rounded-lg border flex items-center justify-center">
-                                <ImageIcon className="w-6 h-6 sm:w-8 sm:h-8 text-gray-400" />
-                              </div>
-                            )}
-                            <div className="min-w-0 flex-1">
-                              <h3 className="font-semibold text-sm sm:text-base truncate">{selectedVenda.produto_nome}</h3>
-                              <p className="text-xs sm:text-sm text-gray-600 truncate">{selectedVenda.numero_autorizacao}</p>
-                            </div>
-                          </div>
-                          
-                          <div className="grid grid-cols-2 gap-3 sm:gap-4 text-xs sm:text-sm">
-                            <div>
-                              <p className="font-medium">Quantidade:</p>
-                              <p>{selectedVenda.quantidade}</p>
-                            </div>
-                            <div>
-                              <p className="font-medium">Valor Unitário:</p>
-                              <p>{formatCurrency(selectedVenda.valor_unitario)}</p>
-                            </div>
-                            <div>
-                              <p className="font-medium">Valor Total:</p>
-                              <p className="font-bold text-green-600">{formatCurrency(selectedVenda.valor_total)}</p>
-                            </div>
-                            <div>
-                              <p className="font-medium">Forma Pagamento:</p>
-                              <p className="text-xs">{selectedVenda.forma_pagamento.replace('_', ' ')}</p>
-                            </div>
-                            {selectedVenda.nsu && (
-                              <div>
-                                <p className="font-medium">NSU:</p>
-                                <p className="text-xs">{selectedVenda.nsu}</p>
-                              </div>
-                            )}
-                            {selectedVenda.bandeira && (
-                              <div>
-                                <p className="font-medium">Bandeira:</p>
-                                <p className="text-xs">{selectedVenda.bandeira}</p>
-                              </div>
-                            )}
-                            <div className="col-span-2">
-                              <p className="font-medium">Data/Hora:</p>
-                              <p className="text-xs">{formatDate(selectedVenda.data_venda)}</p>
-                            </div>
-                          </div>
+                            </TabsContent>
+                          </Tabs>
                         </div>
                       )}
                     </DialogContent>

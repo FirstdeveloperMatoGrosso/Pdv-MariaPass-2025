@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 import { 
   Package, 
   Search, 
@@ -25,7 +26,10 @@ import { useToast } from '@/hooks/use-toast';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import ProductForm from '@/components/ProductForm';
 import ProductDetailsModal from '@/components/ProductDetailsModal';
+import ProductEditForm from '@/components/ProductEditForm';
 import CategoryForm from '@/components/CategoryForm';
+import { TotemProduct } from '@/types';
+import SystemAlert from '@/components/SystemAlert';
 
 interface Product {
   id: string;
@@ -53,8 +57,9 @@ const Produtos: React.FC = () => {
   const [categoryFilter, setCategoryFilter] = useState('todas');
   const [statusFilter, setStatusFilter] = useState('todos');
   const [showForm, setShowForm] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<TotemProduct | null>(null);
   const [showDetails, setShowDetails] = useState(false);
+  const [showEditForm, setShowEditForm] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -142,9 +147,45 @@ const Produtos: React.FC = () => {
     return colors[status as keyof typeof colors] || 'bg-gray-100 text-gray-800';
   };
 
+  const [showEditAlert, setShowEditAlert] = useState(false);
+  const [currentProduct, setCurrentProduct] = useState<Product | null>(null);
+  const [showErrorAlert, setShowErrorAlert] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+
   const handleEdit = (product: Product) => {
-    // TODO: Implementar edição de produto
-    toast({ title: "Funcionalidade de edição será implementada em breve" });
+    setCurrentProduct(product);
+    setShowEditAlert(true);
+  };
+
+  const handleConfirmEdit = () => {
+    setShowEditAlert(false);
+    if (!currentProduct) return;
+    
+    try {
+      const productToEdit: TotemProduct = {
+        ...currentProduct,
+        descricao: (currentProduct as any).descricao || '',
+        imagem_url: currentProduct.imagem_url || null,
+        tipo_venda: (currentProduct as any).tipo_venda || 'unidade',
+        unidades_por_caixa: (currentProduct as any).unidades_por_caixa || null
+      } as TotemProduct;
+      setSelectedProduct(productToEdit);
+      setShowEditForm(true);
+    } catch (error) {
+      console.error('Erro ao abrir edição:', error);
+      setErrorMessage('Erro ao abrir o formulário de edição. Tente novamente mais tarde.');
+      setShowErrorAlert(true);
+    }
+  };
+
+  const handleProductUpdated = () => {
+    toast({
+      title: 'Sucesso',
+      description: 'Produto atualizado com sucesso!',
+      variant: 'default',
+    });
+    setShowEditForm(false);
+    queryClient.invalidateQueries({ queryKey: ['produtos'] });
   };
 
   const handleDelete = (id: string) => {
@@ -153,10 +194,62 @@ const Produtos: React.FC = () => {
     }
   };
 
+  const [showDetailsAlert, setShowDetailsAlert] = useState(false);
+  const [currentProductDetails, setCurrentProductDetails] = useState<Product | null>(null);
+
   const handleViewDetails = (product: Product) => {
-    setSelectedProduct(product);
-    setShowDetails(true);
+    setCurrentProductDetails(product);
+    setShowDetailsAlert(true);
   };
+
+  const renderProductDetails = (product: Product) => (
+    <div className="space-y-3">
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-1">
+          <p className="text-sm font-medium text-gray-500">ID</p>
+          <p className="text-sm">{product.id}</p>
+        </div>
+        <div className="space-y-1">
+          <p className="text-sm font-medium text-gray-500">Preço</p>
+          <p className="text-sm">R$ {product.preco.toFixed(2)}</p>
+        </div>
+        <div className="space-y-1">
+          <p className="text-sm font-medium text-gray-500">Categoria</p>
+          <p className="text-sm">{product.categoria}</p>
+        </div>
+        <div className="space-y-1">
+          <p className="text-sm font-medium text-gray-500">Estoque</p>
+          <p className="text-sm">{product.estoque} unidades</p>
+        </div>
+        <div className="space-y-1">
+          <p className="text-sm font-medium text-gray-500">Status</p>
+          <Badge 
+            variant={product.status === 'ativo' ? 'default' : 'secondary'}
+            className={cn(
+              'text-xs',
+              product.status === 'ativo' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+            )}
+          >
+            {product.status === 'ativo' ? 'Ativo' : 'Inativo'}
+          </Badge>
+        </div>
+        <div className="space-y-1">
+          <p className="text-sm font-medium text-gray-500">Código de Barras</p>
+          <p className="text-sm">{product.codigo_barras || 'Não informado'}</p>
+        </div>
+      </div>
+      <div className="pt-4 border-t">
+        <div className="space-y-1">
+          <p className="text-sm font-medium text-gray-500">Data de Criação</p>
+          <p className="text-sm">{new Date(product.created_at).toLocaleString('pt-BR')}</p>
+        </div>
+        <div className="mt-2 space-y-1">
+          <p className="text-sm font-medium text-gray-500">Última Atualização</p>
+          <p className="text-sm">{new Date(product.updated_at).toLocaleString('pt-BR')}</p>
+        </div>
+      </div>
+    </div>
+  );
 
   const handleFormClose = () => {
     setShowForm(false);
@@ -341,12 +434,95 @@ const Produtos: React.FC = () => {
         )}
       </div>
 
-      {/* Product Details Modal */}
-      <ProductDetailsModal
-        product={selectedProduct}
-        isOpen={showDetails}
-        onClose={() => setShowDetails(false)}
-      />
+      {/* Log de depuração do estado do modal de detalhes */}
+      {(() => {
+        console.log('[Produtos] Estado do modal de detalhes:', { 
+          showDetails, 
+          hasSelectedProduct: !!selectedProduct,
+          selectedProductId: selectedProduct?.id,
+          selectedProductName: selectedProduct?.nome
+        });
+        return null;
+      })()}
+      
+      {/* Modal de detalhes do produto */}
+      {selectedProduct && (
+        <ProductDetailsModal
+          product={selectedProduct}
+          isOpen={showDetails}
+          onClose={() => {
+            console.log('[Produtos] Fechando modal de detalhes');
+            setShowDetails(false);
+          }}
+        />
+      )}
+
+      {/* System Alerts */}
+      {showEditAlert && currentProduct && (
+        <SystemAlert
+          type="info"
+          title={`EDITANDO PRODUTO`}
+          message={`Nome: ${currentProduct.nome}\nID: ${currentProduct.id}\nPreço: R$ ${currentProduct.preco.toFixed(2)}`}
+          actions={[
+            {
+              label: 'Cancelar',
+              onClick: () => setShowEditAlert(false),
+              variant: 'outline'
+            },
+            {
+              label: 'Continuar',
+              onClick: handleConfirmEdit,
+              variant: 'default'
+            }
+          ]}
+        />
+      )}
+
+      {showErrorAlert && (
+        <SystemAlert
+          type="error"
+          title="Erro"
+          message={errorMessage}
+          onClose={() => setShowErrorAlert(false)}
+        />
+      )}
+
+      {showDetailsAlert && currentProductDetails && (
+        <SystemAlert
+          type="info"
+          title={currentProductDetails.nome}
+          message={renderProductDetails(currentProductDetails)}
+          imageUrl={currentProductDetails.imagem_url || undefined}
+          onClose={() => setShowDetailsAlert(false)}
+          size="lg"
+          actions={[
+            {
+              label: 'Fechar',
+              onClick: () => setShowDetailsAlert(false),
+              variant: 'outline'
+            },
+            {
+              label: 'Editar',
+              onClick: () => {
+                setShowDetailsAlert(false);
+                setCurrentProduct(currentProductDetails);
+                setShowEditAlert(true);
+              },
+              variant: 'default'
+            }
+          ]}
+        />
+      )}
+
+      {/* Product Edit Form Modal */}
+      {selectedProduct && (
+        <ProductEditForm
+          open={showEditForm}
+          onClose={() => setShowEditForm(false)}
+          product={selectedProduct}
+          onProductUpdated={handleProductUpdated}
+        />
+      )}
     </div>
   );
 };

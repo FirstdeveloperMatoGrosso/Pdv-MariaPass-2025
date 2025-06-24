@@ -1,31 +1,45 @@
 
-import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog';
+import React, { useState, useEffect } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import SimpleBarcodeInput from './SimpleBarcodeInput';
 import { Badge } from '@/components/ui/badge';
-
-interface Product {
-  id: string;
-  name: string;
-  price: number;
-  barcode: string;
-}
+import { ScanBarcode, CheckCircle, ScanLine, X } from 'lucide-react';
+import { TotemProduct, TotemCartItem } from '@/types';
+import ProductDetailsModal from './ProductDetailsModal';
 
 interface BarcodeModalProps {
   open: boolean;
   onClose: () => void;
-  onProductScanned?: (product: Product) => void;
+  onProductScanned?: (product: TotemProduct) => void;
+  onAddToCart?: (product: TotemProduct) => void;
+  onRemoveFromCart?: (productId: string) => void;
+  cartItems?: TotemCartItem[];
 }
 
-const BarcodeModal: React.FC<BarcodeModalProps> = ({ open, onClose, onProductScanned }) => {
-  const [lastProduct, setLastProduct] = useState<Product | null>(null);
+const BarcodeModal: React.FC<BarcodeModalProps> = ({ 
+  open, 
+  onClose, 
+  onProductScanned,
+  onAddToCart = () => {},
+  onRemoveFromCart = () => {},
+  cartItems = []
+}) => {
+  const [lastProduct, setLastProduct] = useState<TotemProduct | null>(null);
+  const [showProductDetails, setShowProductDetails] = useState(false);
 
-  function handleProduct(product: Product) {
+  useEffect(() => {
+    if (lastProduct) {
+      setShowProductDetails(true);
+    }
+  }, [lastProduct]);
+
+  function handleProduct(product: TotemProduct) {
     setLastProduct(product);
     if (onProductScanned) {
       onProductScanned(product);
     }
+    // Não fecha o modal automaticamente
   }
 
   function handleClose() {
@@ -34,50 +48,85 @@ const BarcodeModal: React.FC<BarcodeModalProps> = ({ open, onClose, onProductSca
   }
 
   return (
-    <Dialog open={open} onOpenChange={(open) => !open && handleClose()}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>
-            <span className="text-blue-800">Adicionar Produto por Código de Barras</span>
-          </DialogTitle>
-          <DialogDescription>
-            {!lastProduct
-              ? <span className="text-sm text-gray-600">Use o leitor de código de barras ou digite manualmente o código do produto.</span>
-              : <span className="text-green-700">✅ Produto adicionado com sucesso! Você pode fechar o modal ou adicionar outro produto.</span>
-            }
-          </DialogDescription>
-        </DialogHeader>
-        
-        <div className="py-4">
-          <SimpleBarcodeInput onProductScanned={handleProduct} />
-        </div>
-
-        {!lastProduct && (
-          <div className="mt-4 p-3 border border-dashed rounded bg-blue-50 text-blue-800 text-center">
-            <span className="font-medium">⏳ Aguardando leitura do código...</span>
+    <>
+      <Dialog open={open} onOpenChange={(open) => !open && handleClose()}>
+        <DialogContent className="max-w-md" onInteractOutside={(e) => e.preventDefault()}>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ScanBarcode className="w-5 h-5 text-blue-600" />
+              <span className="text-blue-800">Leitor de Código de Barras</span>
+            </DialogTitle>
+            <DialogDescription>
+              {!lastProduct ? (
+                <div className="text-sm text-gray-600 space-y-1">
+                  <p>• Aponte o leitor para o código de barras do produto</p>
+                  <p>• Ou digite o código manualmente no campo abaixo</p>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 text-green-700 bg-green-50 p-2 rounded-md">
+                  <CheckCircle className="w-4 h-4 flex-shrink-0" />
+                  <span>Produto escaneado com sucesso! Visualizando detalhes...</span>
+                </div>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-2">
+            <SimpleBarcodeInput onProductScanned={handleProduct} />
           </div>
-        )}
 
-        {lastProduct && (
-          <div className="mt-4 p-4 border rounded bg-green-50 animate-fade-in">
-            <div className="flex flex-col gap-2">
-              <span className="font-bold text-green-700">✅ Produto encontrado:</span>
-              <div className="space-y-1 text-sm">
-                <div><strong>Nome:</strong> {lastProduct.name}</div>
-                <div><strong>Preço:</strong> <Badge variant="secondary">R$ {lastProduct.price.toFixed(2)}</Badge></div>
-                <div><strong>Código:</strong> <code className="bg-gray-100 px-2 py-1 rounded text-xs">{lastProduct.barcode}</code></div>
+          {!lastProduct && (
+            <div className="mt-2 p-3 border-2 border-dashed border-blue-200 rounded-lg bg-blue-50 text-center">
+              <div className="flex items-center justify-center gap-2 text-blue-700">
+                <ScanLine className="w-5 h-5 animate-pulse" />
+                <span className="font-medium">Pronto para escanear</span>
               </div>
+              <p className="text-xs text-blue-600 mt-1">Posicione o código de barras na frente do leitor</p>
             </div>
-          </div>
-        )}
+          )}
 
-        <div className="flex justify-end space-x-2 mt-6">
-          <Button variant="outline" onClick={handleClose}>
-            {lastProduct ? 'Fechar' : 'Cancelar'}
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
+          <div className="flex justify-end space-x-2 mt-4">
+            <Button 
+              variant="outline" 
+              onClick={handleClose}
+              className="flex items-center gap-1"
+            >
+              <X className="w-4 h-4" />
+              {lastProduct ? 'Fechar' : 'Cancelar'}
+            </Button>
+            {lastProduct && (
+              <Button 
+                variant="default"
+                onClick={() => {
+                  setLastProduct(null);
+                  // Foca no input de código de barras para próxima leitura
+                  const input = document.getElementById('manual-barcode-input') as HTMLInputElement;
+                  if (input) {
+                    input.focus();
+                  }
+                }}
+                className="flex items-center gap-1 bg-blue-600 hover:bg-blue-700"
+              >
+                <ScanBarcode className="w-4 h-4" />
+                Novo Código
+              </Button>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de detalhes do produto */}
+      {lastProduct && (
+        <ProductDetailsModal
+          product={lastProduct}
+          isOpen={showProductDetails}
+          onClose={() => setShowProductDetails(false)}
+          onAddToCart={onAddToCart}
+          onRemoveFromCart={onRemoveFromCart}
+          cartItems={cartItems}
+        />
+      )}
+    </>
   );
 };
 

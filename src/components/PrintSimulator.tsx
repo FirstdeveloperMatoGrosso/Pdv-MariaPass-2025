@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Printer, Check, X, FileText, Package, Download } from 'lucide-react';
 import SimpleQRCode from './SimpleQRCode';
 import jsPDF from 'jspdf';
+import Barcode from 'react-barcode';
+import 'jspdf-barcode';
 
 interface CartItem {
   id: string;
@@ -56,11 +58,69 @@ const PrintSimulator: React.FC<PrintSimulatorProps> = ({
     setCurrentPrintingItem(0);
   };
 
+  // Função para renderizar a ficha consolidada
+  const renderConsolidatedFicha = () => {
+    const validationData = generateValidationData();
+    const barcodeNumber = generateBarcode(validationData);
+    
+    return (
+      <div className="border rounded-lg p-4 bg-white shadow-sm">
+        <div className="text-center mb-4">
+          <h3 className="text-lg font-bold text-blue-600">MARIAPASS</h3>
+          <p className="text-xs text-gray-500">Sistema de Pedidos</p>
+          <div className="border-t border-gray-200 my-2"></div>
+          
+          <div className="text-left space-y-1 text-sm">
+            <p><span className="font-semibold">Ficha:</span> #{orderId}</p>
+            <p><span className="font-semibold">Data:</span> {new Date().toLocaleString('pt-BR')}</p>
+            <p><span className="font-semibold">Pagto:</span> {paymentMethod}</p>
+            <p><span className="font-semibold">NSU:</span> {nsu || `NSU${Date.now().toString().slice(-8)}`}</p>
+          </div>
+          
+          <div className="border-t border-gray-200 my-3"></div>
+          
+          <div className="space-y-2 mb-3">
+            {cart.map((item, index) => (
+              <div key={index} className="flex justify-between">
+                <span className="text-sm">{item.quantity}x {item.nome}</span>
+                <span className="text-sm font-medium">R$ {(item.preco * item.quantity).toFixed(2)}</span>
+              </div>
+            ))}
+          </div>
+          
+          <div className="border-t-2 border-gray-300 my-2"></div>
+          
+          <div className="flex justify-between font-bold text-lg mb-3">
+            <span>TOTAL:</span>
+            <span className="text-green-600">R$ {total.toFixed(2)}</span>
+          </div>
+          
+          <div className="flex justify-center my-3">
+            <Barcode 
+              value={barcodeNumber} 
+              format="CODE128" 
+              height={40} 
+              width={1.5} 
+              displayValue={false}
+            />
+          </div>
+          
+          <p className="text-xs text-center text-gray-500 mt-1">{barcodeNumber}</p>
+          
+          <div className="mt-3 text-xs text-center text-gray-600">
+            <p>Obrigado pela preferência!</p>
+            <p>Validação: {validationData.timestamp}</p>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const handleGeneratePDFFromButton = () => {
-    // Criar PDF no formato 58mm (otimizado para impressora térmica)
+    // Criar PDF no formato 80mm (otimizado para impressora térmica)
     const doc = new jsPDF({
       unit: 'mm',
-      format: [58, 200] // Largura fixa 58mm, altura ajustável
+      format: [80, 200] // Largura fixa 80mm, altura ajustável
     });
     
     const currentDate = new Date().toLocaleString('pt-BR');
@@ -69,161 +129,167 @@ const PrintSimulator: React.FC<PrintSimulatorProps> = ({
     if (printMode === 'individual') {
       // Gerar PDF com fichas individuais seguindo o modelo visual
       cart.forEach((item, index) => {
-        if (index > 0) doc.addPage();
-        
-        const validationData = generateValidationData(item.id);
-        const barcodeNumber = generateBarcode(validationData);
-        
-        let yPos = 5;
-        const pageWidth = 58;
-        const margin = 3;
-        const contentWidth = pageWidth - (margin * 2);
-        
-        // Logo/Cabeçalho - Imitando o gradiente azul
-        doc.setFillColor(59, 130, 246); // Azul similar ao gradiente
-        doc.rect(margin, yPos, contentWidth, 12, 'F');
-        
-        // Texto "MP" centralizado no cabeçalho
-        doc.setTextColor(255, 255, 255);
-        doc.setFontSize(12);
-        doc.setFont('helvetica', 'bold');
-        doc.text('MP', pageWidth/2, yPos + 8, { align: 'center' });
-        
-        yPos += 15;
-        
-        // Nome da empresa
-        doc.setTextColor(0, 0, 0);
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'bold');
-        doc.text('MARIAPASS', pageWidth/2, yPos, { align: 'center' });
-        yPos += 5;
-        
-        doc.setFontSize(7);
-        doc.setFont('helvetica', 'normal');
-        doc.text('Ficha Individual de Produto', pageWidth/2, yPos, { align: 'center' });
-        yPos += 8;
-        
-        // Linha separadora
-        doc.setDrawColor(200, 200, 200);
-        doc.setLineWidth(0.2);
-        doc.line(margin, yPos, pageWidth - margin, yPos);
-        yPos += 5;
-        
-        // Informações da ficha - Layout compacto
-        doc.setFontSize(6);
-        doc.setFont('helvetica', 'normal');
-        doc.text(`Ficha: #${orderId}-${index + 1}`, margin, yPos);
-        yPos += 3;
-        doc.text(`Data: ${currentDate}`, margin, yPos);
-        yPos += 3;
-        doc.text(`ID: ${item.id}`, margin, yPos);
-        yPos += 3;
-        doc.text(`Pagto: ${paymentMethod}`, margin, yPos);
-        yPos += 3;
-        doc.text(`NSU: ${generatedNSU}`, margin, yPos);
-        yPos += 6;
-        
-        // Área do produto - Imitando o card azul
-        doc.setFillColor(239, 246, 255); // Azul claro
-        doc.setDrawColor(191, 219, 254); // Borda azul
-        doc.rect(margin, yPos, contentWidth, 18, 'FD');
-        
-        // Ícone do produto (simulado com texto)
-        doc.setFontSize(8);
-        doc.setTextColor(37, 99, 235); // Azul do ícone
-        doc.text('📦', pageWidth/2, yPos + 5, { align: 'center' });
-        
-        // Nome do produto
-        yPos += 8;
-        doc.setFontSize(8);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(0, 0, 0);
-        const productName = item.nome.length > 18 ? item.nome.substring(0, 18) + '...' : item.nome;
-        doc.text(productName, pageWidth/2, yPos, { align: 'center' });
-        
-        // Quantidade e valor
-        yPos += 4;
-        doc.setFontSize(6);
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(107, 114, 128);
-        doc.text(`Quantidade: ${item.quantity}`, pageWidth/2, yPos, { align: 'center' });
-        
-        yPos += 4;
-        doc.setFontSize(7);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(34, 197, 94); // Verde
-        doc.text(`R$ ${(item.preco * item.quantity).toFixed(2)}`, pageWidth/2, yPos, { align: 'center' });
-        
-        yPos += 8;
-        
-        // QR Code área
-        doc.setFontSize(6);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(0, 0, 0);
-        doc.text('QR Code de Validação:', pageWidth/2, yPos, { align: 'center' });
-        yPos += 4;
-        
-        // Simulação do QR Code com hash
-        doc.setFillColor(255, 255, 255);
-        doc.setDrawColor(0, 0, 0);
-        doc.rect(pageWidth/2 - 8, yPos, 16, 16, 'FD');
-        
-        // Grid simulando QR code
-        for(let i = 0; i < 8; i++) {
-          for(let j = 0; j < 8; j++) {
-            if(Math.random() > 0.5) {
-              doc.setFillColor(0, 0, 0);
-              doc.rect(pageWidth/2 - 8 + i*2, yPos + j*2, 2, 2, 'F');
+        // Para cada unidade do item, criar uma ficha
+        for (let i = 0; i < item.quantity; i++) {
+          if (index > 0 || i > 0) doc.addPage();
+          
+          const validationData = generateValidationData(item.id);
+          const barcodeNumber = generateBarcode(validationData);
+          
+          let yPos = 5;
+          const pageWidth = doc.internal.pageSize.getWidth();
+          const margin = 3;
+          const contentWidth = pageWidth - (margin * 2);
+          
+          // Logo/Cabeçalho - Imitando o gradiente azul
+          doc.setFillColor(59, 130, 246); // Azul similar ao gradiente
+          doc.rect(margin, yPos, contentWidth, 12, 'F');
+          
+          // Texto "MP" centralizado no cabeçalho
+          doc.setTextColor(255, 255, 255);
+          doc.setFontSize(12);
+          doc.setFont('helvetica', 'bold');
+          doc.text('MP', pageWidth/2, yPos + 8, { align: 'center' });
+          
+          yPos += 15;
+          
+          // Nome da empresa
+          doc.setTextColor(0, 0, 0);
+          doc.setFontSize(10);
+          doc.setFont('helvetica', 'bold');
+          doc.text('MARIAPASS', pageWidth/2, yPos, { align: 'center' });
+          yPos += 5;
+          
+          doc.setFontSize(7);
+          doc.setFont('helvetica', 'normal');
+          doc.text('Ficha Individual de Produto', pageWidth/2, yPos, { align: 'center' });
+          yPos += 8;
+          
+          // Linha separadora
+          doc.setDrawColor(200, 200, 200);
+          doc.setLineWidth(0.2);
+          doc.line(margin, yPos, pageWidth - margin, yPos);
+          yPos += 5;
+          
+          // Informações da ficha - Layout compacto
+          doc.setFontSize(6);
+          doc.setFont('helvetica', 'normal');
+          doc.text(`Ficha: #${orderId}-${index + 1}`, margin, yPos);
+          yPos += 3;
+          doc.text(`Data: ${currentDate}`, margin, yPos);
+          yPos += 3;
+          doc.text(`ID: ${item.id}`, margin, yPos);
+          yPos += 3;
+          doc.text(`Pagto: ${paymentMethod}`, margin, yPos);
+          yPos += 3;
+          doc.text(`NSU: ${generatedNSU}`, margin, yPos);
+          yPos += 6;
+          
+          // Área do produto - Imitando o card azul
+          doc.setFillColor(239, 246, 255); // Azul claro
+          doc.setDrawColor(191, 219, 254); // Borda azul
+          doc.rect(margin, yPos, contentWidth, 18, 'FD');
+          
+          // Ícone do produto (simulado com texto)
+          doc.setFontSize(8);
+          doc.setTextColor(37, 99, 235); // Azul do ícone
+          doc.text('📦', pageWidth/2, yPos + 5, { align: 'center' });
+          
+          // Nome do produto
+          yPos += 8;
+          doc.setFontSize(8);
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(0, 0, 0);
+          const productName = item.nome.length > 18 ? item.nome.substring(0, 18) + '...' : item.nome;
+          doc.text(productName, pageWidth/2, yPos, { align: 'center' });
+          
+          // Quantidade e valor
+          yPos += 4;
+          doc.setFontSize(6);
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(107, 114, 128);
+          doc.text(`Quantidade: ${item.quantity}`, pageWidth/2, yPos, { align: 'center' });
+          
+          yPos += 4;
+          doc.setFontSize(7);
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(34, 197, 94); // Verde
+          doc.text(`R$ ${(item.preco * item.quantity).toFixed(2)}`, pageWidth/2, yPos, { align: 'center' });
+          
+          yPos += 8;
+          
+          // QR Code área
+          doc.setFontSize(6);
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(0, 0, 0);
+          doc.text('QR Code de Validação:', pageWidth/2, yPos, { align: 'center' });
+          yPos += 4;
+          
+          // Simulação do QR Code com hash
+          doc.setFillColor(255, 255, 255);
+          doc.setDrawColor(0, 0, 0);
+          doc.rect(pageWidth/2 - 8, yPos, 16, 16, 'FD');
+          
+          // Grid simulando QR code
+          for(let i = 0; i < 8; i++) {
+            for(let j = 0; j < 8; j++) {
+              if(Math.random() > 0.5) {
+                doc.setFillColor(0, 0, 0);
+                doc.rect(pageWidth/2 - 8 + i*2, yPos + j*2, 2, 2, 'F');
+              }
             }
           }
+          
+          yPos += 18;
+          doc.setFontSize(5);
+          doc.setTextColor(107, 114, 128);
+          doc.text(`Hash: ${validationData.hash_validacao}`, pageWidth/2, yPos, { align: 'center' });
+          yPos += 6;
+          
+          // Código de barras
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(0, 0, 0);
+          doc.text('Código de Barras EAN-13:', pageWidth/2, yPos, { align: 'center' });
+          yPos += 4;
+          
+          // Adicionar código de barras real usando jspdf-barcode
+          const barcodeOptions = {
+            fontSize: 10,
+            textColor: [0, 0, 0],
+            x: pageWidth/2 - 25,
+            y: yPos,
+            width: 50,
+            height: 20,
+            displayValue: true,
+            font: 'helvetica',
+            textMargin: 2,
+            margin: 0,
+            valid: function(valid: boolean) {
+              if (!valid) {
+                console.error('Código de barras inválido');
+              }
+            }
+          };
+          
+          // Usar o código de barras real
+          (doc as any).barcode(barcodeNumber, 'CODE128', barcodeOptions);
+          yPos += 22;
+          
+          // Rodapé
+          yPos += 2;
+          doc.setFontSize(5);
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(100, 100, 100);
+          doc.text('Obrigado por comprar conosco!', pageWidth/2, yPos, { align: 'center' });
+          yPos += 3;
+          doc.text('Este comprovante é seu documento fiscal', pageWidth/2, yPos, { align: 'center' });
+          yPos += 3;
+          doc.text(`Impresso em: ${new Date().toLocaleString('pt-BR')}`, pageWidth/2, yPos, { align: 'center' });
+          
+          // Adicionar borda ao redor de toda a página
+          doc.setDrawColor(200, 200, 200);
+          doc.rect(margin, 2, pageWidth - (margin * 2), yPos + 3, 'S');
         }
-        
-        yPos += 18;
-        doc.setFontSize(5);
-        doc.setTextColor(107, 114, 128);
-        doc.text(`Hash: ${validationData.hash_validacao}`, pageWidth/2, yPos, { align: 'center' });
-        yPos += 6;
-        
-        // Código de barras
-        doc.setFontSize(6);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(0, 0, 0);
-        doc.text('Código de Barras EAN-13:', pageWidth/2, yPos, { align: 'center' });
-        yPos += 4;
-        
-        // Simulação visual do código de barras
-        doc.setFillColor(255, 255, 255);
-        doc.setDrawColor(0, 0, 0);
-        doc.rect(margin, yPos, contentWidth, 8, 'FD');
-        
-        // Barras do código
-        const barWidth = contentWidth / barcodeNumber.length;
-        for(let i = 0; i < barcodeNumber.length; i++) {
-          const digit = parseInt(barcodeNumber[i]);
-          if(digit % 2 === 0) {
-            doc.setFillColor(0, 0, 0);
-            doc.rect(margin + (i * barWidth), yPos + 1, barWidth * 0.8, 6, 'F');
-          }
-        }
-        
-        yPos += 10;
-        doc.setFontSize(5);
-        doc.setFont('helvetica', 'normal');
-        doc.text(barcodeNumber, pageWidth/2, yPos, { align: 'center' });
-        yPos += 6;
-        
-        // Linha separadora final
-        doc.line(margin, yPos, pageWidth - margin, yPos);
-        yPos += 4;
-        
-        // Rodapé
-        doc.setFontSize(5);
-        doc.setTextColor(107, 114, 128);
-        doc.text('Obrigado pela preferência!', pageWidth/2, yPos, { align: 'center' });
-        yPos += 3;
-        doc.text('Retire este item no balcão', pageWidth/2, yPos, { align: 'center' });
-        yPos += 3;
-        doc.text(`Validação: ${validationData.timestamp}`, pageWidth/2, yPos, { align: 'center' });
       });
     } else {
       // Gerar PDF consolidado seguindo o modelo visual
@@ -231,7 +297,7 @@ const PrintSimulator: React.FC<PrintSimulatorProps> = ({
       const barcodeNumber = generateBarcode(validationData);
       
       let yPos = 5;
-      const pageWidth = 58;
+      const pageWidth = doc.internal.pageSize.getWidth();
       const margin = 3;
       const contentWidth = pageWidth - (margin * 2);
       
@@ -331,23 +397,22 @@ const PrintSimulator: React.FC<PrintSimulatorProps> = ({
       doc.setFontSize(6);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(0, 0, 0);
-      doc.text('Código EAN-13:', pageWidth/2, yPos, { align: 'center' });
+      doc.text('Código de Barras EAN-13:', pageWidth/2, yPos, { align: 'center' });
       yPos += 4;
       
-      // Simulação visual do código de barras
-      doc.setFillColor(255, 255, 255);
-      doc.setDrawColor(0, 0, 0);
-      doc.rect(margin, yPos, contentWidth, 8, 'FD');
+      // Gerar código de barras real no formato EAN-13
+      const barcodeOptions = {
+        bcid: 'code128',  // Tipo de código de barras
+        text: barcodeNumber, // Texto a ser codificado
+        scale: 2,         // Fator de escala
+        height: 10,       // Altura em mm
+        includetext: false, // Não incluir texto abaixo do código
+        textxalign: 'center', // Alinhamento do texto
+        lineWidth: 0.2    // Largura da linha
+      };
       
-      // Barras do código
-      const barWidth = contentWidth / barcodeNumber.length;
-      for(let i = 0; i < barcodeNumber.length; i++) {
-        const digit = parseInt(barcodeNumber[i]);
-        if(digit % 2 === 0) {
-          doc.setFillColor(0, 0, 0);
-          doc.rect(margin + (i * barWidth), yPos + 1, barWidth * 0.8, 6, 'F');
-        }
-      }
+      // Posicionar o código de barras
+      (doc as any).barcode(margin, yPos, 'code128', barcodeOptions);
       
       yPos += 10;
       doc.setFontSize(5);
@@ -486,104 +551,17 @@ const PrintSimulator: React.FC<PrintSimulatorProps> = ({
           <div className="text-center py-2">
             <p className="text-xs font-bold mb-1">Código de Barras EAN-13:</p>
             <div className="bg-white p-2 border border-gray-300 rounded">
-              <div className="flex justify-center items-center space-x-0.5 mb-1">
-                {barcodeNumber.split('').map((digit, i) => (
-                  <div key={i} className="flex flex-col">
-                    <div 
-                      className="w-1 bg-black" 
-                      style={{ 
-                        height: `${20 + (parseInt(digit) % 4) * 2}px`,
-                        marginRight: i % 2 === 0 ? '1px' : '0px'
-                      }}
-                    ></div>
-                  </div>
-                ))}
+              <div className="flex justify-center">
+                <Barcode 
+                  value={barcodeNumber} 
+                  format="CODE128" 
+                  height={40} 
+                  width={1.5} 
+                  displayValue={false}
+                />
               </div>
-              <p className="text-xs font-mono font-bold">{barcodeNumber}</p>
+              <p className="text-xs text-gray-500 mt-2">Validação: {validationData.timestamp}</p>
             </div>
-          </div>
-          
-          <div className="text-center mt-4 pt-2 border-t border-gray-300">
-            <p className="text-xs">Obrigado pela preferência!</p>
-            <p className="text-xs">Retire este item no balcão</p>
-            <p className="text-xs text-gray-500">Validação: {validationData.timestamp}</p>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  const renderConsolidatedFicha = () => {
-    const validationData = generateValidationData();
-    const barcodeNumber = generateBarcode(validationData);
-    
-    return (
-      <div className="bg-gray-50 border-2 border-dashed border-gray-300 p-4 rounded-lg font-mono text-sm">
-        <div className="text-center space-y-2 border-b border-gray-300 pb-4 mb-4">
-          <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg mx-auto flex items-center justify-center text-white font-bold text-xl">
-            MP
-          </div>
-          <h3 className="font-bold text-lg">MARIAPASS</h3>
-          <p className="text-xs text-gray-600">Sistema de Pedidos</p>
-        </div>
-        
-        <div className="space-y-1">
-          <p><strong>Ficha:</strong> #{orderId}</p>
-          <p><strong>Data:</strong> {currentDate}</p>
-          <p><strong>Forma Pagamento:</strong> {paymentMethod}</p>
-          <p><strong>NSU:</strong> {generateNSU()}</p>
-          <hr className="my-2 border-gray-400" />
-          
-          {cart.map(item => (
-            <div key={item.id} className="flex justify-between text-xs">
-              <span>{item.quantity}x {item.nome} (ID: {item.id})</span>
-              <span>R$ {(item.preco * item.quantity).toFixed(2)}</span>
-            </div>
-          ))}
-          
-          <hr className="my-2 border-gray-400" />
-          <div className="flex justify-between font-bold">
-            <span>TOTAL:</span>
-            <span>R$ {total.toFixed(2)}</span>
-          </div>
-          
-          {/* QR Code de Validação */}
-          <div className="text-center py-2">
-            <p className="text-xs font-bold mb-2">QR Code de Validação:</p>
-            <div className="flex justify-center">
-              <SimpleQRCode 
-                text={JSON.stringify(validationData)}
-                size={80}
-              />
-            </div>
-            <p className="text-xs text-gray-500 mt-1">Hash: {validationData.hash_validacao}</p>
-          </div>
-          
-          {/* Código de Barras */}
-          <div className="text-center py-2">
-            <p className="text-xs font-bold mb-1">Código de Barras EAN-13:</p>
-            <div className="bg-white p-2 border border-gray-300 rounded">
-              <div className="flex justify-center items-center space-x-0.5 mb-1">
-                {barcodeNumber.split('').map((digit, i) => (
-                  <div key={i} className="flex flex-col">
-                    <div 
-                      className="w-1 bg-black" 
-                      style={{ 
-                        height: `${20 + (parseInt(digit) % 4) * 2}px`,
-                        marginRight: i % 2 === 0 ? '1px' : '0px'
-                      }}
-                    ></div>
-                  </div>
-                ))}
-              </div>
-              <p className="text-xs font-mono font-bold">{barcodeNumber}</p>
-            </div>
-          </div>
-          
-          <div className="text-center mt-4 pt-2 border-t border-gray-300">
-            <p className="text-xs">Obrigado pela preferência!</p>
-            <p className="text-xs">Retire seu pedido no balcão</p>
-            <p className="text-xs text-gray-500">Validação: {validationData.timestamp}</p>
           </div>
         </div>
       </div>
@@ -720,10 +698,10 @@ const PrintSimulator: React.FC<PrintSimulatorProps> = ({
             <div className="flex gap-2">
               <Button 
                 onClick={handleGeneratePDFFromButton}
-                className="flex-1 bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600"
+                className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white"
               >
-                <Download className="w-4 h-4 mr-2" />
-                Gerar PDF
+                <Printer className="w-4 h-4 mr-2" />
+                Imprimir Fichas
               </Button>
               
               <Button 

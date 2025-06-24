@@ -11,12 +11,11 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import PrintSimulator from '../components/PrintSimulator';
 import BarcodeModal from '../components/BarcodeModal';
-import AlertContainer from '../components/AlertContainer';
+import ProductDetailsModal from '../components/ProductDetailsModal';
 import PaymentMethodSelector from '../components/PaymentMethodSelector';
 import PagSeguroPix from '../components/PagSeguroPix';
 import PixPayment from '../components/PixPayment';
 import CashPayment from '../components/CashPayment';
-import { useSystemAlert } from '@/hooks/useSystemAlert';
 
 interface TotemProduct {
   id: string;
@@ -28,6 +27,8 @@ interface TotemProduct {
   status: string;
   imagem_url?: string;
   descricao?: string;
+  created_at: string;
+  updated_at: string;
 }
 
 interface TotemCartItem extends TotemProduct {
@@ -37,7 +38,7 @@ interface TotemCartItem extends TotemProduct {
 const Index: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { showAlert } = useSystemAlert();
+  // Usando o toast do sonner diretamente
   
   const [cart, setCart] = useState<TotemCartItem[]>([]);
   const [showPaymentMethod, setShowPaymentMethod] = useState(false);
@@ -47,6 +48,7 @@ const Index: React.FC = () => {
   const [showPrintSimulator, setShowPrintSimulator] = useState(false);
   const [currentOrderId, setCurrentOrderId] = useState('');
   const [showBarcodeModal, setShowBarcodeModal] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<TotemProduct | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('todas');
   const [quantityInputs, setQuantityInputs] = useState<{ [key: string]: string }>({});
   const [paymentData, setPaymentData] = useState<{ method: string; nsu?: string } | null>(null);
@@ -72,7 +74,9 @@ const Index: React.FC = () => {
       
       if (error) {
         console.error('Erro ao buscar produtos:', error);
-        toast.error('Erro ao carregar produtos: ' + error.message);
+        toast.error('Erro ao carregar produtos: ' + error.message, {
+          description: 'Por favor, tente novamente mais tarde.'
+        });
         throw error;
       }
       
@@ -152,10 +156,8 @@ const Index: React.FC = () => {
     onError: (error, variables) => {
       console.error('❌ Erro ao registrar impressão no histórico:', error);
       console.error('📋 Dados que falharam:', variables);
-      showAlert({
-        type: 'error',
-        title: 'Erro no Registro de Impressão',
-        message: `Falha ao registrar impressão para ${variables.produto_nome}: ${error.message}`,
+      toast.error(`Erro ao registrar impressão para ${variables.produto_nome}`, {
+        description: error.message,
         duration: 5000
       });
     }
@@ -235,28 +237,22 @@ const Index: React.FC = () => {
         console.log(`Produto ${update.nome} - estoque atualizado para ${update.novoEstoque}`);
 
         if (update.novoEstoque <= 5 && update.novoEstoque > 0) {
-          showAlert({
-            type: 'warning',
-            title: '⚠️ ALERTA DE ESTOQUE BAIXO',
-            message: `Produto "${update.nome}" está com estoque baixo (${update.novoEstoque} unidades restantes)!`,
+          toast.warning(`⚠️ ALERTA DE ESTOQUE BAIXO: ${update.nome}`, {
+            description: `Apenas ${update.novoEstoque} unidades restantes!`,
             duration: 8000,
-            actions: [{
+            action: {
               label: 'Reabastecer',
-              onClick: () => navigate('/estoque'),
-              variant: 'default'
-            }]
+              onClick: () => navigate('/estoque')
+            }
           });
         } else if (update.novoEstoque === 0) {
-          showAlert({
-            type: 'error',
-            title: '🚨 PRODUTO ESGOTADO',
-            message: `"${update.nome}" não possui mais estoque disponível!`,
+          toast.error(`🚨 PRODUTO ESGOTADO: ${update.nome}`, {
+            description: 'Não há mais unidades disponíveis em estoque!',
             duration: 10000,
-            actions: [{
+            action: {
               label: 'Gerenciar Estoque',
-              onClick: () => navigate('/estoque'),
-              variant: 'destructive'
-            }]
+              onClick: () => navigate('/estoque')
+            }
           });
         }
       }
@@ -288,19 +284,15 @@ const Index: React.FC = () => {
       const totalVendas = salesRecords.length;
       const resumo = stockUpdates.map(u => `${u.nome}: ${u.vendido} vendido(s), restam ${u.novoEstoque}`).join('\n');
       
-      showAlert({
-        type: 'success',
-        title: '✅ Venda Finalizada',
-        message: `${totalVendas} item(ns) vendido(s) com sucesso!\n\n${resumo}\n\n🖨️ Impressões registradas no histórico!`,
+      toast.success(`✅ Venda Finalizada: ${totalVendas} item(ns) vendido(s) com sucesso!`, {
+        description: `${resumo}\n\n🖨️ Impressões registradas no histórico!`,
         duration: 6000
       });
     },
     onError: (error: Error) => {
       console.error('Erro ao processar pedido:', error);
-      showAlert({
-        type: 'error',
-        title: '❌ Erro ao Processar Venda',
-        message: error.message,
+      toast.error('❌ Erro ao Processar Venda', {
+        description: error.message,
         duration: 8000
       });
     }
@@ -312,10 +304,8 @@ const Index: React.FC = () => {
     : products.filter(product => product.categoria === selectedCategory);
   const addToCart = (product: TotemProduct, customQuantity?: number) => {
     if (product.estoque <= 0) {
-      showAlert({
-        type: 'error',
-        title: 'Produto Indisponível',
-        message: 'Produto sem estoque disponível!',
+      toast.error('Produto Indisponível', {
+        description: 'Produto sem estoque disponível!',
         duration: 3000
       });
       return;
@@ -328,10 +318,8 @@ const Index: React.FC = () => {
       if (existingItem) {
         const newQuantity = existingItem.quantity + quantityToAdd;
         if (newQuantity > product.estoque) {
-          showAlert({
-            type: 'warning',
-            title: 'Estoque Insuficiente',
-            message: 'Estoque insuficiente para este produto!',
+          toast.warning('Estoque Insuficiente', {
+            description: 'Estoque insuficiente para este produto!',
             duration: 3000
           });
           return prevCart;
@@ -341,10 +329,8 @@ const Index: React.FC = () => {
         );
       } else {
         if (quantityToAdd > product.estoque) {
-          showAlert({
-            type: 'warning',
-            title: 'Estoque Insuficiente',
-            message: 'Estoque insuficiente para este produto!',
+          toast.warning('Estoque Insuficiente', {
+            description: 'Estoque insuficiente para este produto!',
             duration: 3000
           });
           return prevCart;
@@ -382,10 +368,8 @@ const Index: React.FC = () => {
   };
   const generateOrder = () => {
     if (cart.length === 0) {
-      showAlert({
-        type: 'warning',
-        title: 'Carrinho Vazio',
-        message: 'Adicione itens ao carrinho primeiro!',
+      toast.warning('Carrinho Vazio', {
+        description: 'Adicione itens ao carrinho primeiro!',
         duration: 3000
       });
       return;
@@ -399,10 +383,8 @@ const Index: React.FC = () => {
     }
     
     if (stockErrors.length > 0) {
-      showAlert({
-        type: 'error',
-        title: 'Estoque Insuficiente',
-        message: `Estoque insuficiente:\n${stockErrors.join('\n')}`,
+      toast.error('Estoque Insuficiente', {
+        description: `Estoque insuficiente:\n${stockErrors.join('\n')}`,
         duration: 6000
       });
       return;
@@ -412,10 +394,8 @@ const Index: React.FC = () => {
     setCurrentOrderId(orderId);
     setShowPaymentMethod(true);
     
-    showAlert({
-      type: 'success',
-      title: 'Pedido Gerado',
-      message: 'Selecione o método de pagamento.',
+    toast.success('Pedido Gerado', {
+      description: 'Selecione o método de pagamento.',
       duration: 3000
     });
   };
@@ -431,10 +411,8 @@ const Index: React.FC = () => {
       setShowPixPayment(true);
     } else {
       // Stone logic could be added here
-      showAlert({
-        type: 'info',
-        title: 'Stone QR Code',
-        message: 'Funcionalidade Stone será implementada em breve.',
+      toast.info('Stone QR Code', {
+        description: 'Funcionalidade Stone será implementada em breve.',
         duration: 3000
       });
     }
@@ -469,19 +447,26 @@ const Index: React.FC = () => {
     setPaymentData(null);
   };
 
-  const handleBarcodeProductScanned = (product: any) => {
-    const totemProduct: TotemProduct = {
-      id: product.id,
-      nome: product.nome || product.name,
-      preco: product.preco || product.price,
-      codigo_barras: product.codigo_barras || product.barcode,
-      categoria: product.categoria || product.category,
-      estoque: product.estoque || product.stock,
-      status: product.status || 'ativo',
-      imagem_url: product.imagem_url || product.image_url,
-      descricao: product.descricao || product.description
-    };
-    addToCart(totemProduct);
+  const handleBarcodeProductScanned = (product: TotemProduct) => {
+    // Verifica se o produto já está no carrinho
+    const existingItem = cart.find(item => item.id === product.id);
+    
+    // Se o produto já estiver no carrinho, apenas seleciona para exibir os detalhes
+    if (existingItem) {
+      setSelectedProduct(product);
+      return;
+    }
+    
+    // Adiciona o produto ao carrinho
+    addToCart(product);
+    
+    // Exibe os detalhes do produto
+    setSelectedProduct(product);
+    
+    // Feedback visual para o usuário
+    toast.success('Produto adicionado', {
+      description: `${product.nome} foi adicionado ao carrinho`
+    });
   };
 
   if (isLoading) {
@@ -510,7 +495,7 @@ const Index: React.FC = () => {
 
   return (
     <div className="p-2 sm:p-3 space-y-2 sm:space-y-3">
-      <AlertContainer />
+      {/* Alertas são mostrados usando toast diretamente */}
       
       <div className="text-center mb-3 sm:mb-4">
         <h1 className="text-lg sm:text-xl font-bold text-green-600 mb-1">MariaPass Totem</h1>
@@ -566,6 +551,12 @@ const Index: React.FC = () => {
         open={showBarcodeModal}
         onClose={() => setShowBarcodeModal(false)}
         onProductScanned={handleBarcodeProductScanned}
+      />
+      
+      <ProductDetailsModal
+        product={selectedProduct}
+        isOpen={!!selectedProduct}
+        onClose={() => setSelectedProduct(null)}
       />
 
       {filteredProducts.length === 0 ? (
