@@ -39,6 +39,7 @@ import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import SaleDetails from '@/components/SaleDetails';
+import CancelamentoModal from '@/components/CancelamentoModal';
 
 interface VendaRealizada {
   id: string;
@@ -60,6 +61,7 @@ const Vendas: React.FC = () => {
   const [busca, setBusca] = useState('');
   const [selectedVenda, setSelectedVenda] = useState<VendaRealizada | null>(null);
   const [copied, setCopied] = useState(false);
+  const [cancelModalOpen, setCancelModalOpen] = useState(false);
 
   const copyToClipboard = (text: string, e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
@@ -707,6 +709,16 @@ const Vendas: React.FC = () => {
                               />
                             </TabsContent>
                           </Tabs>
+                              <div className="flex justify-end">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="bg-red-600 hover:bg-red-700 text-white mt-2"
+                                  onClick={() => setCancelModalOpen(true)}
+                                >
+                                  Cancelar Venda
+                                </Button>
+                              </div>
                         </div>
                       )}
                     </DialogContent>
@@ -717,6 +729,18 @@ const Vendas: React.FC = () => {
           ))
         )}
       </div>
+      {selectedVenda && (
+        <CancelamentoModal
+          isOpen={cancelModalOpen}
+          onClose={() => setCancelModalOpen(false)}
+          produto={{
+            id: selectedVenda.id,
+            nome: selectedVenda.produto_nome || 'Produto',
+            preco: selectedVenda.valor_total,
+            categoria: selectedVenda.forma_pagamento,
+          }}
+        />
+      )}
     </div>
   );
 };
