@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { CreditCard, X, Banknote } from 'lucide-react';
 
 interface PaymentMethodSelectorProps {
-  onSelectMethod: (method: 'pagseguro' | 'pix' | 'stone' | 'dinheiro') => void;
+  onSelectMethod: (method: 'pix' | 'dinheiro') => void;
   onCancel: () => void;
 }
 
@@ -36,26 +36,19 @@ const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
           </Button>
           
           <Button 
-            onClick={() => onSelectMethod('pagseguro')} 
-            className="w-full bg-orange-600 hover:bg-orange-700 text-white"
-          >
-            🟡 PIX PagBank
-          </Button>
-          
-          <Button 
             onClick={() => onSelectMethod('pix')} 
-            variant="outline"
-            className="w-full"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white"
           >
-            💳 PIX Genérico
+            💰 PAGAMENTO VIA PIX
           </Button>
           
+          {/* Botão para futura implementação de outros métodos de pagamento */}
           <Button 
-            onClick={() => onSelectMethod('stone')} 
             variant="outline"
-            className="w-full"
+            className="w-full opacity-50 cursor-not-allowed"
+            disabled
           >
-            🟢 Stone QR Code
+            🟢 Outros métodos em breve
           </Button>
         </div>
       </CardContent>

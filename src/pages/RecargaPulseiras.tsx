@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,6 +14,7 @@ import {
   Activity,
   Clock
 } from 'lucide-react';
+import { CustomerData } from '@/types/payment';
 import {
   Table,
   TableBody,
@@ -68,6 +69,34 @@ const RecargaPulseiras: React.FC = () => {
   const [showPaymentSelector, setShowPaymentSelector] = useState(false);
   const [showCashPayment, setShowCashPayment] = useState(false);
   const [currentRecargaId, setCurrentRecargaId] = useState('');
+
+  // Cliente padrão para pagamentos PIX
+  const defaultCustomer = useMemo<CustomerData>(() => ({
+    name: selectedPulseira?.cliente_nome || 'Cliente PDV',
+    email: 'cliente@pdv.com',
+    document: selectedPulseira?.cliente_documento || '00000000000',
+    document_type: selectedPulseira?.cliente_documento?.length === 11 ? 'CPF' : 'CNPJ',
+    type: 'individual',
+    phones: {
+      mobile_phone: {
+        country_code: '55',
+        area_code: '11',
+        number: '999999999',
+      },
+    },
+    address: {
+      line_1: 'Rua do Cliente, 123',
+      line_2: 'Sala 1 - Centro',
+      zip_code: '01001000',
+      city: 'São Paulo',
+      state: 'SP',
+      country: 'BR',
+    },
+    metadata: {
+      pulseiraId: selectedPulseira?.id || '',
+      source: 'pdv-mariapass',
+    },
+  }), [selectedPulseira]);
   const queryClient = useQueryClient();
 
   // Buscar recargas do Supabase
@@ -260,6 +289,7 @@ const RecargaPulseiras: React.FC = () => {
         <PixPayment
           valor={parseFloat(rechargeAmount)}
           recargaId={currentRecargaId}
+          customer={defaultCustomer}
           onPaymentSuccess={handlePaymentSuccess}
           onCancel={handlePaymentCancel}
         />
@@ -460,11 +490,12 @@ const RecargaPulseiras: React.FC = () => {
       </Card>
 
       {/* Payment Provider Selector Modal */}
-      {showPaymentSelector && (
+      {showPaymentSelector && selectedPulseira && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <PaymentProviderSelector
             valor={parseFloat(rechargeAmount) || 0}
             recargaId={currentRecargaId}
+            customer={defaultCustomer}
             onPaymentSuccess={handlePaymentSuccess}
             onCancel={handlePaymentCancel}
           />
@@ -489,6 +520,7 @@ const RecargaPulseiras: React.FC = () => {
           <PixPayment
             valor={parseFloat(rechargeAmount) || 0}
             recargaId={currentRecargaId}
+            customer={defaultCustomer}
             onPaymentSuccess={handlePaymentSuccess}
             onCancel={handlePaymentCancel}
           />

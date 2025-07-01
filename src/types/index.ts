@@ -16,10 +16,13 @@ export interface BaseProduct {
 }
 
 // Interface para produtos no contexto do totem
-export interface TotemProduct extends BaseProduct {}
+export interface TotemProduct extends BaseProduct {
+  estoque_atual: number;
+  [key: string]: any; // Para permitir propriedades adicionais
+}
 
 // Interface para itens no carrinho
-export interface TotemCartItem extends BaseProduct {
+export interface TotemCartItem extends TotemProduct {
   quantity: number;
 }
 

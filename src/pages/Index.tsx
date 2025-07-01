@@ -9,11 +9,12 @@ import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { CustomerData } from '@/types/payment';
 import PrintSimulator from '../components/PrintSimulator';
 import BarcodeModal from '../components/BarcodeModal';
 import ProductDetailsModal from '../components/ProductDetailsModal';
 import PaymentMethodSelector from '../components/PaymentMethodSelector';
-import PagSeguroPix from '../components/PagSeguroPix';
+
 import PixPayment from '../components/PixPayment';
 import CashPayment from '../components/CashPayment';
 
@@ -23,7 +24,8 @@ interface TotemProduct {
   preco: number;
   codigo_barras: string;
   categoria: string;
-  estoque: number;
+  estoque: number; // Mantido para compatibilidade
+  estoque_atual: number; // Adicionado para compatibilidade com a interface principal
   status: string;
   imagem_url?: string;
   descricao?: string;
@@ -42,7 +44,6 @@ const Index: React.FC = () => {
   
   const [cart, setCart] = useState<TotemCartItem[]>([]);
   const [showPaymentMethod, setShowPaymentMethod] = useState(false);
-  const [showPagSeguroPix, setShowPagSeguroPix] = useState(false);
   const [showPixPayment, setShowPixPayment] = useState(false);
   const [showCashPayment, setShowCashPayment] = useState(false);
   const [showPrintSimulator, setShowPrintSimulator] = useState(false);
@@ -52,6 +53,33 @@ const Index: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('todas');
   const [quantityInputs, setQuantityInputs] = useState<{ [key: string]: string }>({});
   const [paymentData, setPaymentData] = useState<{ method: string; nsu?: string } | null>(null);
+  
+  // Cliente padrão para pagamentos PIX
+  const defaultCustomer: CustomerData = {
+    name: 'Cliente PDV',
+    email: 'cliente@pdv.com',
+    document: '00000000000',
+    document_type: 'CPF',
+    type: 'individual',
+    phones: {
+      mobile_phone: {
+        country_code: '55',
+        area_code: '11',
+        number: '999999999',
+      },
+    },
+    address: {
+      line_1: 'Rua do Cliente, 123',
+      line_2: 'Sala 1 - Centro',
+      zip_code: '01001000',
+      city: 'São Paulo',
+      state: 'SP',
+      country: 'BR',
+    },
+    metadata: {
+      source: 'pdv-mariapass',
+    },
+  };
 
   // Buscar produtos do Supabase
   const {
@@ -62,15 +90,21 @@ const Index: React.FC = () => {
     queryKey: ['produtos-totem'],
     queryFn: async () => {
       console.log('Buscando produtos para o totem...');
-      const {
-        data,
-        error
-      } = await supabase
+      const { data, error } = await supabase
         .from('produtos')
         .select('*')
         .eq('status', 'ativo')
         .gt('estoque', 0)
         .order('nome');
+        
+      // Garantir que estoque_atual seja preenchido mesmo se não vier do banco
+      const produtosProcessados = data?.map(prod => ({
+        ...prod,
+        // Se estoque_atual não estiver definido, usa o valor de estoque
+        estoque_atual: 'estoque_atual' in prod ? prod.estoque_atual : prod.estoque,
+        // Garantir que estoque também esteja definido para compatibilidade
+        estoque: 'estoque' in prod ? prod.estoque : 0
+      })) || [];
       
       if (error) {
         console.error('Erro ao buscar produtos:', error);
@@ -80,8 +114,8 @@ const Index: React.FC = () => {
         throw error;
       }
       
-      console.log('Produtos carregados para totem:', data);
-      return data as TotemProduct[];
+      console.log('Produtos carregados para totem:', produtosProcessados);
+      return produtosProcessados as TotemProduct[];
     }
   });
 
@@ -400,26 +434,17 @@ const Index: React.FC = () => {
     });
   };
 
-  const handlePaymentMethodSelect = (method: 'pagseguro' | 'pix' | 'stone' | 'dinheiro') => {
+  const handlePaymentMethodSelect = (method: 'pix' | 'dinheiro') => {
     setShowPaymentMethod(false);
     
     if (method === 'dinheiro') {
       setShowCashPayment(true);
-    } else if (method === 'pagseguro') {
-      setShowPagSeguroPix(true);
-    } else if (method === 'pix') {
-      setShowPixPayment(true);
     } else {
-      // Stone logic could be added here
-      toast.info('Stone QR Code', {
-        description: 'Funcionalidade Stone será implementada em breve.',
-        duration: 3000
-      });
+      setShowPixPayment(true);
     }
   };
 
   const handlePaymentSuccess = (paymentInfo?: { method: string; nsu?: string }) => {
-    setShowPagSeguroPix(false);
     setShowPixPayment(false);
     setShowCashPayment(false);
     setPaymentData(paymentInfo || { method: 'PIX' });
@@ -428,7 +453,6 @@ const Index: React.FC = () => {
 
   const handlePaymentCancel = () => {
     setShowPaymentMethod(false);
-    setShowPagSeguroPix(false);
     setShowPixPayment(false);
     setShowCashPayment(false);
     setCurrentOrderId('');
@@ -557,6 +581,9 @@ const Index: React.FC = () => {
         product={selectedProduct}
         isOpen={!!selectedProduct}
         onClose={() => setSelectedProduct(null)}
+        onAddToCart={(product) => addToCart(product)}
+        onRemoveFromCart={(productId) => removeFromCart(productId)}
+        cartItems={cart}
       />
 
       {filteredProducts.length === 0 ? (
@@ -579,7 +606,10 @@ const Index: React.FC = () => {
             
             return (
               <div key={product.id} className="relative">
-                <Card className="overflow-hidden h-full">
+                <Card 
+                  className="overflow-hidden h-full cursor-pointer hover:shadow-md transition-shadow"
+                  onClick={() => setSelectedProduct(product)}
+                >
                   <div className="aspect-square bg-gray-100 overflow-hidden">
                     {product.imagem_url ? (
                       <img
@@ -628,59 +658,48 @@ const Index: React.FC = () => {
                   </CardHeader>
                   
                   <CardContent className="pt-0 p-1.5">
-                    <div className="mb-1">
-                      <Input
-                        type="number"
-                        min="1"
-                        max={availableStock}
-                        placeholder="Qtd"
-                        value={quantityInputs[product.id] || ''}
-                        onChange={(e) => handleQuantityInputChange(product.id, e.target.value)}
-                        className="h-6 text-[10px] text-center"
-                        disabled={availableStock <= 0}
-                      />
-                    </div>
-                    
-                    <div className="flex items-center justify-between gap-1">
-                      <Button
-                        onClick={() => addToCart(product)}
-                        className="w-6 h-6 bg-green-600 hover:bg-green-700 text-white p-0 flex items-center justify-center flex-shrink-0"
-                        disabled={availableStock <= 0}
-                        size="sm"
-                      >
-                        {availableStock <= 0 ? (
-                          <span className="text-[6px] leading-none text-center">X</span>
-                        ) : (
-                          <Plus className="w-2.5 h-2.5" />
-                        )}
-                      </Button>
-                      
-                      {quantityInputs[product.id] && (
-                        <Button
-                          onClick={() => handleAddWithQuantity(product)}
-                          className="w-6 h-6 bg-blue-600 hover:bg-blue-700 text-white p-0 flex items-center justify-center flex-shrink-0"
-                          disabled={availableStock <= 0}
-                          size="sm"
-                        >
-                          <span className="text-[6px] leading-none text-center">+</span>
-                        </Button>
+                    <div className="h-6 flex items-center justify-center">
+                      {availableStock <= 0 ? (
+                        <span className="text-xs text-red-500 font-medium">Esgotado</span>
+                      ) : (
+                        <span className="text-xs text-gray-500">{availableStock} disponíveis</span>
                       )}
-                      
-                      {quantity > 0 && (
+                    </div>
+                    <div className="flex items-center justify-center gap-1 mt-1">
+                      {quantity > 0 ? (
                         <>
-                          <Badge variant="secondary" className="text-[8px] flex-shrink-0 px-1 py-0">
-                            {quantity}
-                          </Badge>
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => removeFromCart(product.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              removeFromCart(product.id);
+                            }}
                             className="w-6 h-6 p-0 border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700 hover:border-red-400 flex items-center justify-center flex-shrink-0"
                           >
                             <Minus className="w-2.5 h-2.5" />
                           </Button>
+                          <Badge variant="secondary" className="text-[10px] flex-shrink-0 px-2 py-0 h-6 flex items-center">
+                            {quantity}
+                          </Badge>
                         </>
-                      )}
+                      ) : null}
+                      <Button
+                        size="sm"
+                        variant={quantity > 0 ? "outline" : "default"}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          addToCart(product);
+                        }}
+                        disabled={availableStock <= 0}
+                        className={`w-6 h-6 p-0 flex items-center justify-center flex-shrink-0 ${
+                          quantity > 0 
+                            ? 'border-green-300 text-green-600 hover:bg-green-50 hover:text-green-700 hover:border-green-400' 
+                            : 'bg-green-600 hover:bg-green-700 text-white border-green-600'
+                        }`}
+                      >
+                        <Plus className="w-3 h-3" />
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
@@ -701,43 +720,84 @@ const Index: React.FC = () => {
       )}
 
       {cart.length > 0 && (
-        <Card className="fixed bottom-2 right-2 w-56 sm:w-64 shadow-lg border-2 border-green-500 z-40">
-          <CardHeader className="pb-1 p-2">
-            <CardTitle className="flex items-center justify-between text-xs sm:text-sm">
-              <div className="flex items-center space-x-1">
-                <ShoppingCart className="w-3 h-3" />
+        <Card className="fixed bottom-2 right-2 w-72 sm:w-80 shadow-lg border-2 border-green-500 z-40">
+          <CardHeader className="pb-1 p-3">
+            <CardTitle className="flex items-center justify-between text-sm sm:text-base">
+              <div className="flex items-center space-x-2">
+                <ShoppingCart className="w-4 h-4" />
                 <span>Carrinho</span>
               </div>
-              <Badge className="text-[10px]">{getTotalItems()} itens</Badge>
+              <Badge className="text-xs">{getTotalItems()} itens</Badge>
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-1 p-2 pt-0">
-            <div className="max-h-20 sm:max-h-24 overflow-y-auto space-y-1">
-              {cart.map(item => (
-                <div key={item.id} className="flex justify-between items-center text-[10px] p-1 bg-gray-50 rounded">
-                  <div className="flex-1">
-                    <span className="font-medium text-[10px]">{item.nome}</span>
-                    <div className="text-[9px] text-gray-500">
-                      {item.quantity}x R$ {item.preco.toFixed(2)}
+          <CardContent className="space-y-2 p-3 pt-0">
+            <div className="max-h-48 sm:max-h-64 overflow-y-auto pr-1 space-y-2">
+              {cart.map(item => {
+                const product = products.find(p => p.id === item.id);
+                const availableStock = product ? (product.estoque - item.quantity) : 0;
+                
+                return (
+                  <div key={item.id} className="flex justify-between items-center text-xs p-2 bg-gray-50 rounded-lg border border-gray-100 hover:bg-gray-100 transition-colors">
+                    <div className="flex-1 min-w-0 pr-2">
+                      <div className="font-medium text-xs truncate">{item.nome}</div>
+                      <div className="text-xs text-gray-500">
+                        R$ {item.preco.toFixed(2)} un.
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeFromCart(item.id);
+                        }}
+                        className="w-6 h-6 p-0 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 hover:border-red-300 flex-shrink-0 flex items-center justify-center"
+                      >
+                        <Minus className="w-3 h-3" />
+                      </Button>
+                      
+                      <span className="text-sm font-semibold w-6 text-center">
+                        {item.quantity}
+                      </span>
+                      
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          addToCart(item);
+                        }}
+                        disabled={availableStock <= 0}
+                        className="w-6 h-6 p-0 border-green-200 text-green-600 hover:bg-green-50 hover:text-green-700 hover:border-green-300 flex-shrink-0 flex items-center justify-center disabled:opacity-50"
+                      >
+                        <Plus className="w-3 h-3" />
+                      </Button>
+                      
+                      <span className="font-bold text-green-600 text-sm min-w-[60px] text-right">
+                        R$ {(item.preco * item.quantity).toFixed(2)}
+                      </span>
                     </div>
                   </div>
-                  <span className="font-bold text-green-600 text-[10px]">
-                    R$ {(item.preco * item.quantity).toFixed(2)}
-                  </span>
-                </div>
-              ))}
+                );
+              })}
             </div>
             
-            <div className="border-t pt-1">
-              <div className="flex justify-between items-center font-bold">
-                <span className="text-xs">Total:</span>
-                <span className="text-green-600 text-sm">R$ {getTotalPrice().toFixed(2)}</span>
+            <div className="border-t pt-3 mt-2">
+              <div className="flex justify-between items-center font-bold mb-3">
+                <span className="text-sm">Total:</span>
+                <span className="text-green-600 text-lg">R$ {getTotalPrice().toFixed(2)}</span>
               </div>
+              
+              <Button 
+                onClick={generateOrder} 
+                className="w-full h-10 text-sm font-medium bg-green-600 hover:bg-green-700" 
+                size="lg"
+              >
+                Finalizar Compra
+              </Button>
             </div>
-            
-            <Button onClick={generateOrder} className="w-full text-[10px] h-7" size="sm">
-              Gerar Pagamento
-            </Button>
           </CardContent>
         </Card>
       )}
@@ -762,22 +822,12 @@ const Index: React.FC = () => {
         </div>
       )}
 
-      {showPagSeguroPix && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <PagSeguroPix
-            valor={getTotalPrice()}
-            recargaId={currentOrderId}
-            onPaymentSuccess={handlePaymentSuccess}
-            onCancel={handlePaymentCancel}
-          />
-        </div>
-      )}
-
-      {showPixPayment && (
+{showPixPayment && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <PixPayment
             valor={getTotalPrice()}
             recargaId={currentOrderId}
+            customer={defaultCustomer}
             onPaymentSuccess={handlePaymentSuccess}
             onCancel={handlePaymentCancel}
           />

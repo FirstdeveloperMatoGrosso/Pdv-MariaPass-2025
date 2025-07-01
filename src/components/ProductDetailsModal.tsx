@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -7,65 +7,56 @@ import {
   Barcode as BarcodeIcon,
   DollarSign,
   Archive,
-  Calendar,
   Image as ImageIcon,
   Tag,
   Info,
-  Plus,
-  Minus,
-  ShoppingCart,
-  ScanBarcode,
-  QrCode,
-  CheckCircle
+  CheckCircle,
+  Calendar
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import ValidationCodes from './ValidationCodes';
 import Barcode from 'react-barcode';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
+  DialogDescription
 } from '@/components/ui/dialog';
-import { useToast } from '@/components/ui/use-toast';
-import { TotemProduct, TotemCartItem } from '@/types';
+import { TotemProduct } from '@/types';
 
 interface ProductDetailsModalProps {
   product: TotemProduct | null;
   isOpen: boolean;
   onClose: () => void;
-  onAddToCart?: (product: TotemProduct) => void;
+  onAddToCart?: (product: any) => void;
   onRemoveFromCart?: (productId: string) => void;
-  cartItems?: TotemCartItem[];
+  cartItems?: Array<{ id: string; quantity: number }>;
 }
 
-const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({ 
+interface ProductDetailsModalContentProps extends Omit<ProductDetailsModalProps, 'product'> {
+  product: TotemProduct; // Garante que product não seja null aqui
+}
+
+const ProductDetailsModalContent: React.FC<ProductDetailsModalContentProps> = ({ 
   product, 
-  isOpen, 
+  isOpen,
   onClose,
-  onAddToCart = () => {},
-  onRemoveFromCart = () => {},
-  cartItems = []
+  onAddToCart,
+  onRemoveFromCart,
+  cartItems
 }) => {
+  // Hooks do React podem ser usados aqui com segurança
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  // Restante do conteúdo do modal...
   console.log('[ProductDetailsModal] Iniciando renderização do modal', { 
-    isOpen, 
-    hasProduct: !!product,
-    productId: product?.id,
-    productName: product?.nome
+    hasProduct: true,
+    productId: product.id,
+    productName: product.nome
   });
   
-  const { toast } = useToast();
   const dialogContentRef = useRef<HTMLDivElement>(null);
-  
-  // Mover a verificação de product para depois dos hooks
-  if (!product) {
-    console.log('[ProductDetailsModal] Nenhum produto fornecido, não renderizando');
-    return null;
-  }
-  
-  const cartItem = cartItems.find(item => item.id === product.id);
-  const cartQuantity = cartItem?.quantity || 0;
+  const availableStock = product.estoque_atual || 0;
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -91,73 +82,43 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    const statusMap: Record<string, { text: string; class: string }> = {
-      'ativo': { text: 'Ativo', class: 'bg-green-100 text-green-800 border-green-200' },
-      'inativo': { text: 'Inativo', class: 'bg-red-100 text-red-800 border-red-200' },
-      'descontinuado': { text: 'Descontinuado', class: 'bg-amber-100 text-amber-800 border-amber-200' },
-      'promocao': { text: 'Promoção', class: 'bg-purple-100 text-purple-800 border-purple-200' },
-      'esgotado': { text: 'Esgotado', class: 'bg-gray-100 text-gray-800 border-gray-200' },
+  // Função auxiliar para obter o status formatado
+  const statusInfo = (() => {
+    const statusMap: { [key: string]: { text: string; class: string } } = {
+      ativo: { text: 'Ativo', class: 'bg-green-100 text-green-800' },
+      inativo: { text: 'Inativo', class: 'bg-red-100 text-red-800' },
+      esgotado: { text: 'Esgotado', class: 'bg-gray-100 text-gray-800' },
     };
-    
-    const statusInfo = statusMap[status.toLowerCase()] || { text: status, class: 'bg-gray-100 text-gray-800 border-gray-200' };
-    return statusInfo;
-  };
+    return statusMap[product.status] || { text: 'Desconhecido', class: 'bg-gray-100 text-gray-800' };
+  })();
 
-  const validationData = React.useMemo(() => ({
-    saleId: `SALE-${Date.now()}`,
-    productId: product.id,
-    productName: product.nome,
-    unitPrice: product.preco,
-    quantity: cartItem?.quantity || 1,
-    paymentMethod: 'Pulseira', // Valor padrão, pode ser substituído pelo método de pagamento real
-    nsu: `NSU${Date.now().toString().slice(-8)}`,
-    hash: `HASH-${Math.random().toString(36).substring(2, 10).toUpperCase()}`,
-    barcode: product.codigo_barras || product.id.padEnd(13, '0').substring(0, 13),
-    date: new Date().toISOString(),
-  }), [product, cartItem]);
-
-  const handleAddToCart = () => {
-    onAddToCart(product);
-    toast({
-      title: 'Produto adicionado',
-      description: `${product.nome} foi adicionado ao carrinho`,
-    });
-  };
-  
-  const handleRemoveFromCart = () => {
-    onRemoveFromCart(product.id);
-  };
-  
-  // Rolar para o topo quando o modal for aberto
-  useEffect(() => {
-    if (isOpen && dialogContentRef.current) {
-      dialogContentRef.current.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  }, [isOpen, product?.id]);
-
-  const statusInfo = getStatusBadge(product.status);
-  const isOutOfStock = product.estoque <= 0;
+  const isOutOfStock = availableStock <= 0;
   
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0 overflow-hidden">
+      <DialogContent 
+        ref={dialogContentRef}
+        className="max-w-2xl max-h-[90vh] overflow-y-auto"
+        onPointerDownOutside={(e) => {
+          // Evita fechar ao clicar em elementos dentro do modal
+          if (dialogContentRef.current && dialogContentRef.current.contains(e.target as Node)) {
+            e.preventDefault();
+          }
+        }}
+      >
         <DialogHeader className="border-b px-6 py-4">
           <div className="flex items-center justify-between">
             <DialogTitle className="flex items-center space-x-2 text-lg">
-              <Package className="w-5 h-5 text-blue-600" />
+              <Package className="h-5 w-5" />
               <span>Detalhes do Produto</span>
             </DialogTitle>
-            <Badge variant="outline" className={statusInfo.class}>
-              {statusInfo.text}
-            </Badge>
           </div>
           <DialogDescription className="text-sm">
             Visualizando informações detalhadas do produto
           </DialogDescription>
         </DialogHeader>
         
-        <div className="flex-1 overflow-y-auto p-6" ref={dialogContentRef}>
+        <div className="flex-1 overflow-y-auto p-6">
           <Tabs defaultValue="detalhes" className="w-full">
             <div className="mb-6">
               <TabsList className="grid w-full grid-cols-2">
@@ -166,7 +127,7 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
                   Detalhes
                 </TabsTrigger>
                 <TabsTrigger value="validacao">
-                  <ScanBarcode className="w-4 h-4 mr-2" />
+                  <BarcodeIcon className="w-4 h-4 mr-2" />
                   Validação
                 </TabsTrigger>
               </TabsList>
@@ -197,41 +158,6 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
                         <span className="bg-white/90 text-red-600 text-xs font-bold px-2 py-1 rounded-full shadow">
                           ESGOTADO
                         </span>
-                      </div>
-                    )}
-                  </div>
-                  
-                  {/* Ações rápidas */}
-                  <div className="mt-4 space-y-2">
-                    <Button 
-                      onClick={handleAddToCart}
-                      disabled={isOutOfStock}
-                      className="w-full bg-blue-600 hover:bg-blue-700"
-                    >
-                      <ShoppingCart className="w-4 h-4 mr-2" />
-                      Adicionar ao Carrinho
-                    </Button>
-                    
-                    {cartQuantity > 0 && (
-                      <div className="flex items-center justify-between bg-blue-50 p-2 rounded-md">
-                        <Button 
-                          variant="outline" 
-                          size="icon" 
-                          className="h-8 w-8"
-                          onClick={handleRemoveFromCart}
-                        >
-                          <Minus className="h-4 w-4" />
-                        </Button>
-                        <span className="font-medium">{cartQuantity} no carrinho</span>
-                        <Button 
-                          variant="outline" 
-                          size="icon" 
-                          className="h-8 w-8"
-                          onClick={handleAddToCart}
-                          disabled={isOutOfStock}
-                        >
-                          <Plus className="h-4 w-4" />
-                        </Button>
                       </div>
                     )}
                   </div>
@@ -282,13 +208,8 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
                       </CardHeader>
                       <CardContent className="px-4 pb-4 pt-0">
                         <div className={`text-2xl font-bold ${isOutOfStock ? 'text-red-600' : 'text-blue-600'}`}>
-                          {isOutOfStock ? 'ESGOTADO' : `${product.estoque} un.`}
+                          {isOutOfStock ? 'ESGOTADO' : `${availableStock} un.`}
                         </div>
-                        {cartQuantity > 0 && (
-                          <p className="text-xs text-gray-500 mt-1">
-                            {cartQuantity} un. no seu carrinho
-                          </p>
-                        )}
                       </CardContent>
                     </Card>
                   </div>
@@ -381,32 +302,40 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
                   </div>
                 </div>
               </div>
-              
-              <ValidationCodes
-                {...validationData}
-                title=""
-                className="max-w-md mx-auto"
-              />
             </TabsContent>
           </Tabs>
 
           {/* Rodapé com ações */}
-          <div className="border-t bg-gray-50 px-6 py-3 flex justify-end space-x-3">
-            <Button variant="outline" onClick={onClose}>
-              Fechar
-            </Button>
-            <Button 
-              onClick={handleAddToCart}
-              disabled={isOutOfStock}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              <ShoppingCart className="w-4 h-4 mr-2" />
-              {cartQuantity > 0 ? `Adicionar mais (${cartQuantity})` : 'Adicionar ao Carrinho'}
-            </Button>
+          <div className="border-t bg-gray-50 px-6 py-4">
+            <div className="flex justify-end">
+              <Button variant="outline" onClick={onClose}>
+                Fechar
+              </Button>
+            </div>
           </div>
         </div>
       </DialogContent>
     </Dialog>
+  );
+};
+
+const ProductDetailsModal: React.FC<ProductDetailsModalProps> = (props) => {
+  // Verificação do produto antes de qualquer hook
+  if (!props.product) {
+    console.log('[ProductDetailsModal] Nenhum produto fornecido, não renderizando');
+    return null;
+  }
+
+  // Se chegou aqui, temos certeza que product não é null
+  return (
+    <ProductDetailsModalContent 
+      isOpen={props.isOpen}
+      onClose={props.onClose}
+      product={props.product}
+      onAddToCart={props.onAddToCart}
+      onRemoveFromCart={props.onRemoveFromCart}
+      cartItems={props.cartItems}
+    />
   );
 };
 

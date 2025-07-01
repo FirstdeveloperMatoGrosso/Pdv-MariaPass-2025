@@ -5,28 +5,56 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
   CreditCard, 
-  Building,
   ArrowLeft,
   Banknote
 } from 'lucide-react';
 import PixPayment from './PixPayment';
-import PagSeguroPix from './PagSeguroPix';
 import CashPayment from './CashPayment';
+import { CustomerData } from '@/types/payment';
 
 interface PaymentProviderSelectorProps {
   valor: number;
   recargaId: string;
   onPaymentSuccess: () => void;
   onCancel: () => void;
+  customer?: CustomerData; // Adicionando prop opcional para o cliente
 }
+
+// Cliente padrão para pagamentos PIX
+const DEFAULT_CUSTOMER: CustomerData = {
+  name: 'Cliente PDV',
+  email: 'cliente@pdv.com',
+  document: '00000000000', // CPF genérico
+  document_type: 'CPF',
+  type: 'individual',
+  phones: {
+    mobile_phone: {
+      country_code: '55',
+      area_code: '11',
+      number: '999999999',
+    },
+  },
+  address: {
+    line_1: 'Rua do Cliente, 123',
+    line_2: 'Sala 1 - Centro',
+    zip_code: '01001000',
+    city: 'São Paulo',
+    state: 'SP',
+    country: 'BR'
+  },
+  metadata: {
+    source: 'pdv-mariapass',
+  },
+};
 
 const PaymentProviderSelector: React.FC<PaymentProviderSelectorProps> = ({ 
   valor, 
   recargaId, 
   onPaymentSuccess, 
-  onCancel 
+  onCancel,
+  customer = DEFAULT_CUSTOMER // Usa o cliente padrão se não for fornecido
 }) => {
-  const [selectedProvider, setSelectedProvider] = useState<'pagseguro' | 'default' | 'cash' | null>(null);
+  const [selectedProvider, setSelectedProvider] = useState<'pix' | 'cash' | null>(null);
 
   const providers = [
     {
@@ -38,16 +66,8 @@ const PaymentProviderSelector: React.FC<PaymentProviderSelectorProps> = ({
       badge: 'Imediato'
     },
     {
-      id: 'pagseguro' as const,
-      name: 'PagSeguro',
-      description: 'PIX via PagSeguro',
-      icon: Building,
-      color: 'bg-orange-500 hover:bg-orange-600',
-      badge: 'Recomendado'
-    },
-    {
-      id: 'default' as const,
-      name: 'PIX Simples',
+      id: 'pix' as const,
+      name: 'PIX',
       description: 'PIX tradicional',
       icon: CreditCard,
       color: 'bg-blue-500 hover:bg-blue-600',
@@ -77,29 +97,7 @@ const PaymentProviderSelector: React.FC<PaymentProviderSelectorProps> = ({
     );
   }
 
-  if (selectedProvider === 'pagseguro') {
-    return (
-      <div className="space-y-3">
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          onClick={() => setSelectedProvider(null)}
-          className="flex items-center space-x-1 text-sm"
-        >
-          <ArrowLeft className="w-3 h-3" />
-          <span>Voltar à seleção</span>
-        </Button>
-        <PagSeguroPix 
-          valor={valor}
-          recargaId={recargaId}
-          onPaymentSuccess={onPaymentSuccess}
-          onCancel={onCancel}
-        />
-      </div>
-    );
-  }
-
-  if (selectedProvider === 'default') {
+  if (selectedProvider === 'pix') {
     return (
       <div className="space-y-3">
         <Button 
@@ -114,6 +112,7 @@ const PaymentProviderSelector: React.FC<PaymentProviderSelectorProps> = ({
         <PixPayment 
           valor={valor}
           recargaId={recargaId}
+          customer={customer}
           onPaymentSuccess={onPaymentSuccess}
           onCancel={onCancel}
         />
