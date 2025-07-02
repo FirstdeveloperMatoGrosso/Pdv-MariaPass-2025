@@ -1,5 +1,5 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { ComprovanteDialog } from '@/components/ComprovanteDialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -40,7 +40,9 @@ const Cancelamentos: React.FC = () => {
     valor_cancelado: '',
     observacoes: ''
   });
-  const [processando, setProcessando] = useState<string | null>(null);
+  const [processando, setProcessando] = React.useState<string | null>(null);
+  const [comprovanteAberto, setComprovanteAberto] = useState(false);
+  const [comprovanteSelecionado, setComprovanteSelecionado] = useState<any>(null);
 
   const filteredCancellations = cancelamentos.filter(cancel =>
     (cancel.numero_pedido || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -117,7 +119,8 @@ const Cancelamentos: React.FC = () => {
   }
 
   return (
-    <div className="p-2 sm:p-3 space-y-2 sm:space-y-3">
+    <div className="p-4 pr-6 w-full max-w-[calc(100vw-56px)] overflow-x-auto">
+      <div className="space-y-4 min-w-[800px]">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-1">
           <XCircle className="w-5 h-5 text-red-600" />
@@ -130,7 +133,7 @@ const Cancelamentos: React.FC = () => {
       </div>
 
       {/* Estatísticas */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 w-full">
         <Card>
           <CardContent className="p-2 sm:p-3">
             <div className="flex items-center space-x-1">
@@ -187,12 +190,12 @@ const Cancelamentos: React.FC = () => {
       </div>
 
       {/* Novo Cancelamento */}
-      <Card>
-        <CardHeader className="p-2 sm:p-3">
-          <CardTitle className="text-sm sm:text-base">Solicitar Cancelamento</CardTitle>
+      <Card className="w-full">
+        <CardHeader className="p-3">
+          <CardTitle className="text-base">Solicitar Cancelamento</CardTitle>
         </CardHeader>
-        <CardContent className="p-2 sm:p-3 pt-0">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-2 sm:gap-3">
+        <CardContent className="p-2 sm:p-3 pr-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2 pr-2 sm:gap-3">
             <Input
               placeholder="ID do Pedido"
               value={newCancellation.numero_pedido}
@@ -242,15 +245,15 @@ const Cancelamentos: React.FC = () => {
       </Card>
 
       {/* Lista de Cancelamentos */}
-      <Card>
-        <CardHeader className="p-2 sm:p-3">
-          <CardTitle className="text-sm sm:text-base">
+      <Card className="w-full">
+        <CardHeader className="p-3">
+          <CardTitle className="text-base">
             Histórico de Cancelamentos ({filteredCancellations.length})
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
-            <Table>
+            <Table className="min-w-full">
               <TableHeader>
                 <TableRow>
                   <TableHead className="h-8 text-xs">ID Pedido</TableHead>
@@ -289,8 +292,8 @@ const Cancelamentos: React.FC = () => {
                       {cancelamento.operador}
                     </TableCell>
                     <TableCell className="p-2">
-                      {!cancelamento.aprovado && (
-                        <div className="flex space-x-1">
+                      <div className="flex space-x-1">
+                        {!cancelamento.aprovado ? (
                           <Button
                             size="sm"
                             className="bg-green-600 hover:bg-green-700 h-6 text-xs px-2"
@@ -303,8 +306,20 @@ const Cancelamentos: React.FC = () => {
                               'Aprovar'
                             )}
                           </Button>
-                        </div>
-                      )}
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-6 text-xs px-2"
+                            onClick={() => {
+                              setComprovanteSelecionado(cancelamento);
+                              setComprovanteAberto(true);
+                            }}
+                          >
+                            Ver Comprovante
+                          </Button>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -320,6 +335,19 @@ const Cancelamentos: React.FC = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Diálogo do Comprovante */}
+      {comprovanteSelecionado && (
+        <ComprovanteDialog
+          isOpen={comprovanteAberto}
+          onClose={() => {
+            setComprovanteAberto(false);
+            setComprovanteSelecionado(null);
+          }}
+          data={comprovanteSelecionado}
+        />
+      )}
+      </div>
     </div>
   );
 };

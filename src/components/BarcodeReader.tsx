@@ -23,8 +23,8 @@ interface BarcodeReaderProps {
 
 const BarcodeReader: React.FC<BarcodeReaderProps> = ({ 
   onCodeRead, 
-  placeholder = "Código da pulseira",
-  title = "Leitura de Pulseira"
+  placeholder = "Código do produto",
+  title = "Leitor de Código de Barras"
 }) => {
   const [inputMethod, setInputMethod] = useState<'manual' | 'camera' | 'scanner'>('manual');
   const [code, setCode] = useState('');

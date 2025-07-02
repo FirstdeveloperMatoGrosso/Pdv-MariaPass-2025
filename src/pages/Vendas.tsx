@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useCancelamentos } from '@/hooks/useCancelamentos';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,7 +17,10 @@ import {
   Hash,
   MapPin,
   Copy,
-  Check
+  Check,
+  Printer,
+  XCircle,
+  FileText
 } from 'lucide-react';
 import {
   Select,
@@ -40,19 +44,31 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import SaleDetails from '@/components/SaleDetails';
 import CancelamentoModal from '@/components/CancelamentoModal';
+import { ComprovanteDialog } from '@/components/ComprovanteDialog';
 
-interface VendaRealizada {
+import { VendaPulseira } from '@/types/venda';
+
+interface VendaRealizada extends Omit<VendaPulseira, 'created_at' | 'updated_at'> {
+  // Campos específicos adicionais podem ser adicionados aqui
+}
+
+interface CancelamentoExistente {
   id: string;
-  data_venda: string;
-  numero_autorizacao: string;
-  quantidade: number;
-  valor_unitario: number;
-  valor_total: number;
-  forma_pagamento: string;
+  data_cancelamento: string;
+  numero_pedido: string;
+  motivo: string;
+  valor_cancelado: number;
+  aprovado: boolean;
+  // Campos adicionais para o comprovante
+  forma_pagamento?: string;
+  codigo_autorizacao?: string;
+  estabelecimento?: string;
+  endereco_estabelecimento?: string;
+  cnpj_estabelecimento?: string;
+  operador?: string;
   produto_nome?: string;
+  produto_quantidade?: number;
   produto_imagem?: string;
-  nsu?: string;
-  bandeira?: string;
 }
 
 const Vendas: React.FC = () => {
@@ -62,6 +78,63 @@ const Vendas: React.FC = () => {
   const [selectedVenda, setSelectedVenda] = useState<VendaRealizada | null>(null);
   const [copied, setCopied] = useState(false);
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [comprovanteAberto, setComprovanteAberto] = useState(false);
+  const [cancelamentoExistente, setCancelamentoExistente] = useState<CancelamentoExistente | null>(null);
+  
+  const { buscarCancelamentoPorPedido } = useCancelamentos();
+
+  // Verifica se já existe cancelamento para a venda selecionada
+  useEffect(() => {
+    const verificarCancelamento = async () => {
+      if (selectedVenda) {
+        try {
+          // Primeiro verifica se existe um cancelamento registrado
+          const cancelamento = await buscarCancelamentoPorPedido(selectedVenda.numero_autorizacao);
+          
+          if (cancelamento) {
+            setCancelamentoExistente({
+              id: cancelamento.id,
+              data_cancelamento: cancelamento.data_cancelamento,
+              numero_pedido: cancelamento.numero_pedido,
+              motivo: cancelamento.motivo,
+              valor_cancelado: cancelamento.valor_cancelado,
+              aprovado: cancelamento.aprovado
+            });
+            
+            // Se o cancelamento estiver aprovado, garante que o status está correto
+            if (cancelamento.aprovado && selectedVenda.status !== 'cancelada') {
+              // Atualiza o status localmente para refletir o cancelamento
+              selectedVenda.status = 'cancelada';
+            }
+            return;
+          }
+          
+          // Se não encontrou cancelamento, verifica se o status está como cancelada
+          if (selectedVenda.status === 'cancelada') {
+            setCancelamentoExistente({
+              id: 'sistema',
+              data_cancelamento: new Date().toISOString(),
+              numero_pedido: selectedVenda.numero_autorizacao,
+              motivo: 'Venda cancelada anteriormente',
+              valor_cancelado: selectedVenda.valor_total,
+              aprovado: true
+            });
+            return;
+          }
+          
+          // Se não encontrou cancelamento e o status não é cancelada, limpa o estado
+          setCancelamentoExistente(null);
+        } catch (error) {
+          console.error('Erro ao verificar cancelamento:', error);
+          setCancelamentoExistente(null);
+        }
+      } else {
+        setCancelamentoExistente(null);
+      }
+    };
+
+    verificarCancelamento();
+  }, [selectedVenda]);
 
   const copyToClipboard = (text: string, e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
@@ -73,89 +146,127 @@ const Vendas: React.FC = () => {
   };
 
   // Buscar vendas realizadas
-  const { data: vendas = [], isLoading, error, refetch } = useQuery({
-    queryKey: ['vendas-realizadas', filtroData, filtroFormaPagamento, busca],
+  const { data: vendas = [], isLoading, refetch, error } = useQuery<VendaRealizada[]>({
+    queryKey: ['vendas', filtroData, filtroFormaPagamento, busca],
     queryFn: async () => {
       console.log('Buscando vendas realizadas...');
       
-      let dataInicio = new Date();
-      let dataFim = new Date();
-      
-      // Configurar filtros de data
-      switch (filtroData) {
-        case 'hoje':
-          dataInicio.setHours(0, 0, 0, 0);
-          dataFim.setHours(23, 59, 59, 999);
-          break;
-        case 'semana':
-          dataInicio.setDate(dataInicio.getDate() - 7);
-          dataInicio.setHours(0, 0, 0, 0);
-          dataFim.setHours(23, 59, 59, 999);
-          break;
-        case 'mes':
-          dataInicio.setDate(1);
-          dataInicio.setHours(0, 0, 0, 0);
-          dataFim.setHours(23, 59, 59, 999);
-          break;
-        case 'todos':
-          dataInicio = new Date('2020-01-01');
-          dataFim.setHours(23, 59, 59, 999);
-          break;
-      }
+      try {
+        // Formata as datas para o formato YYYY-MM-DD
+        let dataInicio = new Date();
+        let dataFim = new Date();
+        
+        // Configurar filtros de data
+        switch (filtroData) {
+          case 'hoje':
+            dataInicio.setHours(0, 0, 0, 0);
+            dataFim.setHours(23, 59, 59, 999);
+            break;
+          case 'semana':
+            dataInicio.setDate(dataInicio.getDate() - 7);
+            dataInicio.setHours(0, 0, 0, 0);
+            dataFim.setHours(23, 59, 59, 999);
+            break;
+          case 'mes':
+            dataInicio.setDate(1);
+            dataInicio.setHours(0, 0, 0, 0);
+            dataFim.setHours(23, 59, 59, 999);
+            break;
+          case 'todos':
+            dataInicio = new Date('2020-01-01');
+            dataFim.setHours(23, 59, 59, 999);
+            break;
+        }
 
-      let query = supabase
-        .from('vendas_pulseiras')
-        .select(`
-          id,
-          data_venda,
-          numero_autorizacao,
-          quantidade,
-          valor_unitario,
-          valor_total,
-          forma_pagamento,
-          nsu,
-          bandeira,
-          produtos:produto_id (
-            nome,
-            imagem_url
-          )
-        `)
-        .gte('data_venda', dataInicio.toISOString())
-        .lte('data_venda', dataFim.toISOString())
-        .order('data_venda', { ascending: false });
+        // Define os campos da consulta incluindo o status
+        // Define a consulta base para buscar pedidos com seus itens e produtos
+        let query = supabase
+          .from('pedidos')
+          .select(`
+            id,
+            data_pedido,
+            numero_pedido,
+            status,
+            tipo_pagamento,
+            valor_total,
+            itens:itens_pedido(
+              quantidade,
+              preco_unitario,
+              subtotal,
+              produto:produtos(
+                id,
+                nome,
+                imagem_url
+              )
+            )
+          `)
+          .gte('data_pedido', dataInicio.toISOString())
+          .lte('data_pedido', dataFim.toISOString())
+          .order('data_pedido', { ascending: false })
+          .limit(100);
 
-      // Filtrar por forma de pagamento
-      if (filtroFormaPagamento !== 'todas') {
-        query = query.eq('forma_pagamento', filtroFormaPagamento);
-      }
+        // Aplica filtros adicionais se necessário
+        if (filtroFormaPagamento !== 'todas') {
+          query = query.eq('tipo_pagamento', filtroFormaPagamento);
+        }
+        
+        if (busca.trim()) {
+          query = query.or(`numero_pedido.ilike.%${busca}%,itens.produto.nome.ilike.%${busca}%`);
+        }
+        
+        // Executa a consulta
+        const { data, error: queryError } = await query;
+        
+        if (queryError) {
+          console.error('Erro ao buscar vendas:', queryError);
+          toast.error('Erro ao carregar as vendas. Tente novamente.');
+          return [];
+        }
+        
+        // Processa os pedidos e itens para o formato esperado
+        const vendasMapeadas = (data || []).flatMap((pedido: any) => {
+          // Se não houver itens, retorna um pedido vazio
+          if (!pedido.itens || pedido.itens.length === 0) {
+            return [{
+              id: pedido.id,
+              data_venda: pedido.data_pedido,
+              numero_autorizacao: pedido.numero_pedido || `PED-${pedido.id.slice(0, 8)}`,
+              status: pedido.status || 'pendente',
+              forma_pagamento: pedido.tipo_pagamento || 'Não informado',
+              valor_total: Number(pedido.valor_total) || 0,
+              produto_nome: 'Nenhum item',
+              produto_imagem: undefined,
+              quantidade: 0,
+              valor_unitario: 0,
+              nsu: '',
+              bandeira: ''
+            }];
+          }
+          
+          // Para cada item, cria uma entrada no array de vendas
+          return pedido.itens.map((item: any) => ({
+            id: `${pedido.id}-${item.produto?.id || '0'}`,
+            data_venda: pedido.data_pedido,
+            numero_autorizacao: pedido.numero_pedido || `PED-${pedido.id.slice(0, 8)}`,
+            status: pedido.status || 'pendente',
+            forma_pagamento: pedido.tipo_pagamento || 'Não informado',
+            valor_total: Number(item.subtotal) || 0,
+            produto_nome: item.produto?.nome || 'Produto não identificado',
+            produto_imagem: item.produto?.imagem_url || '',
+            quantidade: Number(item.quantidade) || 1,
+            valor_unitario: Number(item.preco_unitario) || 0,
+            nsu: '',
+            bandeira: ''
+          }));
+        });
 
-      // Filtrar por busca (número de autorização ou nome do produto)
-      if (busca.trim()) {
-        query = query.or(`numero_autorizacao.ilike.%${busca}%,produtos.nome.ilike.%${busca}%`);
-      }
-
-      const { data, error } = await query.limit(100);
-
-      if (error) {
+        console.log('Vendas encontradas:', vendasMapeadas.length);
+        return vendasMapeadas;
+      } catch (error) {
         console.error('Erro ao buscar vendas:', error);
-        throw error;
+        toast.error('Erro ao carregar as vendas. Tente novamente.');
+        return [];
       }
-
-      console.log('Vendas encontradas:', data?.length || 0);
-
-      return data?.map(venda => ({
-        id: venda.id,
-        data_venda: venda.data_venda,
-        numero_autorizacao: venda.numero_autorizacao || `VEN-${venda.id.slice(0, 8)}`,
-        quantidade: Number(venda.quantidade) || 1,
-        valor_unitario: Number(venda.valor_unitario) || 0,
-        valor_total: Number(venda.valor_total) || 0,
-        forma_pagamento: venda.forma_pagamento || 'Não informado',
-        produto_nome: venda.produtos?.nome || 'Produto não identificado',
-        produto_imagem: venda.produtos?.imagem_url,
-        nsu: venda.nsu,
-        bandeira: venda.bandeira
-      })) || [];
     },
   });
 
@@ -398,11 +509,12 @@ const Vendas: React.FC = () => {
   };
 
   if (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
     return (
       <div className="min-h-screen p-2 sm:p-4 flex items-center justify-center">
         <Card className="w-full max-w-md">
           <CardContent className="p-4 sm:p-6 text-center">
-            <p className="text-red-600 mb-4 text-sm">Erro ao carregar vendas: {error.message}</p>
+            <p className="text-red-600 mb-4 text-sm">Erro ao carregar vendas: {errorMessage}</p>
             <Button onClick={() => refetch()} size="sm">Tentar Novamente</Button>
           </CardContent>
         </Card>
@@ -710,14 +822,34 @@ const Vendas: React.FC = () => {
                             </TabsContent>
                           </Tabs>
                               <div className="flex justify-end">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="bg-red-600 hover:bg-red-700 text-white mt-2"
-                                  onClick={() => setCancelModalOpen(true)}
-                                >
-                                  Cancelar Venda
-                                </Button>
+                                {cancelamentoExistente || selectedVenda.status === 'cancelada' ? (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="bg-blue-600 hover:bg-blue-700 text-white mt-2 w-full"
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      if (cancelamentoExistente) {
+                                        setComprovanteAberto(true);
+                                      } else {
+                                        setCancelModalOpen(true);
+                                      }
+                                    }}
+                                  >
+                                    <FileText className="mr-2 h-4 w-4" />
+                                    {cancelamentoExistente?.aprovado || selectedVenda.status === 'cancelada' ? 'Comprovante de Cancelamento' : 'Cancelamento Pendente'}
+                                  </Button>
+                                ) : (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="bg-red-600 hover:bg-red-700 text-white mt-2 w-full"
+                                    onClick={() => setCancelModalOpen(true)}
+                                  >
+                                    <XCircle className="mr-2 h-4 w-4" />
+                                    Cancelar Venda
+                                  </Button>
+                                )}
                               </div>
                         </div>
                       )}
@@ -735,9 +867,50 @@ const Vendas: React.FC = () => {
           onClose={() => setCancelModalOpen(false)}
           produto={{
             id: selectedVenda.id,
-            nome: selectedVenda.produto_nome || 'Produto',
-            preco: selectedVenda.valor_total,
+            nome: selectedVenda.produto_nome || 'Produto não identificado',
+            preco: cancelamentoExistente?.valor_cancelado || selectedVenda.valor_total,
             categoria: selectedVenda.forma_pagamento,
+            numero_pedido: cancelamentoExistente?.numero_pedido || selectedVenda.numero_autorizacao,
+          }}
+          modoVisualizacao={!!cancelamentoExistente}
+          onPrintComplete={async () => {
+            // Atualiza o estado de cancelamentoExistente após o cancelamento
+            try {
+              const cancelamento = await buscarCancelamentoPorPedido(selectedVenda.numero_autorizacao);
+              setCancelamentoExistente(cancelamento ? {
+                id: cancelamento.id,
+                data_cancelamento: cancelamento.data_cancelamento,
+                numero_pedido: cancelamento.numero_pedido || selectedVenda.numero_autorizacao,
+                motivo: cancelamento.motivo || 'Motivo não especificado',
+                valor_cancelado: cancelamento.valor_cancelado || selectedVenda.valor_total,
+                aprovado: cancelamento.aprovado || false
+              } : null);
+            } catch (error) {
+              console.error('Erro ao verificar cancelamento:', error);
+            }
+            setCancelModalOpen(false);
+          }}
+        />
+      )}
+
+      {/* Diálogo do Comprovante */}
+      {selectedVenda && cancelamentoExistente && (
+        <ComprovanteDialog
+          isOpen={comprovanteAberto}
+          onClose={() => setComprovanteAberto(false)}
+          data={{
+            ...cancelamentoExistente,
+            id: cancelamentoExistente.id,
+            numero_pedido: cancelamentoExistente.numero_pedido || selectedVenda.numero_autorizacao,
+            valor_cancelado: cancelamentoExistente.valor_cancelado || selectedVenda.valor_total,
+            motivo: cancelamentoExistente.motivo || 'Motivo não especificado',
+            data_cancelamento: cancelamentoExistente.data_cancelamento || new Date().toISOString(),
+            forma_pagamento: selectedVenda.forma_pagamento,
+            codigo_autorizacao: selectedVenda.numero_autorizacao,
+            produto_nome: selectedVenda.produto_nome,
+            produto_quantidade: selectedVenda.quantidade,
+            produto_imagem: selectedVenda.produto_imagem,
+            operador: 'Sistema'
           }}
         />
       )}

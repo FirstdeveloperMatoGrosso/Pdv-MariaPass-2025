@@ -102,45 +102,51 @@ export const useRelatorioDados = (periodo: 'today' | 'week' | 'month') => {
 
       console.log('Dados do relatório:', dadosRelatorio);
 
-      // Buscar TODOS os produtos vendidos diretamente das vendas com JOIN na tabela produtos
-      const { data: produtosVendidos, error: errorProdutos } = await supabase
-        .from('vendas_pulseiras')
+      // Buscar TODOS os produtos vendidos diretamente da tabela itens_pedido com JOIN em produtos
+      const { data: itensVendidos, error: errorProdutos } = await supabase
+        .from('itens_pedido')
         .select(`
-          produto_id,
+          id,
           quantidade,
-          valor_total,
-          produtos:produto_id (
+          preco_unitario,
+          subtotal,
+          pedido_id,
+          produto:produtos(
             id,
             nome,
             imagem_url
+          ),
+          pedido:pedidos!inner(
+            data_pedido,
+            status
           )
         `)
-        .gte('data_venda', inicio)
-        .lt('data_venda', fim)
+        .gte('pedido.data_pedido', inicio)
+        .lt('pedido.data_pedido', fim)
         .not('produto_id', 'is', null);
 
       if (errorProdutos) {
         console.error('Erro ao buscar produtos vendidos:', errorProdutos);
         setProdutosMaisVendidos([]);
       } else {
-        console.log('Produtos vendidos encontrados:', produtosVendidos?.length || 0);
-        console.log('Detalhes dos produtos:', produtosVendidos);
+        console.log('Itens vendidos encontrados:', itensVendidos?.length || 0);
         
         // Processar dados para agrupar por produto
-        const produtosAgrupados = produtosVendidos?.reduce((acc: any, venda: any) => {
-          if (venda.produtos && venda.produtos.id) {
-            const produtoId = venda.produtos.id;
+        const produtosAgrupados = itensVendidos?.reduce((acc: any, item: any) => {
+          if (item.produto && item.produto.id) {
+            const produtoId = item.produto.id;
             if (!acc[produtoId]) {
               acc[produtoId] = {
                 id: produtoId,
-                nome: venda.produtos.nome,
-                imagem_url: venda.produtos.imagem_url,
+                nome: item.produto.nome,
+                imagem_url: item.produto.imagem_url,
                 quantidade: 0,
                 receita: 0
               };
             }
-            acc[produtoId].quantidade += Number(venda.quantidade) || 0;
-            acc[produtoId].receita += Number(venda.valor_total) || 0;
+            acc[produtoId].quantidade += Number(item.quantidade) || 0;
+            acc[produtoId].receita += Number(item.subtotal) || 
+              (Number(item.quantidade) * Number(item.preco_unitario)) || 0;
           }
           return acc;
         }, {}) || {};
@@ -152,41 +158,66 @@ export const useRelatorioDados = (periodo: 'today' | 'week' | 'month') => {
         setProdutosMaisVendidos(produtosOrdenados);
       }
 
-      // Buscar vendas recentes com informações do produto
-      const { data: vendasRecentes, error: errorVendas } = await supabase
-        .from('vendas_pulseiras')
+      // Buscar pedidos recentes com informações dos itens e produtos
+      const { data: pedidosRecentes, error: errorVendas } = await supabase
+        .from('pedidos')
         .select(`
           id,
-          quantidade,
+          numero_pedido,
+          data_pedido,
+          status,
+          tipo_pagamento,
           valor_total,
-          forma_pagamento,
-          numero_autorizacao,
-          data_venda,
-          produtos:produto_id (
-            nome,
-            imagem_url
+          itens:itens_pedido(
+            quantidade,
+            preco_unitario,
+            subtotal,
+            produto:produtos(
+              id,
+              nome,
+              imagem_url
+            )
           )
         `)
-        .gte('data_venda', inicio)
-        .lt('data_venda', fim)
-        .order('data_venda', { ascending: false })
+        .gte('data_pedido', inicio)
+        .lt('data_pedido', fim)
+        .order('data_pedido', { ascending: false })
         .limit(15);
 
       if (errorVendas) {
         console.error('Erro ao buscar vendas recentes:', errorVendas);
         setPedidosRecentes([]);
       } else {
-        console.log('Vendas recentes encontradas:', vendasRecentes?.length || 0);
-        const pedidosProcessados = vendasRecentes?.map(venda => ({
-          id: venda.id,
-          numeroAutorizacao: venda.numero_autorizacao || `VEN-${venda.id.slice(0, 8)}`,
-          dataVenda: venda.data_venda,
-          quantidade: Number(venda.quantidade) || 1,
-          valorTotal: Number(venda.valor_total) || 0,
-          formaPagamento: venda.forma_pagamento || 'Não informado',
-          produtoNome: venda.produtos?.nome || 'Produto não identificado',
-          produtoImagem: venda.produtos?.imagem_url || undefined
-        })) || [];
+        console.log('Vendas recentes encontradas:', pedidosRecentes?.length || 0);
+        
+        // Processar pedidos recentes
+        const pedidosProcessados = pedidosRecentes?.flatMap(pedido => {
+          // Se não houver itens, retorna um pedido vazio
+          if (!pedido.itens || pedido.itens.length === 0) {
+            return [{
+              id: pedido.id,
+              numeroAutorizacao: pedido.numero_pedido || `PED-${pedido.id.slice(0, 8)}`,
+              dataVenda: pedido.data_pedido,
+              quantidade: 0,
+              valorTotal: Number(pedido.valor_total) || 0,
+              formaPagamento: pedido.tipo_pagamento || 'Não informado',
+              produtoNome: 'Nenhum item',
+              produtoImagem: undefined
+            }];
+          }
+          
+          // Para cada item, cria uma entrada no array de pedidos processados
+          return pedido.itens.map(item => ({
+            id: `${pedido.id}-${item.produto?.id || '0'}`,
+            numeroAutorizacao: pedido.numero_pedido || `PED-${pedido.id.slice(0, 8)}`,
+            dataVenda: pedido.data_pedido,
+            quantidade: Number(item.quantidade) || 1,
+            valorTotal: Number(item.subtotal) || (Number(item.quantidade) * Number(item.preco_unitario)) || 0,
+            formaPagamento: pedido.tipo_pagamento || 'Não informado',
+            produtoNome: item.produto?.nome || 'Produto não identificado',
+            produtoImagem: item.produto?.imagem_url || undefined
+          }));
+        }) || [];
         setPedidosRecentes(pedidosProcessados);
       }
 
@@ -223,18 +254,18 @@ export const useRelatorioDados = (periodo: 'today' | 'week' | 'month') => {
     // Buscar dados iniciais
     buscarDados();
 
-    // Configurar subscription para mudanças na tabela vendas_pulseiras
+    // Configurar subscription para mudanças na tabela pedidos
     const channel = supabase
-      .channel('vendas-changes')
+      .channel('pedidos-changes')
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
-          table: 'vendas_pulseiras'
+          table: 'pedidos'
         },
         (payload) => {
-          console.log('Mudança detectada na tabela vendas_pulseiras:', payload);
+          console.log('Mudança detectada na tabela de pedidos:', payload);
           // Recarregar dados quando houver mudanças
           setTimeout(() => buscarDados(), 1000);
         }

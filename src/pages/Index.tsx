@@ -109,7 +109,8 @@ const Index: React.FC = () => {
       if (error) {
         console.error('Erro ao buscar produtos:', error);
         toast.error('Erro ao carregar produtos: ' + error.message, {
-          description: 'Por favor, tente novamente mais tarde.'
+          description: 'Por favor, tente novamente mais tarde.',
+          duration: 3000 // Reduzido para 3 segundos
         });
         throw error;
       }
@@ -192,7 +193,7 @@ const Index: React.FC = () => {
       console.error('📋 Dados que falharam:', variables);
       toast.error(`Erro ao registrar impressão para ${variables.produto_nome}`, {
         description: error.message,
-        duration: 5000
+        duration: 3000 // Reduzido para 3 segundos
       });
     }
   });
@@ -230,8 +231,8 @@ const Index: React.FC = () => {
           quantidade: item.quantity,
           valor_unitario: item.preco,
           valor_total: item.preco * item.quantity,
-          forma_pagamento: 'Pulseira',
-          numero_autorizacao: `VEN-${Date.now()}-${item.id.slice(0, 6)}`,
+          forma_pagamento: 'debito_pulseira',
+          numero_autorizacao: `PED-${Date.now()}-${item.id.slice(0, 6)}`,
           data_venda: new Date().toISOString()
         };
         
@@ -244,14 +245,47 @@ const Index: React.FC = () => {
         });
       }
 
-      console.log('Registrando vendas:', salesRecords);
-      const { error: salesError } = await supabase
-        .from('vendas_pulseiras')
-        .insert(salesRecords);
+      console.log('Registrando pedido e itens...');
       
-      if (salesError) {
-        console.error('Erro ao registrar vendas:', salesError);
-        throw new Error(`Erro ao registrar vendas: ${salesError.message}`);
+      // Cria o pedido principal
+      const pedidoData = {
+        numero_pedido: `PED-${Date.now()}`,
+        tipo_pagamento: 'debito_pulseira',
+        status: 'concluido',
+        valor_total: salesRecords.reduce((sum, item) => sum + item.valor_total, 0),
+        data_pedido: new Date().toISOString(),
+        terminal_id: null // Adicionar ID do terminal se necessário
+      };
+      
+      // Insere o pedido
+      const { data: pedido, error: pedidoError } = await supabase
+        .from('pedidos')
+        .insert(pedidoData)
+        .select()
+        .single();
+      
+      if (pedidoError) {
+        console.error('Erro ao criar pedido:', pedidoError);
+        throw new Error(`Erro ao criar pedido: ${pedidoError.message}`);
+      }
+      
+      // Prepara os itens do pedido com os campos exatos da tabela
+      const itensPedido = salesRecords.map(item => ({
+        pedido_id: pedido.id,
+        produto_id: item.produto_id,
+        quantidade: item.quantidade,
+        preco_unitario: item.valor_unitario,
+        subtotal: item.valor_total
+      }));
+      
+      // Insere os itens do pedido
+      const { error: itensError } = await supabase
+        .from('itens_pedido')
+        .insert(itensPedido);
+      
+      if (itensError) {
+        console.error('Erro ao registrar itens do pedido:', itensError);
+        throw new Error(`Erro ao registrar itens do pedido: ${itensError.message}`);
       }
 
       for (const update of stockUpdates) {
@@ -273,7 +307,7 @@ const Index: React.FC = () => {
         if (update.novoEstoque <= 5 && update.novoEstoque > 0) {
           toast.warning(`⚠️ ALERTA DE ESTOQUE BAIXO: ${update.nome}`, {
             description: `Apenas ${update.novoEstoque} unidades restantes!`,
-            duration: 8000,
+            duration: 3000, // Reduzido para 3 segundos
             action: {
               label: 'Reabastecer',
               onClick: () => navigate('/estoque')
@@ -282,7 +316,7 @@ const Index: React.FC = () => {
         } else if (update.novoEstoque === 0) {
           toast.error(`🚨 PRODUTO ESGOTADO: ${update.nome}`, {
             description: 'Não há mais unidades disponíveis em estoque!',
-            duration: 10000,
+            duration: 4000, // Reduzido para 4 segundos
             action: {
               label: 'Gerenciar Estoque',
               onClick: () => navigate('/estoque')
@@ -320,14 +354,14 @@ const Index: React.FC = () => {
       
       toast.success(`✅ Venda Finalizada: ${totalVendas} item(ns) vendido(s) com sucesso!`, {
         description: `${resumo}\n\n🖨️ Impressões registradas no histórico!`,
-        duration: 6000
+        duration: 3000 // Reduzido para 3 segundos
       });
     },
     onError: (error: Error) => {
       console.error('Erro ao processar pedido:', error);
       toast.error('❌ Erro ao Processar Venda', {
         description: error.message,
-        duration: 8000
+        duration: 3000 // Reduzido para 3 segundos
       });
     }
   });
@@ -489,7 +523,8 @@ const Index: React.FC = () => {
     
     // Feedback visual para o usuário
     toast.success('Produto adicionado', {
-      description: `${product.nome} foi adicionado ao carrinho`
+      description: `${product.nome} foi adicionado ao carrinho`,
+      duration: 2000 // Definido para 2 segundos
     });
   };
 

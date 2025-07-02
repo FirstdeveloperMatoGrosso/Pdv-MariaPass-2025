@@ -128,7 +128,7 @@ const PixPayment: React.FC<PixPaymentProps> = ({
         customer: formattedCustomer,
         orderCode: generateOrderId(),
         expiresIn: 30, // 30 minutos para expirar
-        description: `Recarga de Pulseira #${recargaId}`
+        description: `Venda de Produto #${recargaId}`
       };
 
       console.log('Dados do pagamento PIX:', pixPaymentData);
@@ -388,7 +388,7 @@ const PixPayment: React.FC<PixPaymentProps> = ({
       
       // Exibe a mensagem de erro para o usuário
       toast.error(errorMessage, {
-        duration: 8000, // 8 segundos para mensagens mais longas
+        duration: 3000, // Reduzido para 3 segundos
         position: 'top-center',
         style: {
           maxWidth: '90%',
@@ -413,7 +413,7 @@ const PixPayment: React.FC<PixPaymentProps> = ({
   const copyPixCode = () => {
     if (!pixData) {
       console.error('Nenhum dado PIX disponível para copiar');
-      toast.error('Nenhum código PIX disponível para copiar');
+      toast.error('Nenhum código PIX disponível para copiar', { duration: 2000 });
       return;
     }
     
@@ -421,26 +421,26 @@ const PixPayment: React.FC<PixPaymentProps> = ({
     if (pixData.code) {
       navigator.clipboard.writeText(pixData.code)
         .then(() => {
-          toast.success('Código PIX copiado!');
+          toast.success('Código PIX copiado!', { duration: 2000 });
         })
         .catch(err => {
           console.error('Erro ao copiar código PIX:', err);
-          toast.error('Não foi possível copiar o código PIX');
+          toast.error('Não foi possível copiar o código PIX', { duration: 2000 });
         });
     } 
     // Se não tiver código, mas tiver URL do PIX, copia a URL
     else if (pixData.qrCodeUrl) {
       navigator.clipboard.writeText(pixData.qrCodeUrl)
         .then(() => {
-          toast.success('URL do PIX copiada!');
+          toast.success('URL do PIX copiada!', { duration: 2000 });
         })
         .catch(err => {
           console.error('Erro ao copiar URL do PIX:', err);
-          toast.error('Não foi possível copiar a URL do PIX');
+          toast.error('Não foi possível copiar a URL do PIX', { duration: 2000 });
         });
     } else {
       console.error('Nenhum código ou URL PIX disponível para copiar');
-      toast.error('Nenhum dado PIX disponível para copiar');
+      toast.error('Nenhum dado PIX disponível para copiar', { duration: 2000 });
     }
   };
 
@@ -485,7 +485,7 @@ const PixPayment: React.FC<PixPaymentProps> = ({
       // Atualiza o status com base na resposta
       if (response.status === 'paid') {
         setStatus('paid');
-        toast.success('Pagamento confirmado!');
+        toast.success('Pagamento confirmado!', { duration: 2000 });
         
         // Chama o callback de sucesso após um pequeno atraso
         setTimeout(() => {
@@ -494,13 +494,13 @@ const PixPayment: React.FC<PixPaymentProps> = ({
       } else if (response.status === 'failed' || response.status === 'canceled') {
         // Se o pagamento falhou ou foi cancelado, atualiza o status
         setStatus('expired');
-        toast.error('O pagamento falhou ou foi cancelado. Por favor, tente novamente.');
+        toast.error('O pagamento falhou ou foi cancelado. Por favor, tente novamente.', { duration: 3000 });
       }
       // Se o status for 'pending', não fazemos nada e esperamos a próxima verificação
       
     } catch (error) {
       console.error('Erro ao verificar status do pagamento:', error);
-      toast.error('Erro ao verificar o status do pagamento. Tente novamente.');
+      toast.error('Erro ao verificar o status do pagamento. Tente novamente.', { duration: 3000 });
     }
   }, [pixData, valor, onPaymentSuccess]);
 

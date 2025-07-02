@@ -333,39 +333,119 @@ export const paymentService = {
       
       // Cria o pedido com pagamento PIX
       console.log('Criando pedido PIX com os seguintes dados:', {
-        customer: formattedCustomer,
+        customer: { ...formattedCustomer, document: '***' }, // Não logar documento completo por segurança
         amount: paymentAmount,
         orderCode: orderCode || `order_${Date.now()}`,
         expiresIn: paymentExpiresIn,
-        items: orderItems
+        items: orderItems.map(item => ({
+          ...item,
+          description: item.description.substring(0, 30) + (item.description.length > 30 ? '...' : '')
+        }))
       });
 
-      console.log('Chamando pagarmeApi.createPixOrder com os seguintes dados:', {
-        customer: { ...formattedCustomer, document: '***' }, // Não logar documento completo por segurança
-        amount: paymentAmount / 100,
-        orderCode: orderCode || `order_${Date.now()}`,
-        expiresIn: paymentExpiresIn,
-        items: orderItems
-      });
-
-      const orderResponse = await pagarmeApi.createPixOrder({
-        customer: formattedCustomer,
-        amount: paymentAmount / 100, // Converte para reais
-        orderCode: orderCode || `order_${Date.now()}`,
-        expiresIn: paymentExpiresIn,
-        items: orderItems
-      });
-
-      console.log('Pedido criado com sucesso:', orderResponse.id);
-      console.log('Resposta completa da API:', JSON.stringify(orderResponse, null, 2));
+      let responseData: any;
+      let orderResponse: any;
       
+      try {
+        // Tenta criar o pedido usando a API do Pagar.me
+        orderResponse = await pagarmeApi.createPixOrder({
+          customer: formattedCustomer,
+          amount: paymentAmount / 100, // Converte para reais
+          orderCode: orderCode || `order_${Date.now()}`,
+          expiresIn: paymentExpiresIn,
+          items: orderItems
+        });
+        
+        responseData = orderResponse;
+        console.log('Resposta da API (sucesso):', responseData);
+      } catch (error: any) {
+        // Tenta extrair os dados da resposta mesmo em caso de erro
+        console.warn('Erro ao criar pedido PIX, tentando extrair dados úteis:', error);
+        
+        if (error.response) {
+          // Se tivermos uma resposta de erro, tenta extrair os dados
+          console.warn('Detalhes do erro da API:', {
+            status: error.response.status,
+            data: error.response.data
+          });
+          
+          // Tenta extrair os dados da resposta de erro
+          responseData = error.response.data || {};
+          
+          // Se não tivermos os dados de cobrança, tenta construir um objeto básico
+          if (!responseData.charges && (responseData.qr_code || responseData.qr_code_url)) {
+            responseData.charges = [{
+              id: responseData.id || `charge_${Date.now()}`,
+              status: 'pending',
+              amount: responseData.amount || paymentAmount,
+              payment_method: 'pix',
+              last_transaction: {
+                id: responseData.id || `trans_${Date.now()}`,
+                qr_code: responseData.qr_code,
+                qr_code_url: responseData.qr_code_url,
+                pix_url: responseData.payment_url,
+                expires_at: responseData.expires_at,
+                status: 'pending',
+                success: true
+              }
+            }];
+          }
+          
+          // Se não tivermos um orderResponse, usamos os dados da resposta de erro
+          if (!orderResponse) {
+            orderResponse = {
+              id: responseData.id || `order_${Date.now()}`,
+              status: 'pending',
+              amount: responseData.amount || paymentAmount,
+              charges: responseData.charges || [],
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+              items: orderItems,
+              customer: formattedCustomer,
+              payment_method: 'pix',
+              code: orderCode || `order_${Date.now()}`,
+              metadata: {}
+            };
+          }
+        } else {
+          console.error('Erro ao processar pagamento PIX:', error);
+          throw new Error('Erro ao processar pagamento PIX. Tente novamente mais tarde.');
+        }
+      }
+
+      // Verifica se a resposta contém os dados do PIX
+      if (!responseData.charges || !Array.isArray(responseData.charges) || responseData.charges.length === 0) {
+        console.warn('Resposta da API não contém dados de cobrança, mas continuando com os dados disponíveis:', responseData);
+        
+        // Tenta extrair os dados diretamente da resposta
+        if (responseData.qr_code || responseData.qr_code_url) {
+          responseData.charges = [{
+            id: responseData.id || `charge_${Date.now()}`,
+            status: 'pending',
+            amount: responseData.amount || paymentAmount,
+            payment_method: 'pix',
+            last_transaction: {
+              id: responseData.id || `trans_${Date.now()}`,
+              qr_code: responseData.qr_code,
+              qr_code_url: responseData.qr_code_url,
+              pix_url: responseData.payment_url,
+              expires_at: responseData.expires_at,
+              status: 'pending',
+              success: true
+            }
+          }];
+        } else {
+          throw new Error('A resposta da API não contém dados de cobrança suficientes');
+        }
+      }
+
       // Obtém os dados da cobrança
-      const charge = orderResponse.charges?.[0];
+      const charge = responseData.charges?.[0];
       const transaction = charge?.last_transaction;
       
       // Verifica se a resposta contém os dados necessários
       if (!charge) {
-        console.error('Nenhuma cobrança encontrada na resposta:', { orderResponse });
+        console.error('Nenhuma cobrança encontrada na resposta:', { responseData });
         throw new Error('Não foi possível processar o pagamento PIX: nenhuma cobrança encontrada');
       }
       
@@ -746,26 +826,60 @@ export const paymentService = {
         throw new Error('A data de vencimento deve ser pelo menos 1 dia no futuro');
       }
       
-      // Cria o pedido com pagamento por boleto
-      const orderResponse = await pagarmeApi.createBoletoOrder({
-        customer: formattedCustomer,
-        amount: paymentAmount,
-        orderCode: orderCode || `order_${Date.now()}`,
-        dueDate: paymentDueDate,
-        instructions: instructions || 'Pagar até a data de vencimento',
-      });
-
-      console.log('Pedido criado com sucesso:', orderResponse.id);
-
-          // Verifica se a resposta contém os dados necessários
-      if (!orderResponse.charges || !Array.isArray(orderResponse.charges) || orderResponse.charges.length === 0) {
-        console.error('Resposta da API sem informações de cobrança:', { orderResponse });
-        throw new Error('Não foi possível processar a cobrança: dados de cobrança não encontrados');
+      let responseData: any;
+      let orderResponse: any;
+      
+      try {
+        // Tenta criar o pedido usando a API do Pagar.me
+        orderResponse = await pagarmeApi.createBoletoOrder({
+          customer: formattedCustomer,
+          amount: paymentAmount / 100, // Converte para reais
+          orderCode: orderCode || `order_${Date.now()}`,
+          dueDate: paymentDueDate,
+          instructions: instructions || 'Pagar até a data de vencimento',
+          items: orderItems
+        });
+        
+        responseData = orderResponse;
+        console.log('Resposta da API (sucesso):', responseData);
+      } catch (error: any) {
+        // Tenta extrair os dados da resposta mesmo em caso de erro
+        console.warn('Erro ao criar pedido de boleto, tentando extrair dados úteis:', error);
+        
+        if (error.response) {
+          // Se tivermos uma resposta de erro, tenta extrair os dados
+          console.warn('Detalhes do erro da API:', {
+            status: error.response.status,
+            data: error.response.data
+          });
+          
+          // Tenta extrair os dados da resposta de erro
+          responseData = error.response.data || {};
+          
+          // Se não tivermos um orderResponse, usamos os dados da resposta de erro
+          if (!orderResponse) {
+            orderResponse = {
+              id: responseData.id || `order_${Date.now()}`,
+              status: 'pending',
+              amount: responseData.amount || paymentAmount,
+              charges: responseData.charges || [],
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+              items: orderItems,
+              customer: formattedCustomer,
+              payment_method: 'boleto',
+              code: orderCode || `order_${Date.now()}`,
+              metadata: {}
+            };
+          }
+        } else {
+          console.error('Erro ao processar pagamento com boleto:', error);
+          throw new Error('Erro ao processar pagamento com boleto. Tente novamente mais tarde.');
+        }
       }
-      
-      // Obtém a primeira cobrança (deve haver pelo menos uma)
-      const charge = orderResponse.charges[0];
-      
+
+      // Verifica se a resposta contém os dados do boleto
+      const charge = responseData.charges?.[0];
       if (!charge || !charge.last_transaction) {
         console.error('Resposta da API sem transação de boleto:', { orderResponse });
         throw new Error('Não foi possível processar a transação de boleto');
@@ -833,7 +947,14 @@ export const paymentService = {
         metadata: {
           ...(orderResponse.metadata || {}),
           created_at: new Date().toISOString()
-        }
+        },
+        _debug: process.env.NODE_ENV === 'development' ? {
+          rawResponse: orderResponse,
+          charge: charge,
+          transaction: lastTransaction,
+          config: config.pagarme,
+          processedAt: new Date().toISOString()
+        } : undefined
       };
 
       console.log('Resposta do pagamento com boleto:', response);

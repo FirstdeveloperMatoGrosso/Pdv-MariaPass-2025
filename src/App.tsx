@@ -46,15 +46,17 @@ const App = () => {
         <BrowserRouter>
           <SidebarProvider>
             <div className="min-h-screen flex w-full">
-              <AppSidebar />
-              <SidebarInset>
-                <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+              <div className="flex-shrink-0">
+                <AppSidebar />
+              </div>
+              <SidebarInset className="pr-2" style={{ zoom: 0.85, flex: '1 1 auto' }}>
+                <header className="flex h-14 shrink-0 items-center gap-2 border-b px-4">
                   <SidebarTrigger className="-ml-1" />
                   <div className="flex items-center gap-2">
-                    <span className="font-semibold">Sistema de Totem - MariaPass</span>
+                    <span className="text-sm font-semibold">Sistema de Totem - MariaPass</span>
                   </div>
                 </header>
-                <main className="flex-1">
+                <main className="flex-1 p-2 pr-4">
                   <Routes>
                     <Route path="/" element={<Index />} />
                     <Route path="/vendas" element={<Vendas />} />

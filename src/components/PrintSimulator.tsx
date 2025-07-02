@@ -27,7 +27,7 @@ const PrintSimulator: React.FC<PrintSimulatorProps> = ({
   orderId, 
   cart, 
   total, 
-  paymentMethod = 'Pulseira',
+  paymentMethod = 'Produto',
   nsu,
   onClose 
 }) => {

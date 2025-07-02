@@ -3,20 +3,15 @@ import {
   Sidebar, 
   SidebarContent, 
   SidebarGroup, 
-  SidebarGroupContent, 
-  SidebarGroupLabel, 
   SidebarMenu, 
   SidebarMenuButton, 
   SidebarMenuItem,
   SidebarHeader,
-  SidebarTrigger,
   useSidebar 
 } from '@/components/ui/sidebar';
 import { NavLink, useLocation } from 'react-router-dom';
 import { 
   Home, 
-  Settings, 
-  ScanBarcode, 
   Package,
   BarChart3,
   CreditCard,
@@ -25,37 +20,31 @@ import {
   Printer,
   Monitor,
   Lock,
-  Ticket,
-  Watch,
   FileSpreadsheet,
   ShoppingCart,
   FileText,
   FileCheck2,
-  Banknote
+  Banknote,
+  ScanBarcode
 } from 'lucide-react';
 
 // Adicionando as integrações requisitadas
 const menuItems = [
-  { title: 'Início', url: '/', icon: Home },
-  { title: 'Vendas', url: '/vendas', icon: ShoppingCart },
-  { title: 'Produtos', url: '/produtos', icon: Package },
-  { title: 'Importar Excel', url: '/importar-excel', icon: FileSpreadsheet },
-  { title: 'Relatórios', url: '/relatorios', icon: BarChart3 },
-  { title: 'Pagamentos', url: '/pagamentos', icon: CreditCard },
-  { title: 'Cancelamentos', url: '/cancelamentos', icon: XCircle },
-  { title: 'Estoque', url: '/estoque', icon: Archive },
-  { title: 'Impressões de Vendas', url: '/impressoes', icon: Printer },
-  { title: 'Terminais', url: '/terminais', icon: Monitor },
-  { title: 'Controle de Acesso', url: '/acesso', icon: Lock },
-  { title: 'Vouchers', url: '/vouchers', icon: Ticket },
-  { title: 'Recarga Pulseiras', url: '/recarga-pulseiras', icon: Watch },
-  { title: 'Scanner & Configurações', url: '/configuracoes', icon: ScanBarcode },
-  // Integração Nota Fiscal (utilizando um ícone representativo)
-  { title: 'Integração Nota Fiscal', url: '/integracao-nota-fiscal', icon: FileText },
-  // Integração Boleto
-  { title: 'Integração Boleto', url: '/integracao-boleto', icon: Banknote },
-  // Integração NFC-e
-  { title: 'Integração NFC-e', url: '/integracao-nfce', icon: FileCheck2 },
+  { title: 'Início', url: '/', icon: Home, color: '#3b82f6' }, // Azul
+  { title: 'Vendas', url: '/vendas', icon: ShoppingCart, color: '#10b981' }, // Verde
+  { title: 'Produtos', url: '/produtos', icon: Package, color: '#eab308' }, // Amarelo
+  { title: 'Importar Excel', url: '/importar-excel', icon: FileSpreadsheet, color: '#10b981' }, // Esmeralda
+  { title: 'Relatórios', url: '/relatorios', icon: BarChart3, color: '#a855f7' }, // Roxo
+  { title: 'Pagamentos', url: '/pagamentos', icon: CreditCard, color: '#6366f1' }, // Índigo
+  { title: 'Cancelamentos', url: '/cancelamentos', icon: XCircle, color: '#ef4444' }, // Vermelho
+  { title: 'Estoque', url: '/estoque', icon: Archive, color: '#f59e0b' }, // Âmbar
+  { title: 'Impressões de Vendas', url: '/impressoes', icon: Printer, color: '#06b6d4' }, // Ciano
+  { title: 'Terminais', url: '/terminais', icon: Monitor, color: '#0ea5e9' }, // Azul céu
+  { title: 'Controle de Acesso', url: '/acesso', icon: Lock, color: '#f43f5e' }, // Rosa
+  { title: 'Scanner & Configurações', url: '/configuracoes', icon: ScanBarcode, color: '#8b5cf6' }, // Violeta
+  { title: 'Integração Nota Fiscal', url: '/integracao-nota-fiscal', icon: FileText, color: '#f97316' }, // Laranja
+  { title: 'Integração Boleto', url: '/integracao-boleto', icon: Banknote, color: '#84cc16' }, // Lima
+  { title: 'Integração NFC-e', url: '/integracao-nfce', icon: FileCheck2, color: '#0d9488' }, // Verde água
 ];
 
 export function AppSidebar() {
@@ -71,39 +60,64 @@ export function AppSidebar() {
   console.log('Menu items:', menuItems);
 
   return (
-    <Sidebar className={isCollapsed ? 'w-14' : 'w-60'} collapsible="icon">
-      <SidebarHeader className="border-b">
-        <div className="flex items-center gap-2 p-2">
-          <ScanBarcode className="w-6 h-6 text-green-600" />
-          {!isCollapsed && (
-            <span className="font-bold text-lg text-green-600">MariaPass</span>
-          )}
-        </div>
-        <SidebarTrigger className="ml-auto" />
-      </SidebarHeader>
+    <Sidebar 
+      className={`fixed left-0 top-0 bottom-0 flex flex-col border-r border-gray-200 ${isCollapsed ? 'w-14' : 'w-56'}`} 
+      collapsible="icon"
+      data-sidebar="sidebar"
+      data-collapsed={isCollapsed ? 'true' : 'false'}
+      style={{
+        height: '100vh',
+        padding: '0.25rem 0 0',
+        boxSizing: 'border-box',
+        display: 'flex',
+        flexDirection: 'column',
+        backgroundColor: 'white',
+        zIndex: 40,
+        transition: 'width 0.2s ease-in-out'
+      }}
+    >
+      <div className="flex-shrink-0">
+        <SidebarHeader className="border-b p-1.5 h-12">
+          <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'justify-start'} h-full`}>
+            <img 
+              src="/file_00000000752461f89c07fa2b32ca50d32.png" 
+              alt="Logo MariaPass" 
+              className="h-7 w-auto max-w-[28px]"
+            />
+            {!isCollapsed && (
+              <span className="font-bold text-sm text-green-600 ml-2">MariaPass</span>
+            )}
+          </div>
+        </SidebarHeader>
+      </div>
 
-      <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Menu Principal</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {menuItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild isActive={isActive(item.url)}>
-                    <NavLink 
-                      to={item.url} 
-                      className="flex items-center gap-2"
-                    >
-                      <item.icon className="w-4 h-4" />
-                      {!isCollapsed && <span>{item.title}</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      </SidebarContent>
+      <div className="flex-1 overflow-y-auto">
+        <SidebarContent className="px-1.5 pt-1">
+          <SidebarMenu className="space-y-0">
+            {menuItems.map((item, index) => (
+              <SidebarMenuItem key={index} className="w-full">
+                <SidebarMenuButton asChild className="w-full h-8" data-active={isActive(item.url)}>
+                  <NavLink
+                    to={item.url}
+                    className={`flex items-center ${isCollapsed ? 'justify-center' : 'justify-start'} w-full h-full px-2 rounded transition-colors hover:bg-green-50`}
+                  >
+                    <item.icon 
+                      className="h-4 w-4 flex-shrink-0" 
+                      style={{ color: item.color }}
+                      aria-hidden="true"
+                    />
+                    {!isCollapsed && (
+                      <span className="ml-2 text-xs font-medium whitespace-nowrap truncate">
+                        {item.title}
+                      </span>
+                    )}
+                  </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            ))}
+          </SidebarMenu>
+        </SidebarContent>
+      </div>
     </Sidebar>
   );
 }

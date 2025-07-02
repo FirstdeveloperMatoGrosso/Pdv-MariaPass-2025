@@ -26,7 +26,7 @@ import {
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import PulseiraReader from '@/components/PulseiraReader';
+import BarcodeReader from '@/components/BarcodeReader';
 import PixPayment from '@/components/PixPayment';
 import PaymentProviderSelector from '@/components/PaymentProviderSelector';
 import CashPayment from '@/components/CashPayment';
@@ -355,8 +355,21 @@ const RecargaPulseiras: React.FC = () => {
       </div>
 
       {/* Leitura de Pulseira com histórico */}
-      <PulseiraReader 
-        onPulseiraSelected={(pulseira) => setSelectedPulseira(pulseira)}
+      <BarcodeReader 
+        onCodeRead={(code) => {
+          // Here you would typically fetch the pulseira data using the scanned code
+          // For now, we'll just set the code as a placeholder
+          setSelectedPulseira({
+            id: code,
+            codigo: code,
+            saldo: 0,
+            status: 'ativa',
+            tipo: 'recarregavel',
+            cliente_nome: 'Cliente não identificado',
+            cliente_documento: ''
+          });
+        }}
+        placeholder="Passe o código da pulseira"
       />
 
       {/* Nova Recarga */}

@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -15,6 +15,13 @@ import { useCancelamentos } from '@/hooks/useCancelamentos';
 import { Loader2, Printer } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+
+// Função para gerar código de autorização aleatório
+const gerarCodigoAutorizacao = () => {
+  // Gera um código de 6 dígitos numéricos
+  return Math.floor(100000 + Math.random() * 900000).toString();
+};
+
 // jsPDF é carregado globalmente via CDN
 declare global {
   interface Window {
@@ -24,8 +31,11 @@ declare global {
         setFont(fontName: string, fontStyle?: string, fontWeight?: string | number): void;
         text(text: string | string[], x: number, y: number, options?: { align?: string }): void;
         setLineWidth(width: number): void;
+        setDrawColor(color: number): void;
+        setLineDash(dashArray: number[], dashPhase?: number): void;
         line(x1: number, y1: number, x2: number, y2: number, style?: { width?: number; color?: string }): void;
         save(filename: string): void;
+        output(type: string, options?: any): any;
         internal: {
           pageSize: {
             getWidth(): number;
@@ -39,21 +49,26 @@ declare global {
 
 interface Produto {
   id: string;
-  nome: string;
+  nome: string; // Agora é obrigatório
   preco: number;
   categoria: string;
+  numero_pedido?: string;
 }
 
 interface CancelamentoModalProps {
   isOpen: boolean;
   onClose: () => void;
   produto: Produto | null;
+  modoVisualizacao?: boolean;
+  onPrintComplete?: () => void;
 }
 
 const CancelamentoModal: React.FC<CancelamentoModalProps> = ({
   isOpen,
   onClose,
   produto,
+  modoVisualizacao = false,
+  onPrintComplete,
 }) => {
   const { criarCancelamento } = useCancelamentos();
   const navigate = useNavigate();
@@ -66,6 +81,132 @@ const CancelamentoModal: React.FC<CancelamentoModalProps> = ({
     observacoes: '',
   });
 
+  // Se estiver em modo de visualização, preenche o formulário com dados do cancelamento
+  useEffect(() => {
+    if (produto) {
+      setFormData({
+        numero_pedido: produto.numero_pedido || '',
+        motivo: modoVisualizacao ? 'Venda cancelada anteriormente' : '',
+        valor_cancelado: produto.preco.toString(),
+        cliente_nome: modoVisualizacao ? 'Cliente não especificado' : '',
+        observacoes: modoVisualizacao 
+          ? `Cancelamento realizado em ${new Date().toLocaleString('pt-BR')}` 
+          : '',
+      });
+    }
+  }, [modoVisualizacao, produto]);
+
+  const gerarComprovantePDF = (dados: any) => {
+    const doc = new window.jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const margin = 10;
+    let yPos = 10;
+    
+    // Cabeçalho - Logo e Título
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text('MARIA PASS', pageWidth / 2, yPos, { align: 'center' } as any);
+    yPos += 8;
+    
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text('RUA JOAO DA SILVA, 123 - CENTRO', pageWidth / 2, yPos, { align: 'center' } as any);
+    yPos += 5;
+    doc.text('SÃO PAULO - SP - 01234-567', pageWidth / 2, yPos, { align: 'center' } as any);
+    yPos += 5;
+    doc.text('CNPJ: 12.345.678/0001-90', pageWidth / 2, yPos, { align: 'center' } as any);
+    yPos += 10;
+    
+    // Linha divisória
+    doc.setLineWidth(0.5);
+    doc.line(margin, yPos, pageWidth - margin, yPos);
+    yPos += 8;
+    
+    // Título do Comprovante
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.text('COMPROVANTE DE CANCELAMENTO', pageWidth / 2, yPos, { align: 'center' } as any);
+    yPos += 10;
+    
+    // Linha divisória
+    doc.line(margin, yPos, pageWidth - margin, yPos);
+    yPos += 8;
+    
+    // Data e Hora
+    const now = new Date();
+    const dataHora = now.toLocaleString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+    
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Data/Hora: ${dataHora}`, margin, yPos);
+    yPos += 6;
+    
+    // Número do Cupom
+    doc.text(`Cupom Nº: ${dados.numero_pedido || 'N/A'}`, margin, yPos);
+    yPos += 8;
+    
+    // Linha divisória pontilhada
+    doc.setLineWidth(0.2);
+    doc.setDrawColor(150);
+    doc.setLineDash([2, 2], 0);
+    doc.line(margin, yPos, pageWidth - margin, yPos);
+    doc.setLineDash([], 0);
+    yPos += 8;
+    
+    // Itens do Cancelamento
+    doc.setFont('helvetica', 'bold');
+    doc.text('CANCELAMENTO', margin, yPos);
+    yPos += 10;
+    
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Valor: R$ ${Number(dados.valor_cancelado || 0).toFixed(2).replace('.', ',')}`, margin, yPos);
+    yPos += 6;
+    
+    doc.text(`Motivo: ${dados.motivo || 'N/A'}`, margin, yPos);
+    yPos += 6;
+    
+    // Código de autorização
+    doc.text(`Cód. Autorização: ${dados.codigo_autorizacao || 'N/A'}`, margin, yPos);
+    yPos += 10;
+    
+    // Linha divisória pontilhada
+    doc.setLineWidth(0.2);
+    doc.setDrawColor(150);
+    doc.setLineDash([2, 2], 0);
+    doc.line(margin, yPos, pageWidth - margin, yPos);
+    doc.setLineDash([], 0);
+    yPos += 8;
+    
+    // Total
+    doc.setFont('helvetica', 'bold');
+    doc.text(`TOTAL CANCELADO: R$ ${Number(dados.valor_cancelado || 0).toFixed(2).replace('.', ',')}`, margin, yPos);
+    yPos += 10;
+    
+    // Mensagem de agradecimento
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Obrigado pela preferência!', pageWidth / 2, yPos, { align: 'center' } as any);
+    yPos += 5;
+    doc.text('Volte sempre!', pageWidth / 2, yPos, { align: 'center' } as any);
+    yPos += 10;
+    
+    // Rodapé
+    doc.setFontSize(7);
+    doc.text('Desenvolvido por: MARIA PASS TECNOLOGIA', pageWidth / 2, yPos, { align: 'center' } as any);
+    yPos += 5;
+    doc.text('CNPJ: 12.345.678/0001-90', pageWidth / 2, yPos, { align: 'center' } as any);
+    yPos += 5;
+    doc.text('Sistema de automação comercial', pageWidth / 2, yPos, { align: 'center' } as any);
+    
+    return doc;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!produto || !formData.numero_pedido || !formData.motivo) return;
@@ -73,82 +214,65 @@ const CancelamentoModal: React.FC<CancelamentoModalProps> = ({
     try {
       setLoading(true);
       
-      const cancelamento = {
+      // Gera o código de autorização
+      const codigoAutorizacao = gerarCodigoAutorizacao();
+      
+      const dadosCancelamento = {
         numero_pedido: formData.numero_pedido,
         motivo: formData.motivo,
         valor_cancelado: parseFloat(formData.valor_cancelado) || 0,
         cliente_nome: formData.cliente_nome,
-        produto_nome: produto.nome,
+        produto_nome: produto?.nome || 'Produto não identificado', // Garante que sempre teremos um valor
         observacoes: formData.observacoes,
+        data_cancelamento: new Date().toISOString(),
+        codigo_autorizacao: codigoAutorizacao,
       };
 
-      // Cria o cancelamento no banco de dados
-      const result = await criarCancelamento(cancelamento);
-      
-      if (!result) {
-        throw new Error('Nenhum resultado retornado ao criar o cancelamento');
-      }
-      
-      if ('error' in result) {
-        throw new Error(typeof result.error === 'string' ? result.error : 'Erro desconhecido ao criar cancelamento');
+      if (!modoVisualizacao) {
+        // Cria o cancelamento no banco de dados apenas se não for modo de visualização
+        const result = await criarCancelamento(dadosCancelamento);
+        if (!result) throw new Error('Nenhum resultado retornado ao criar o cancelamento');
+        if ('error' in result) throw new Error(typeof result.error === 'string' ? result.error : 'Erro desconhecido ao criar cancelamento');
+        
+        // Redireciona imediatamente após o cancelamento ser criado com sucesso
+        onClose();
+        navigate('/cancelamentos');
+        toast.success('Cancelamento realizado com sucesso!');
       }
 
-      // Gera o comprovante de cancelamento
+      // Gera o PDF em segundo plano sem bloquear o redirecionamento
       try {
-        const doc = new window.jsPDF();
-        const pageWidth = doc.internal.pageSize.getWidth();
-        const margin = 15;
-        let yPos = 20;
-        
-        // Cabeçalho
-        doc.setFontSize(18);
-        doc.setFont('helvetica', 'bold');
-        doc.text('COMPROVANTE DE CANCELAMENTO', pageWidth / 2, yPos, { align: 'center' } as any);
-        yPos += 15;
-        
-        // Linha divisória
-        doc.setLineWidth(0.5);
-        doc.line(margin, yPos, pageWidth - margin, yPos);
-        yPos += 15;
-        
-        // Conteúdo
-        doc.setFontSize(12);
-        doc.setFont('helvetica', 'normal');
-        
-        // Função para adicionar campo
-        const addField = (label: string, value: string) => {
-          doc.setFont('helvetica', 'bold');
-          doc.text(`${label}:`, margin, yPos);
-          doc.setFont('helvetica', 'normal');
-          doc.text(value, margin + 60, yPos);
-          yPos += 10;
-        };
-        
-        // Adiciona os campos
-        addField('Número do Pedido', cancelamento.numero_pedido || 'N/A');
-        addField('Produto', cancelamento.produto_nome || 'N/A');
-        addField('Valor', `R$ ${Number(cancelamento.valor_cancelado || 0).toFixed(2).replace('.', ',')}`);
-        addField('Motivo', cancelamento.motivo || 'N/A');
-        addField('Data', new Date().toLocaleString('pt-BR'));
-        
-        // Rodapé
-        yPos = doc.internal.pageSize.getHeight() - 20;
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'italic');
-doc.text('Este é um documento gerado automaticamente.', pageWidth / 2, yPos, { align: 'center' } as any);
+        const doc = gerarComprovantePDF(dadosCancelamento);
         
         // Salva o PDF
-        doc.save(`cancelamento-${cancelamento.numero_pedido || 'sem-numero'}.pdf`);
+        const pdfBlob = doc.output('blob');
+        const pdfUrl = URL.createObjectURL(pdfBlob);
+        
+        // Abre o PDF em uma nova aba
+        window.open(pdfUrl, '_blank');
+        
+        // Força o download do PDF
+        const a = document.createElement('a');
+        a.href = pdfUrl;
+        a.download = `comprovante-cancelamento-${dadosCancelamento.numero_pedido || 'sem-numero'}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        
+        // Notifica o componente pai que o PDF foi gerado
+        if (onPrintComplete) {
+          onPrintComplete();
+        }
+        
+        // Se for modo de visualização, fecha o modal após um pequeno delay
+        if (modoVisualizacao) {
+          toast.success('Comprovante gerado com sucesso!');
+          setTimeout(() => onClose(), 1000);
+        }
       } catch (error) {
         console.error('Erro ao gerar PDF:', error);
         toast.error('Ocorreu um erro ao gerar o comprovante.');
       }
-
-      // Redireciona para a página de cancelamentos
-      navigate('/cancelamentos');
-      
-      // Fecha o modal após um pequeno delay para dar tempo do redirecionamento
-      setTimeout(() => onClose(), 300);
       
       // Reset form and close modal
       setFormData({

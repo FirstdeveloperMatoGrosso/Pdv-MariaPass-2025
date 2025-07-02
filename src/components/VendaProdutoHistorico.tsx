@@ -22,9 +22,9 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
-interface PulseiraHistoricoProps {
-  pulseiraId: string;
-  codigoPulseira: string;
+interface VendaProdutoHistoricoProps {
+  produtoVendidoId: string;
+  codigoProduto: string;
 }
 
 interface VendaHistorico {
@@ -47,34 +47,80 @@ interface VendaHistorico {
   };
 }
 
-const PulseiraHistorico: React.FC<PulseiraHistoricoProps> = ({ pulseiraId, codigoPulseira }) => {
+const VendaProdutoHistorico: React.FC<VendaProdutoHistoricoProps> = ({ produtoVendidoId, codigoProduto }) => {
   const { data: vendas = [], isLoading } = useQuery({
-    queryKey: ['historico_vendas', pulseiraId],
+    queryKey: ['historico_pedidos', produtoVendidoId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('vendas_pulseiras')
-        .select(`
-          *,
-          produtos (
-            nome,
-            codigo_barras
-          ),
-          terminais (
-            nome,
-            localizacao
-          )
-        `)
-        .eq('pulseira_id', pulseiraId)
-        .order('data_venda', { ascending: false });
+      // Primeiro busca os itens de pedido
+      const { data: itens, error: itensError } = await supabase
+        .from('itens_pedido')
+        .select('*')
+        .eq('produto_vendido_id', produtoVendidoId)
+        .order('created_at', { ascending: false });
       
-      if (error) {
-        console.error('Erro ao buscar histórico:', error);
+      if (itensError) {
+        console.error('Erro ao buscar itens do pedido:', itensError);
+        throw itensError;
+      }
+
+      // Se não houver itens, retorna array vazio
+      if (!itens || itens.length === 0) return [];
+
+      try {
+        // Busca os pedidos e produtos relacionados
+        const pedidosIds = [...new Set(itens.map(item => item.pedido_id))];
+        const produtosIds = [...new Set(itens.map(item => item.produto_id).filter(Boolean))];
+
+        // Busca os pedidos
+        const { data: pedidos = [], error: pedidosError } = await supabase
+          .from('pedidos')
+          .select('*')
+          .in('id', pedidosIds);
+        
+        if (pedidosError) throw pedidosError;
+
+        // Busca os produtos
+        const { data: produtos = [], error: produtosError } = await supabase
+          .from('produtos')
+          .select('*')
+          .in('id', produtosIds);
+        
+        if (produtosError) throw produtosError;
+
+        // Cria um mapa de pedidos por ID para acesso rápido
+        const pedidosMap = new Map(pedidos.map(p => [p.id, p]));
+        
+        // Cria um mapa de produtos por ID para acesso rápido
+        const produtosMap = new Map(produtos.map(p => [p.id, p]));
+
+        // Transforma os itens no formato esperado
+        return itens.map(item => ({
+          id: item.id,
+          quantidade: item.quantidade,
+          valor_unitario: item.preco_unitario,
+          valor_total: item.subtotal,
+          forma_pagamento: pedidosMap.get(item.pedido_id)?.tipo_pagamento || 'desconhecido',
+          numero_autorizacao: pedidosMap.get(item.pedido_id)?.numero_pedido || null,
+          nsu: null,
+          bandeira: null,
+          data_venda: pedidosMap.get(item.pedido_id)?.data_pedido || new Date().toISOString(),
+          nome: produtosMap.get(item.produto_id)?.nome || 'Produto não identificado',
+          codigo_barras: produtosMap.get(item.produto_id)?.codigo_barras || null,
+          produtos: produtosMap.get(item.produto_id) ? {
+            nome: produtosMap.get(item.produto_id)?.nome || '',
+            codigo_barras: produtosMap.get(item.produto_id)?.codigo_barras || null
+          } : undefined,
+          terminais: {
+            nome: 'Terminal',
+            localizacao: 'Localização não especificada'
+          }
+        }));
+      } catch (error) {
+        console.error('Erro ao processar histórico de vendas:', error);
         throw error;
       }
-      
-      return data || [];
     },
-    enabled: !!pulseiraId,
+    enabled: !!produtoVendidoId,
   });
 
   const getPaymentIcon = (forma: string) => {
@@ -93,7 +139,7 @@ const PulseiraHistorico: React.FC<PulseiraHistoricoProps> = ({ pulseiraId, codig
     const labels: { [key: string]: string } = {
       'cartao_credito': 'Cartão de Crédito',
       'cartao_debito': 'Cartão de Débito',
-      'debito_pulseira': 'Débito Pulseira',
+      'debito_pulseira': 'Débito em Conta',
       'pix': 'PIX',
       'dinheiro': 'Dinheiro'
     };
@@ -113,15 +159,11 @@ const PulseiraHistorico: React.FC<PulseiraHistoricoProps> = ({ pulseiraId, codig
   if (isLoading) {
     return (
       <Card>
-        <CardHeader className="p-3">
-          <CardTitle className="text-base">Carregando histórico...</CardTitle>
+        <CardHeader>
+          <CardTitle>Histórico de Vendas</CardTitle>
         </CardHeader>
-        <CardContent className="p-3">
-          <div className="animate-pulse space-y-2">
-            <div className="h-4 bg-gray-200 rounded"></div>
-            <div className="h-4 bg-gray-200 rounded"></div>
-            <div className="h-4 bg-gray-200 rounded"></div>
-          </div>
+        <CardContent>
+          <p>Carregando histórico do produto {codigoProduto}...</p>
         </CardContent>
       </Card>
     );
@@ -132,7 +174,7 @@ const PulseiraHistorico: React.FC<PulseiraHistoricoProps> = ({ pulseiraId, codig
       <CardHeader className="p-3">
         <CardTitle className="flex items-center space-x-2 text-base">
           <ShoppingCart className="w-5 h-5 text-green-600" />
-          <span>Histórico de Compras - {codigoPulseira}</span>
+          <span>Histórico de Compras - {codigoProduto}</span>
           <Badge variant="outline">{vendas.length} transações</Badge>
         </CardTitle>
       </CardHeader>
@@ -140,7 +182,7 @@ const PulseiraHistorico: React.FC<PulseiraHistoricoProps> = ({ pulseiraId, codig
         {vendas.length === 0 ? (
           <div className="p-6 text-center text-gray-500">
             <ShoppingCart className="w-12 h-12 text-gray-300 mx-auto mb-2" />
-            <p>Nenhuma compra realizada com esta pulseira</p>
+            <p>Nenhuma venda encontrada para o produto {codigoProduto}.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -237,4 +279,4 @@ const PulseiraHistorico: React.FC<PulseiraHistoricoProps> = ({ pulseiraId, codig
   );
 };
 
-export default PulseiraHistorico;
+export default VendaProdutoHistorico;

@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { VendaPulseira } from '@/types/venda';
 
 interface Cancelamento {
   id: string;
@@ -12,6 +13,7 @@ interface Cancelamento {
   valor_cancelado: number;
   motivo: string;
   observacoes?: string;
+  codigo_autorizacao?: string;
   responsavel: string;
   operador?: string;
   aprovado: boolean;
@@ -25,7 +27,27 @@ interface NovoCancelamento {
   cliente_nome?: string;
   produto_nome?: string;
   observacoes?: string;
+  codigo_autorizacao?: string;
 }
+
+export const buscarCancelamentoPorPedido = async (numeroPedido: string) => {
+  try {
+    const { data, error } = await supabase
+      .from('cancelamentos')
+      .select('*')
+      .eq('numero_pedido', numeroPedido)
+      .single();
+
+    if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+      throw error;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Erro ao buscar cancelamento:', error);
+    throw error;
+  }
+};
 
 export const useCancelamentos = () => {
   const [cancelamentos, setCancelamentos] = useState<Cancelamento[]>([]);
@@ -60,37 +82,87 @@ export const useCancelamentos = () => {
 
   const criarCancelamento = async (dadosCancelamento: NovoCancelamento) => {
     try {
+      // Primeiro, buscar o ID do pedido usando o número do pedido
+      const { data: pedido, error: erroPedido } = await supabase
+        .from('pedidos')
+        .select('id')
+        .eq('numero_pedido', dadosCancelamento.numero_pedido)
+        .single();
+
+      if (erroPedido || !pedido) {
+        console.error('Erro ao buscar pedido:', erroPedido);
+        throw new Error('Pedido não encontrado');
+      }
+
+      // Usando apenas as colunas que existem na tabela
       const novoCancelamento = {
-        numero_pedido: dadosCancelamento.numero_pedido,
-        cliente_nome: dadosCancelamento.cliente_nome || 'Cliente Totem',
-        produto_nome: dadosCancelamento.produto_nome || 'Produto não especificado',
-        valor_cancelado: dadosCancelamento.valor_cancelado || 0,
+        pedido_id: pedido.id, // Usando o ID real do pedido
         motivo: dadosCancelamento.motivo,
-        observacoes: dadosCancelamento.observacoes,
+        valor_cancelado: dadosCancelamento.valor_cancelado || 0,
         responsavel: 'Sistema',
-        operador: 'Totem',
-        aprovado: false,
+        observacoes: `Nº Pedido: ${dadosCancelamento.numero_pedido}. ` +
+                    `Cliente: ${dadosCancelamento.cliente_nome || 'Não informado'}. ` +
+                    `Produto: ${dadosCancelamento.produto_nome || 'Não especificado'}. ` +
+                    `Código: ${dadosCancelamento.codigo_autorizacao || 'N/A'}. ` +
+                    (dadosCancelamento.observacoes ? `Obs: ${dadosCancelamento.observacoes}` : ''),
+        aprovado: true,
         data_cancelamento: new Date().toISOString()
       };
 
-      const { data, error } = await supabase
+      // 1. Primeiro, verifica se já existe um cancelamento para esta venda
+      const { data: cancelamentoExistente } = await supabase
+        .from('cancelamentos')
+        .select('*')
+        .eq('pedido_id', pedido.id) // Usar o ID do pedido
+        .maybeSingle();
+
+      if (cancelamentoExistente) {
+        throw new Error('Já existe um cancelamento para esta venda');
+      }
+
+      // 2. Cria o registro de cancelamento
+      const { data: cancelamento, error: erroCancelamento } = await supabase
         .from('cancelamentos')
         .insert([novoCancelamento])
         .select()
         .single();
 
-      if (error) {
-        console.error('Erro ao criar cancelamento:', error);
-        throw error;
+      if (erroCancelamento) {
+        console.error('Erro ao criar cancelamento:', erroCancelamento);
+        throw erroCancelamento;
       }
 
-      console.log('Cancelamento criado:', data);
-      toast.success('Solicitação de cancelamento criada com sucesso!');
+      // Atualiza o status do pedido para 'cancelado' no banco de dados
+      try {
+        // Tenta atualizar o status do pedido
+        const { error: erroAtualizacao } = await supabase
+          .from('pedidos')
+          .update({ 
+            status: 'cancelado',
+            updated_at: new Date().toISOString() 
+          })
+          .eq('id', pedido.id); // Usar o ID do pedido
+
+        if (erroAtualizacao) {
+          console.warn('Aviso: Não foi possível atualizar o status do pedido:', erroAtualizacao);
+          
+          // Se a coluna status não existir, apenas registra o aviso
+          if (erroAtualizacao.code === '42703') {
+            console.warn('A coluna "status" não existe na tabela "pedidos". Execute o script SQL para adicioná-la.');
+          }
+        }
+      } catch (error) {
+        console.error('Erro ao tentar atualizar o status da venda:', error);
+        // Continua mesmo com erro para não interromper o fluxo principal
+      }
+
+      console.log('Cancelamento criado e venda atualizada:', cancelamento);
+      toast.success('Venda cancelada com sucesso!');
       
       // Atualizar lista local
-      setCancelamentos(prev => [data, ...prev]);
+      setCancelamentos(prev => [cancelamento, ...prev]);
       
-      return data;
+      return cancelamento;
     } catch (err) {
       console.error('Erro ao criar cancelamento:', err);
       toast.error('Erro ao criar solicitação de cancelamento');
@@ -100,6 +172,19 @@ export const useCancelamentos = () => {
 
   const atualizarStatusCancelamento = async (id: string, aprovado: boolean) => {
     try {
+      // Primeiro, obtém os dados atuais do cancelamento
+      const { data: cancelamentoAtual, error: erroBusca } = await supabase
+        .from('cancelamentos')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (erroBusca) {
+        console.error('Erro ao buscar cancelamento:', erroBusca);
+        throw erroBusca;
+      }
+
+      // Atualiza o status do cancelamento
       const { data, error } = await supabase
         .from('cancelamentos')
         .update({ 
@@ -116,6 +201,26 @@ export const useCancelamentos = () => {
       }
 
       console.log('Status do cancelamento atualizado:', data);
+      
+      // Se o cancelamento foi aprovado, atualiza o status do pedido para 'cancelado'
+      if (aprovado && cancelamentoAtual?.numero_pedido) {
+        try {
+          const { error: erroAtualizacao } = await supabase
+            .from('pedidos')
+            .update({ 
+              status: 'cancelado',
+              updated_at: new Date().toISOString() 
+            })
+            .eq('numero_pedido', cancelamentoAtual.numero_pedido);
+
+          if (erroAtualizacao) {
+            console.warn('Aviso: Não foi possível atualizar o status do pedido:', erroAtualizacao);
+          }
+        } catch (error) {
+          console.error('Erro ao atualizar status da venda:', error);
+          // Continua mesmo com erro para não interromper o fluxo principal
+        }
+      }
       
       // Atualizar lista local
       setCancelamentos(prev => 
@@ -145,6 +250,8 @@ export const useCancelamentos = () => {
     loading,
     error,
     criarCancelamento,
+    buscarCancelamentos,
+    buscarCancelamentoPorPedido,
     atualizarStatusCancelamento,
     refetch: buscarCancelamentos
   };

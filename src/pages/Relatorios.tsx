@@ -38,6 +38,25 @@ const Relatorios: React.FC = () => {
       currency: 'BRL'
     }).format(value);
   };
+
+  const formatarFormaPagamento = (forma: string) => {
+    if (!forma) return 'Não informado';
+    
+    const formatos = {
+      'pix': 'PIX',
+      'credit_card': 'Cartão de Crédito',
+      'debit_card': 'Cartão de Débito',
+      'money': 'Dinheiro',
+      'debit_machine': 'Máquina de Cartão',
+      'transfer': 'Transferência Bancária',
+      'boleto': 'Boleto',
+      'pix_instant': 'PIX Instantâneo',
+      'pix_static': 'PIX Estático',
+      'pix_dynamic': 'PIX Dinâmico'
+    };
+    
+    return formatos[forma.toLowerCase()] || forma;
+  };
   const formatTime = (dateString: string) => {
     try {
       return format(new Date(dateString), 'HH:mm', {
@@ -48,12 +67,14 @@ const Relatorios: React.FC = () => {
     }
   };
 
-  // Dados para gráficos
-  const dadosGraficoVendas = produtosMaisVendidos.map(produto => ({
-    nome: produto.nome.length > 15 ? produto.nome.substring(0, 15) + '...' : produto.nome,
-    valor: produto.receita,
-    periodo: selectedPeriod
-  }));
+  // Dados para gráficos - limitar a 10 itens para melhor visualização
+  const dadosGraficoVendas = produtosMaisVendidos
+    .slice(0, 10) // Limitar a 10 itens para o gráfico
+    .map(produto => ({
+      nome: produto.nome.length > 15 ? produto.nome.substring(0, 15) + '...' : produto.nome,
+      valor: produto.receita,
+      periodo: selectedPeriod
+    }));
   if (error) {
     return <div className="min-h-screen p-1">
         <div className="flex items-center justify-center min-h-[400px]">
@@ -112,7 +133,7 @@ const Relatorios: React.FC = () => {
               </div>
             </div>
             <p className="text-xs text-green-600 mt-0.5">
-              {loading ? '...' : `+${dados?.crescimentoPercentual || 0}% período anterior`}
+              {loading ? '...' : dados?.crescimentoPercentual ? `+${dados.crescimentoPercentual}% período anterior` : 'Sem dados de comparação'}
             </p>
           </CardContent>
         </Card>
@@ -131,7 +152,7 @@ const Relatorios: React.FC = () => {
               </div>
             </div>
             <p className="text-xs text-blue-600 mt-0.5">
-              {loading ? '...' : '+8.2% período anterior'}
+              {loading ? '...' : dados?.pedidosRealizados ? `${Math.round((dados.pedidosRealizados / 30) * 100)}% da meta diária` : 'Sem meta definida'}
             </p>
           </CardContent>
         </Card>
@@ -150,7 +171,7 @@ const Relatorios: React.FC = () => {
               </div>
             </div>
             <p className="text-xs text-purple-600 mt-0.5">
-              {loading ? '...' : '+3.8% período anterior'}
+              {loading ? '...' : dados?.ticketMedio ? `Média de ${formatCurrency(dados.ticketMedio)} por pedido` : 'Sem dados suficientes'}
             </p>
           </CardContent>
         </Card>
@@ -210,8 +231,11 @@ const Relatorios: React.FC = () => {
                         {formatCurrency(pedido.valorTotal)}
                       </TableCell>
                       <TableCell className="p-1">
-                        <Badge variant="outline" className="text-xs px-1 py-0">
-                          {pedido.formaPagamento}
+                        <Badge 
+                          variant="outline" 
+                          className="text-xs px-1 py-0 capitalize"
+                        >
+                          {formatarFormaPagamento(pedido.formaPagamento)}
                         </Badge>
                       </TableCell>
                     </TableRow>)}
@@ -228,25 +252,83 @@ const Relatorios: React.FC = () => {
 
       {/* Lista Completa de Produtos Vendidos */}
       <Card>
-        
+        <CardHeader className="p-1.5">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-xs font-semibold text-gray-800">Produtos Vendidos</CardTitle>
+            <Badge variant="outline" className="text-xs px-1 py-0">
+              {produtosMaisVendidos.length} itens
+            </Badge>
+          </div>
+        </CardHeader>
         <CardContent className="p-0">
-          {loading ? <div className="p-2 text-center">
+          {loading ? (
+            <div className="p-2 text-center">
               <RefreshCw className="w-4 h-4 animate-spin mx-auto mb-1" />
               <p className="text-xs text-gray-500">Carregando produtos...</p>
-            </div> : produtosMaisVendidos.length === 0 ? <div className="p-2 text-center">
+            </div>
+          ) : produtosMaisVendidos.length === 0 ? (
+            <div className="p-2 text-center">
               <Package className="w-6 h-6 text-gray-400 mx-auto mb-1" />
               <p className="text-xs text-gray-500">Nenhum produto vendido no período</p>
-            </div> : <div className="overflow-x-auto mb-1">
-              
-            </div>}
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader className="bg-gray-50">
+                  <TableRow>
+                    <TableHead className="h-6 text-xs px-2">Produto</TableHead>
+                    <TableHead className="h-6 text-xs px-2 text-right">Quantidade</TableHead>
+                    <TableHead className="h-6 text-xs px-2 text-right">Receita</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {produtosMaisVendidos.map((produto, index) => (
+                    <TableRow key={`${produto.id}-${index}`} className="h-8">
+                      <TableCell className="p-1">
+                        <div className="flex items-center space-x-2">
+                          {produto.imagem_url && (
+                            <img 
+                              src={produto.imagem_url} 
+                              alt={produto.nome} 
+                              className="w-6 h-6 object-cover rounded" 
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = 'none';
+                              }} 
+                            />
+                          )}
+                          <span className="text-xs truncate max-w-[150px]">
+                            {produto.nome || 'Produto não identificado'}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="p-1 text-right text-xs">
+                        {produto.quantidade}
+                      </TableCell>
+                      <TableCell className="p-1 text-right text-xs font-medium">
+                        {formatCurrency(produto.receita)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </CardContent>
       </Card>
 
-      <ExportModal open={exportModalOpen} onClose={() => setExportModalOpen(false)} reportData={dados || {
-      total: 0,
-      orders: 0,
-      avgTicket: 0
-    }} period={getPeriodLabel(selectedPeriod)} />
-    </div>;
+      <ExportModal 
+        open={exportModalOpen} 
+        onClose={() => setExportModalOpen(false)} 
+        reportData={{
+          total: dados?.faturamentoTotal || 0,
+          orders: dados?.pedidosRealizados || 0,
+          avgTicket: dados?.ticketMedio || 0,
+          produtosMaisVendidos: produtosMaisVendidos,
+          pedidosRecentes: pedidosRecentes,
+          periodo: getPeriodLabel(selectedPeriod)
+        }} 
+        period={getPeriodLabel(selectedPeriod)} 
+      /></div>;
 };
 export default Relatorios;

@@ -1,0 +1,202 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definição do sistema de design. Todas as cores, gradientes, fontes, etc devem ser definidas aqui. */
+
+@layer base {
+  :root {
+    /* Cores de fundo */
+    --background: 0 0% 98%;
+    --foreground: 240 10% 4%;
+    
+    /* Cores de cartões */
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 4%;
+    
+    /* Cores de popover */
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 4%;
+    
+    /* Cores primárias */
+    --primary: 160 84% 39%;
+    --primary-foreground: 0 0% 100%;
+    
+    /* Cores secundárias */
+    --secondary: 147 50% 96%;
+    --secondary-foreground: 160 84% 39%;
+    
+    /* Cores de destaque */
+    --accent: 147 50% 96%;
+    --accent-foreground: 160 84% 39%;
+    
+    /* Cores de alerta */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    
+    /* Cores de feedback */
+    --success: 147 50% 45%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+    --info: 199 89% 48%;
+    --info-foreground: 0 0% 100%;
+    
+    /* Cores de UI */
+    --border: 240 6% 90%;
+    --input: 240 6% 90%;
+    --ring: 160 84% 39%;
+    --hover: 240 5% 96%;
+    --hover-foreground: 240 6% 10%;
+    
+    /* Bordas e sombras */
+    --radius: 0.75rem;
+    --border-opacity: 0.1;
+    
+    /* Sidebar */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 240 10% 4%;
+    --sidebar-primary: 160 84% 39%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 147 50% 96%;
+    --sidebar-accent-foreground: 160 84% 39%;
+    --sidebar-border: 240 6% 90%;
+    --sidebar-ring: 160 84% 39%;
+    
+    /* Efeitos de hover */
+    --hover-opacity: 0.9;
+    --hover-scale: 1.02;
+    
+    /* Transições */
+    --transition-duration: 150ms;
+    --transition-timing: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Tema Escuro */
+  .dark {
+    /* Cores de fundo */
+    --background: 240 10% 4%;
+    --foreground: 0 0% 95%;
+    
+    /* Cores de cartões */
+    --card: 160 84% 7%;
+    --card-foreground: 147 50% 98%;
+    
+    /* Cores de popover */
+    --popover: 160 84% 7%;
+    --popover-foreground: 147 50% 98%;
+    
+    /* Cores primárias */
+    --primary: 147 50% 60%;
+    --primary-foreground: 160 84% 4%;
+    
+    /* Cores secundárias */
+    --secondary: 160 84% 35%;
+    --secondary-foreground: 147 50% 98%;
+    
+    /* Cores de destaque */
+    --accent: 160 50% 20%;
+    --accent-foreground: 147 50% 98%;
+    
+    /* Cores de alerta */
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 100%;
+    
+    /* Cores de feedback */
+    --success: 147 50% 45%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+    --info: 199 89% 48%;
+    --info-foreground: 0 0% 100%;
+    
+    /* Cores de UI */
+    --border: 160 30% 20%;
+    --input: 160 30% 20%;
+    --ring: 147 50% 60%;
+    --hover: 160 30% 25%;
+    --hover-foreground: 0 0% 100%;
+    
+    /* Sidebar */
+    --sidebar-background: 160 84% 7%;
+    --sidebar-foreground: 147 50% 98%;
+    --sidebar-primary: 147 50% 60%;
+    --sidebar-primary-foreground: 160 84% 4%;
+    --sidebar-accent: 160 50% 20%;
+    --sidebar-accent-foreground: 147 50% 98%;
+    --sidebar-border: 160 30% 20%;
+    --sidebar-ring: 147 50% 60%;
+    
+    /* Efeitos de hover */
+    --hover-opacity: 0.8;
+    --hover-scale: 1.02;
+    --muted: 160 30% 12%;
+    --muted-foreground: 147 20% 70%;
+  }
+}
+
+@layer base {
+  * {
+    border-color: hsl(var(--border));
+  }
+
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+  }
+
+  /* Estilos personalizados para ícones e hover do sidebar */
+  [data-sidebar="menu-button"] svg,
+  [data-sidebar="menu-button"] .lucide,
+  [data-sidebar="menu-button"] .lucide-icon {
+    color: hsl(160, 84%, 39%);
+    stroke: currentColor;
+  }
+  
+  [data-sidebar="menu-button"]:not([data-active="true"]):hover svg,
+  [data-sidebar="menu-button"]:not([data-active="true"]):hover .lucide,
+  [data-sidebar="menu-button"]:not([data-active="true"]):hover .lucide-icon {
+    color: hsla(160, 84%, 39%, 0.8);
+    stroke: currentColor;
+  }
+
+  /* Cores específicas para cada ícone */
+  [data-sidebar="menu-button"]:not([data-active="true"]):hover {
+    color: hsl(160, 84%, 39%);
+  }
+  
+  /* Cores específicas para cada ícone */
+  [data-title="Início"] svg { color: hsl(221.2, 83.2%, 53.3%); }
+  [data-title="Vendas"] svg { color: hsl(160, 84%, 39%); }
+  [data-title="Produtos"] svg { color: hsl(38, 92%, 50%); }
+  [data-title="Importar Excel"] svg { color: hsl(160, 84%, 39%); }
+  [data-title="Relatórios"] svg { color: hsl(262.1, 83.3%, 57.8%); }
+  [data-title="Pagamentos"] svg { color: hsl(224.3, 76.3%, 48%); }
+  [data-title="Cancelamentos"] svg { color: hsl(0, 84.2%, 60.2%); }
+  [data-title="Estoque"] svg { color: hsl(45.4, 93.4%, 47.5%); }
+  [data-title="Impressões de Vendas"] svg { color: hsl(180, 90%, 50%); }
+  [data-title="Terminais"] svg { color: hsl(199, 89%, 48%); }
+  [data-title="Controle de Acesso"] svg { color: hsl(346.8, 77.2%, 49.8%); }
+  [data-title="Vouchers"] svg { color: hsl(292, 84%, 61%); }
+  [data-title="Recarga Pulseiras"] svg { color: hsl(330.4, 81.2%, 60.4%); }
+  [data-title="Scanner Configuracoes"] svg { color: hsl(262.1, 83.3%, 57.8%); }
+  [data-title="Integracao Nota Fiscal"] svg { color: hsl(24.6, 95%, 53.1%); }
+  [data-title="Integracao Boleto"] svg { color: hsl(83.7, 80.5%, 44.3%); }
+  [data-title="Integracao NFC-e"] svg { color: hsl(173.4, 80.4%, 40%); }
+
+  [data-sidebar="menu-button"][data-active="true"] svg,
+  [data-sidebar="menu-button"][data-active="true"] .lucide,
+  [data-sidebar="menu-button"][data-active="true"] .lucide-icon {
+    color: hsl(160, 84%, 39%);
+    stroke: currentColor;
+  }
+
+  [data-sidebar="menu-button"][data-active="true"] {
+    color: hsl(160, 84%, 39%);
+    background-color: hsla(0, 0%, 96%, 0.5);
+  }
+  
+  .dark [data-sidebar="menu-button"][data-active="true"] {
+    background-color: hsla(240, 4%, 16%, 0.7);
+  }
+}
