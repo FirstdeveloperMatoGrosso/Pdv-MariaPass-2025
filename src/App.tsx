@@ -11,7 +11,6 @@ import Produtos from "./pages/Produtos";
 import ImportarExcel from "./pages/ImportarExcel";
 import Vendas from "./pages/Vendas";
 import Relatorios from "./pages/Relatorios";
-import Pagamentos from "./pages/Pagamentos";
 import Cancelamentos from "./pages/Cancelamentos";
 import Estoque from "./pages/Estoque";
 import ImpressoesVendas from "./pages/ImpressoesVendas";
@@ -63,7 +62,6 @@ const App = () => {
                     <Route path="/produtos" element={<Produtos />} />
                     <Route path="/importar-excel" element={<ImportarExcel />} />
                     <Route path="/relatorios" element={<Relatorios />} />
-                    <Route path="/pagamentos" element={<Pagamentos />} />
                     <Route path="/cancelamentos" element={<Cancelamentos />} />
                     <Route path="/estoque" element={<Estoque />} />
                     <Route path="/impressoes" element={<ImpressoesVendas />} />
