@@ -35,7 +35,6 @@ const menuItems = [
   { title: 'Produtos', url: '/produtos', icon: Package, color: '#eab308' }, // Amarelo
   { title: 'Importar Excel', url: '/importar-excel', icon: FileSpreadsheet, color: '#10b981' }, // Esmeralda
   { title: 'Relatórios', url: '/relatorios', icon: BarChart3, color: '#a855f7' }, // Roxo
-  { title: 'Pagamentos', url: '/pagamentos', icon: CreditCard, color: '#6366f1' }, // Índigo
   { title: 'Cancelamentos', url: '/cancelamentos', icon: XCircle, color: '#ef4444' }, // Vermelho
   { title: 'Estoque', url: '/estoque', icon: Archive, color: '#f59e0b' }, // Âmbar
   { title: 'Impressões de Vendas', url: '/impressoes', icon: Printer, color: '#06b6d4' }, // Ciano
