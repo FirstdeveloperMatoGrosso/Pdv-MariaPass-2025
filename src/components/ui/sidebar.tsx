@@ -65,8 +65,20 @@ const SidebarProvider = React.forwardRef<
   ) => {
     const isMobile = useIsMobile()
     const [openMobile, setOpenMobile] = React.useState(false)
-    const [_open, _setOpen] = React.useState(defaultOpen)
+    const [mounted, setMounted] = React.useState(false)
+    const [_open, _setOpen] = React.useState(() => {
+      // Apenas tenta ler do cookie no lado do cliente
+      if (typeof document === 'undefined') return defaultOpen;
+      
+      const cookie = document.cookie
+        .split('; ')
+        .find(row => row.startsWith(`${SIDEBAR_COOKIE_NAME}=`))
+      
+      return cookie ? cookie.split('=')[1] === 'true' : defaultOpen
+    })
+    
     const open = openProp ?? _open
+    
     const setOpen = React.useCallback(
       (value: boolean | ((value: boolean) => boolean)) => {
         const openState = typeof value === "function" ? value(open) : value
@@ -75,16 +87,26 @@ const SidebarProvider = React.forwardRef<
         } else {
           _setOpen(openState)
         }
-        document.cookie = `${SIDEBAR_COOKIE_NAME}=${openState}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`
+        // Garante que está no cliente antes de acessar document
+        if (typeof document !== 'undefined') {
+          document.cookie = `${SIDEBAR_COOKIE_NAME}=${openState}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`
+        }
       },
       [setOpenProp, open]
     )
 
     const toggleSidebar = React.useCallback(() => {
-      return isMobile
-        ? setOpenMobile((open) => !open)
-        : setOpen((open) => !open)
-    }, [isMobile, setOpen, setOpenMobile])
+      if (isMobile) {
+        setOpenMobile(prev => !prev)
+      } else {
+        setOpen(prev => !prev)
+      }
+    }, [isMobile, setOpen])
+    
+    // Marca o componente como montado após a primeira renderização
+    React.useEffect(() => {
+      setMounted(true)
+    }, [])
 
     React.useEffect(() => {
       const handleKeyDown = (event: KeyboardEvent) => {
@@ -101,40 +123,48 @@ const SidebarProvider = React.forwardRef<
     }, [toggleSidebar])
 
     const state = open ? "expanded" : "collapsed"
-    const contextValue = React.useMemo<SidebarContext>(
-      () => ({
-        state,
-        open,
-        setOpen,
-        isMobile,
-        openMobile,
-        setOpenMobile,
-        toggleSidebar,
-      }),
-      [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar]
-    )
+    const contextValue = React.useMemo<SidebarContext>(() => ({
+      state: open ? "expanded" : "collapsed",
+      open,
+      setOpen,
+      openMobile,
+      setOpenMobile,
+      isMobile: isMobile ?? false,
+      toggleSidebar,
+    }), [open, setOpen, openMobile, setOpenMobile, isMobile, toggleSidebar])
+
+    // Evita renderizar o conteúdo até que o componente esteja montado no cliente
+    if (!mounted) {
+      return (
+        <div 
+          ref={ref}
+          className={cn("relative flex h-full w-full", className)}
+          style={style}
+          {...props}
+        />
+      )
+    }
 
     return (
       <SidebarContext.Provider value={contextValue}>
-        <TooltipProvider delayDuration={0}>
-          <div
-            style={
-              {
-                "--sidebar-width": SIDEBAR_WIDTH,
-                "--sidebar-width-icon": SIDEBAR_WIDTH_ICON,
-                ...style,
-              } as React.CSSProperties
-            }
-            className={cn(
-              "group/sidebar-wrapper flex min-h-svh w-full has-[[data-variant=inset]]:bg-sidebar",
-              className
-            )}
-            ref={ref}
-            {...props}
-          >
-            {children}
-          </div>
-        </TooltipProvider>
+        <div
+          ref={ref}
+          data-sidebar="sidebar"
+          className={cn("relative flex h-full w-full", className)}
+          style={{
+            ...style,
+            '--sidebar-width': SIDEBAR_WIDTH,
+            '--sidebar-width-mobile': SIDEBAR_WIDTH_MOBILE,
+            '--sidebar-width-icon': SIDEBAR_WIDTH_ICON,
+          } as React.CSSProperties & {
+            '--sidebar-width': string
+            '--sidebar-width-mobile': string
+            '--sidebar-width-icon': string
+          }}
+          {...props}
+        >
+          <TooltipProvider>{children}</TooltipProvider>
+        </div>
       </SidebarContext.Provider>
     )
   }
