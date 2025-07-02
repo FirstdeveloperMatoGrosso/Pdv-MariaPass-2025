@@ -23,7 +23,7 @@ interface PixPaymentProps {
   valor: number;
   recargaId: string;
   customer: CustomerData;
-  onPaymentSuccess: () => void;
+  onPaymentSuccess: (paymentInfo?: { method: string; nsu?: string }) => void;
   onCancel: () => void;
 }
 
@@ -489,7 +489,7 @@ const PixPayment: React.FC<PixPaymentProps> = ({
         
         // Chama o callback de sucesso após um pequeno atraso
         setTimeout(() => {
-          onPaymentSuccess();
+          onPaymentSuccess({ method: 'PIX', nsu: pixData.chargeId || pixData.charge_id });
         }, 2000);
       } else if (response.status === 'failed' || response.status === 'canceled') {
         // Se o pagamento falhou ou foi cancelado, atualiza o status
