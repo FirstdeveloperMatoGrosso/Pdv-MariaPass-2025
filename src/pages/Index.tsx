@@ -231,7 +231,7 @@ const Index: React.FC = () => {
           quantidade: item.quantity,
           valor_unitario: item.preco,
           valor_total: item.preco * item.quantity,
-          forma_pagamento: 'debito_pulseira',
+          forma_pagamento: paymentData?.method === 'PIX' ? 'pix' : 'dinheiro',
           numero_autorizacao: `PED-${Date.now()}-${item.id.slice(0, 6)}`,
           data_venda: new Date().toISOString()
         };
@@ -250,7 +250,7 @@ const Index: React.FC = () => {
       // Cria o pedido principal
       const pedidoData = {
         numero_pedido: `PED-${Date.now()}`,
-        tipo_pagamento: 'debito_pulseira',
+        tipo_pagamento: paymentData?.method === 'PIX' ? 'pix' : 'dinheiro',
         status: 'concluido',
         valor_total: salesRecords.reduce((sum, item) => sum + item.valor_total, 0),
         data_pedido: new Date().toISOString(),
