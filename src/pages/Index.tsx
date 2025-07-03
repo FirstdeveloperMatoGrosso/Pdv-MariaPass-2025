@@ -755,7 +755,7 @@ const Index: React.FC = () => {
       )}
 
       {cart.length > 0 && (
-        <Card className="fixed bottom-2 right-2 w-72 sm:w-80 shadow-lg border-2 border-green-500 z-40">
+        <Card className="fixed bottom-4 right-4 w-72 sm:w-80 shadow-lg border-2 border-green-500 z-40" style={{ position: 'fixed', bottom: '1rem', right: '1rem' }}>
           <CardHeader className="pb-1 p-3">
             <CardTitle className="flex items-center justify-between text-sm sm:text-base">
               <div className="flex items-center space-x-2">
