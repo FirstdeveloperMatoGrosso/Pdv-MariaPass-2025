@@ -45,6 +45,11 @@ export function Login() {
       // Simulando um token de autenticação
       const mockToken = 'mock-jwt-token';
       localStorage.setItem('auth_token', mockToken);
+      // Salva o email do usuário no localStorage
+      localStorage.setItem('user_email', email);
+      
+      // Dispara um evento para atualizar o cabeçalho
+      window.dispatchEvent(new Event('storage'));
       
       // Redireciona para a página inicial após o login
       const from = (location.state as any)?.from?.pathname || '/';

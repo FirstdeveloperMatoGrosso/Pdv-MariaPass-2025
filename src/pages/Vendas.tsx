@@ -523,9 +523,9 @@ const Vendas: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen p-1 sm:p-2 space-y-1 sm:space-y-2">
-      {/* Header - Reduzido espaçamento */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-2">
+    <div className="w-full min-w-0">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-2 px-6 py-3 w-full">
         <div className="flex items-center space-x-2">
           <ShoppingCart className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
           <h1 className="text-lg sm:text-2xl font-bold text-gray-800">Vendas Realizadas</h1>
@@ -537,8 +537,8 @@ const Vendas: React.FC = () => {
         />
       </div>
 
-      {/* Resumo - Cards com menos espaçamento */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1 sm:gap-2">
+      {/* Resumo - Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 px-6 py-3 w-full">
         <Card className="border shadow-sm">
           <CardHeader className="pb-0 p-2">
             <CardTitle className="text-xs sm:text-sm font-medium text-gray-600">Total de Vendas</CardTitle>
@@ -567,8 +567,8 @@ const Vendas: React.FC = () => {
         </Card>
       </div>
 
-      {/* Filtros - Espaçamento muito reduzido */}
-      <Card className="border shadow-sm">
+      {/* Filtros */}
+      <Card className="border-0 shadow-none w-full rounded-none px-6 py-3">
         <CardHeader className="p-2 pb-0">
           <CardTitle className="flex items-center space-x-2 text-sm sm:text-base">
             <Filter className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -626,8 +626,8 @@ const Vendas: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Lista de Vendas - Grade com menos espaçamento */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-1 sm:gap-2">
+      {/* Lista de Vendas */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4 w-full px-6 py-3">
         {isLoading ? (
           Array.from({ length: 16 }).map((_, index) => (
             <Card key={index} className="animate-pulse">

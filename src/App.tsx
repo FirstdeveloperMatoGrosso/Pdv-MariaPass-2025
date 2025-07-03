@@ -29,6 +29,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-route
 import { useEffect, useState } from 'react';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "./components/AppSidebar";
+import { AppHeader } from "./components/AppHeader";
 import Index from "./pages/Index";
 import Produtos from "./pages/Produtos";
 import ImportarExcel from "./pages/ImportarExcel";
@@ -233,26 +234,25 @@ const AppRoutes = () => {
 };
 
 // Componente para renderizar rotas protegidas
-const ProtectedLayout = ({ children }: { children: React.ReactNode }) => {
+const ProtectedLayout = ({ children }: { children: React.ReactElement }) => {
   return (
-    <ProtectedRoute>
-      <>
-        <div className="flex-shrink-0">
+    <div className="min-h-screen bg-green-50 w-screen overflow-x-hidden">
+      <SidebarProvider>
+        <div className="flex w-full">
           <AppSidebar />
+          <div className="flex-1 flex flex-col min-w-0">
+            <AppHeader />
+            <SidebarInset className="flex-1 overflow-auto">
+              <ProtectedRoute>
+                <div className="min-h-[calc(100vh-3.5rem)] p-0 pr-6 w-full">
+                  {children}
+                </div>
+              </ProtectedRoute>
+            </SidebarInset>
+          </div>
         </div>
-        <SidebarInset className="pr-2" style={{ zoom: 0.85, flex: '1 1 auto' }}>
-          <header className="flex h-14 shrink-0 items-center gap-2 border-b px-4">
-            <SidebarTrigger className="-ml-1" />
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold">Sistema de Totem - MariaPass</span>
-            </div>
-          </header>
-          <main className="flex-1 p-2 pr-4">
-            {children}
-          </main>
-        </SidebarInset>
-      </>
-    </ProtectedRoute>
+      </SidebarProvider>
+    </div>
   );
 };
 
