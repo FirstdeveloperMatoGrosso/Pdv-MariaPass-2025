@@ -98,7 +98,7 @@ const mapPaymentStatus = (status?: string): PaymentStatus => {
 };
 
 // Definindo os tipos manualmente para evitar problemas de importação
-type PagarmeCustomerData = {
+export type PagarmeCustomerData = {
   id?: string;
   name: string;
   email: string;
@@ -138,7 +138,7 @@ type PagarmePixPaymentData = {
 };
 
 // Definindo o tipo para o boleto
-interface BoletoPaymentData {
+export interface BoletoPaymentData {
   amount: number;
   customer: PagarmeCustomerData;
   orderCode: string;
@@ -152,6 +152,7 @@ interface BoletoPaymentData {
     quantity: number;
     code?: string;
   }>;
+  metadata?: Record<string, any>;
 }
 
 // Interface para a resposta do pagamento com boleto

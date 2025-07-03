@@ -1,4 +1,27 @@
 
+// Verificação de ambiente (remova após o teste)
+import { useEffect } from 'react';
+
+// Teste de variáveis de ambiente
+const checkEnvVars = () => {
+  console.log('=== VERIFICAÇÃO DE AMBIENTE ===');
+  console.log('VITE_SUPABASE_URL:', import.meta.env.VITE_SUPABASE_URL || '❌ Não definida');
+  console.log('VITE_SUPABASE_ANON_KEY:', import.meta.env.VITE_SUPABASE_ANON_KEY ? '✅ Definida' : '❌ Não definida');
+  
+  if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
+    console.error('❌ ERRO: Variáveis de ambiente do Supabase não encontradas!');
+    console.info('Certifique-se de que o arquivo .env está configurado corretamente na raiz do projeto.');
+  } else {
+    try {
+      new URL(import.meta.env.VITE_SUPABASE_URL);
+      console.log('✅ URL do Supabase é válida');
+    } catch (e) {
+      console.error('❌ ERRO: URL do Supabase inválida:', import.meta.env.VITE_SUPABASE_URL);
+    }
+  }
+  console.log('==============================');
+};
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -22,6 +45,7 @@ import Configuracoes from "./pages/Configuracoes";
 import IntegracaoNotaFiscal from "./pages/IntegracaoNotaFiscal";
 import IntegracaoBoleto from "./pages/IntegracaoBoleto";
 import IntegracaoNFCe from "./pages/IntegracaoNFCe";
+import Clientes from "./pages/Clientes";
 import NotFound from "./pages/NotFound";
 
 // Create QueryClient outside of component to avoid recreation on each render
@@ -73,6 +97,7 @@ const App = () => {
                     <Route path="/integracao-nota-fiscal" element={<IntegracaoNotaFiscal />} />
                     <Route path="/integracao-boleto" element={<IntegracaoBoleto />} />
                     <Route path="/integracao-nfce" element={<IntegracaoNFCe />} />
+                    <Route path="/clientes" element={<Clientes />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </main>

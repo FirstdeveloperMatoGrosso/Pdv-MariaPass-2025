@@ -6,16 +6,18 @@ import { Badge } from '@/components/ui/badge';
 import { 
   CreditCard, 
   ArrowLeft,
-  Banknote
+  Banknote,
+  FileText
 } from 'lucide-react';
 import PixPayment from './PixPayment';
 import CashPayment from './CashPayment';
+import BoletoPayment from './BoletoPayment';
 import { CustomerData } from '@/types/payment';
 
 interface PaymentProviderSelectorProps {
   valor: number;
   recargaId: string;
-  onPaymentSuccess: () => void;
+  onPaymentSuccess: (paymentMethod: 'pix' | 'dinheiro' | 'boleto') => void;
   onCancel: () => void;
   customer?: CustomerData; // Adicionando prop opcional para o cliente
 }
@@ -54,7 +56,7 @@ const PaymentProviderSelector: React.FC<PaymentProviderSelectorProps> = ({
   onCancel,
   customer = DEFAULT_CUSTOMER // Usa o cliente padrão se não for fornecido
 }) => {
-  const [selectedProvider, setSelectedProvider] = useState<'pix' | 'cash' | null>(null);
+  const [selectedProvider, setSelectedProvider] = useState<'pix' | 'cash' | 'boleto' | null>(null);
 
   const providers = [
     {
@@ -71,7 +73,15 @@ const PaymentProviderSelector: React.FC<PaymentProviderSelectorProps> = ({
       description: 'PIX tradicional',
       icon: CreditCard,
       color: 'bg-blue-500 hover:bg-blue-600',
-      badge: 'Básico'
+      badge: 'Rápido'
+    },
+    {
+      id: 'boleto' as const,
+      name: 'Boleto',
+      description: 'Boleto bancário',
+      icon: FileText,
+      color: 'bg-purple-500 hover:bg-purple-600',
+      badge: 'Até 3 dias úteis'
     }
   ];
 
@@ -90,7 +100,7 @@ const PaymentProviderSelector: React.FC<PaymentProviderSelectorProps> = ({
         <CashPayment 
           valor={valor}
           recargaId={recargaId}
-          onPaymentSuccess={onPaymentSuccess}
+          onPaymentSuccess={() => onPaymentSuccess('dinheiro')}
           onCancel={onCancel}
         />
       </div>
@@ -113,7 +123,30 @@ const PaymentProviderSelector: React.FC<PaymentProviderSelectorProps> = ({
           valor={valor}
           recargaId={recargaId}
           customer={customer}
-          onPaymentSuccess={onPaymentSuccess}
+          onPaymentSuccess={() => onPaymentSuccess('pix')}
+          onCancel={onCancel}
+        />
+      </div>
+    );
+  }
+
+  if (selectedProvider === 'boleto') {
+    return (
+      <div className="space-y-3">
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={() => setSelectedProvider(null)}
+          className="flex items-center space-x-1 text-sm"
+        >
+          <ArrowLeft className="w-3 h-3" />
+          <span>Voltar à seleção</span>
+        </Button>
+        <BoletoPayment 
+          valor={valor}
+          recargaId={recargaId}
+          customer={customer}
+          onPaymentSuccess={() => onPaymentSuccess('boleto')}
           onCancel={onCancel}
         />
       </div>

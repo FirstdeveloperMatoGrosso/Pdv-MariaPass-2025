@@ -22,14 +22,42 @@ export default defineConfig({
           
           // Tratamento de erros
           proxy.on('error', (err, req: IncomingMessage, res: ServerResponse) => {
-            console.error('Proxy error:', err);
+            console.error('Proxy error:', {
+              message: err.message,
+              stack: err.stack,
+              code: (err as any).code,
+              syscall: (err as any).syscall,
+              hostname: (err as any).hostname,
+              port: (err as any).port,
+              response: (err as any).response?.data,
+              config: {
+                url: (err as any).config?.url,
+                method: (err as any).config?.method,
+                headers: (err as any).config?.headers ? {
+                  ...(err as any).config.headers,
+                  authorization: (err as any).config.headers?.authorization ? '***' : undefined
+                } : undefined,
+                data: (err as any).config?.data
+              }
+            });
+            
             if (!res.headersSent) {
               res.writeHead(500, { 'Content-Type': 'application/json' });
             }
-            res.end(JSON.stringify({ 
-              error: 'Proxy error', 
-              message: err.message 
-            }));
+            
+            const errorResponse = { 
+              error: 'Proxy error',
+              message: err.message,
+              details: process.env.NODE_ENV === 'development' ? {
+                code: (err as any).code,
+                syscall: (err as any).syscall,
+                hostname: (err as any).hostname,
+                port: (err as any).port
+              } : undefined
+            };
+            
+            console.error('Sending error response to client:', errorResponse);
+            res.end(JSON.stringify(errorResponse));
           });
           
           // Intercepta a requisição para adicionar headers

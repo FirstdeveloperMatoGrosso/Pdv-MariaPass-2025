@@ -15,7 +15,7 @@ import {
 interface CashPaymentProps {
   valor: number;
   recargaId: string;
-  onPaymentSuccess: (paymentData?: { method: string; nsu?: string }) => void;
+  onPaymentSuccess: (paymentMethod: 'pix' | 'dinheiro') => void;
   onCancel: () => void;
 }
 
@@ -49,9 +49,9 @@ const CashPayment: React.FC<CashPaymentProps> = ({
     
     setPagamentoConfirmado(true);
     
-    // Simular um pequeno delay para dar feedback visual
+    // Simular um atraso para processamento
     setTimeout(() => {
-      onPaymentSuccess({ method: 'Dinheiro', nsu });
+      onPaymentSuccess('dinheiro');
     }, 1500);
   };
 

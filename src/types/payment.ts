@@ -82,3 +82,34 @@ export interface PaymentStatusResponse {
   paidAmount: number;
   paidAt: string | null;
 }
+
+export interface BoletoPaymentResponse {
+  success: boolean;
+  status: 'pending' | 'paid' | 'failed' | 'canceled' | 'processing' | 'authorized';
+  orderId: string;
+  order_id?: string;
+  chargeId: string;
+  charge_id?: string;
+  transaction_id?: string;
+  barcode: string;
+  boletoUrl: string;
+  boleto_url?: string;
+  pdfUrl: string;
+  pdf_url?: string;
+  dueDate: string;
+  due_date?: string;
+  instructions?: string;
+  amount: number;
+  metadata?: Record<string, any>;
+  error?: {
+    message: string;
+    code?: string;
+    details?: Array<{ message: string; [key: string]: any }>;
+    [key: string]: any;
+  };
+  message?: string;
+  _debug?: {
+    rawResponse?: any;
+    [key: string]: any;
+  };
+}

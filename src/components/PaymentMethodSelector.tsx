@@ -2,10 +2,10 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { CreditCard, X, Banknote } from 'lucide-react';
+import { CreditCard, X, Banknote, FileText } from 'lucide-react';
 
 interface PaymentMethodSelectorProps {
-  onSelectMethod: (method: 'pix' | 'dinheiro') => void;
+  onSelectMethod: (method: 'pix' | 'dinheiro' | 'boleto') => void;
   onCancel: () => void;
 }
 
@@ -42,14 +42,17 @@ const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
             💰 PAGAMENTO VIA PIX
           </Button>
           
-          {/* Botão para futura implementação de outros métodos de pagamento */}
           <Button 
-            variant="outline"
-            className="w-full opacity-50 cursor-not-allowed"
-            disabled
+            onClick={() => onSelectMethod('boleto')} 
+            className="w-full bg-purple-600 hover:bg-purple-700 text-white"
           >
-            🟢 Outros métodos em breve
+            📄 PAGAMENTO VIA BOLETO
           </Button>
+          
+          {/* Espaço reservado para futuros métodos de pagamento */}
+          <div className="text-center text-xs text-muted-foreground mt-2">
+            Outros métodos em breve
+          </div>
         </div>
       </CardContent>
     </Card>

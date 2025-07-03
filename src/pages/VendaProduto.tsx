@@ -420,7 +420,7 @@ const VendaProduto = () => {
     const vendaData = {
       produto_id: selectedProduto.id,
       valor: parseFloat(vendaAmount) || 0,
-      tipo_pagamento: paymentMethod || 'dinheiro',
+      tipo_pagamento: paymentMethod === 'pix' ? 'pix' : (paymentMethod || 'dinheiro'),
       status: 'pendente',
       itens: [
         {
@@ -469,14 +469,17 @@ const VendaProduto = () => {
     setShowPaymentModal(true);
   };
 
-  const handlePaymentSuccess = () => {
+  const handlePaymentSuccess = (paymentMethod: 'pix' | 'dinheiro') => {
     if (!selectedProduto || !vendaAmount) return;
+    
+    // Atualiza o estado do método de pagamento
+    setPaymentMethod(paymentMethod);
     
     // Aqui você pode adicionar a lógica para salvar a venda no banco de dados
     console.log('Dados da venda:', {
       produto_id: selectedProduto.id,
       valor: vendaAmount,
-      tipo_pagamento: paymentMethod || 'dinheiro',
+      tipo_pagamento: paymentMethod, // Usa o método de pagamento recebido
       status: 'pendente',
       itens: [
         {

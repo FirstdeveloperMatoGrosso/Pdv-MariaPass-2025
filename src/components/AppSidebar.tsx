@@ -25,13 +25,15 @@ import {
   FileText,
   FileCheck2,
   Banknote,
-  ScanBarcode
+  ScanBarcode,
+  Users
 } from 'lucide-react';
 
 // Adicionando as integrações requisitadas
 const menuItems = [
   { title: 'Início', url: '/', icon: Home, color: '#3b82f6' }, // Azul
   { title: 'Vendas', url: '/vendas', icon: ShoppingCart, color: '#10b981' }, // Verde
+  { title: 'Clientes', url: '/clientes', icon: Users, color: '#8b5cf6' }, // Roxo
   { title: 'Produtos', url: '/produtos', icon: Package, color: '#eab308' }, // Amarelo
   { title: 'Importar Excel', url: '/importar-excel', icon: FileSpreadsheet, color: '#10b981' }, // Esmeralda
   { title: 'Relatórios', url: '/relatorios', icon: BarChart3, color: '#a855f7' }, // Roxo

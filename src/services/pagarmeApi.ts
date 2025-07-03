@@ -322,6 +322,7 @@ const pagarmeApi = {
       // Prepara os itens do pedido
       const orderItems = items.length > 0 ? items : [
         {
+          id: `item_${Date.now()}`,
           amount: Math.round(amount * 100), // Converte para centavos
           description: 'Produto ou serviço',
           quantity: 1,
@@ -329,11 +330,12 @@ const pagarmeApi = {
         },
       ];
 
-      // Prepara o payload da requisição exatamente como na imagem
+      // Prepara o payload da requisição
       const payload = {
         items: orderItems.map(item => ({
+          id: item.id || `item_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
           amount: Math.round(item.amount * 100), // Garante que está em centavos
-          description: item.description.substring(0, 100), // Limita o tamanho da descrição
+          description: (item.description || '').substring(0, 100), // Limita o tamanho da descrição
           quantity: Math.max(1, Math.min(item.quantity || 1, 100)), // Valida a quantidade
           code: item.code || `item_${Date.now()}`
         })),
@@ -343,8 +345,8 @@ const pagarmeApi = {
           document: customer.document,
           type: customer.type || 'individual',
           document_type: customer.document_type || (customer.document?.length === 11 ? 'CPF' : 'CNPJ'),
-          phones: {
-            mobile_phone: customer.phones?.mobile_phone || {
+          phones: customer.phones || {
+            mobile_phone: {
               country_code: '55',
               area_code: '11',
               number: '999999999'
@@ -362,9 +364,7 @@ const pagarmeApi = {
           {
             payment_method: 'pix',
             pix: {
-              // Usa apenas expires_in (em segundos) - a API irá calcular a data de expiração
               expires_in: Math.min(Math.max(60, expiresIn), 86400), // Entre 1 min e 24h
-              // A API irá calcular o expires_at automaticamente com base no expires_in
               additional_information: [
                 {
                   name: 'Pedido',
@@ -374,11 +374,9 @@ const pagarmeApi = {
             },
           },
         ],
-        // Adiciona metadados como na imagem
         metadata: {
           order_id: orderCode,
           custom_id: `custom_${Date.now()}`,
-          // Adiciona metadados adicionais do cliente
           customer_id: customer.id || `temp_${Date.now()}`,
           source: 'pdv-mariapass',
           created_at: new Date().toISOString()
@@ -386,38 +384,43 @@ const pagarmeApi = {
       };
 
       console.log('Enviando requisição para criar pedido PIX...');
+      console.log('Payload da requisição:', JSON.stringify(payload, null, 2));
       
       // Faz a requisição para a API do Pagar.me
       const response = await api.post('/orders', payload);
       
-      console.log('Resposta da API:', response.data);
+      console.log('Resposta da API:', {
+        status: response.status,
+        statusText: response.statusText,
+        headers: response.headers,
+        data: response.data
+      });
 
-      // Verifica se a resposta contém os dados do PIX
-      if (!response.data.charges || !Array.isArray(response.data.charges) || response.data.charges.length === 0) {
-        throw new Error('A resposta da API não contém dados de cobrança');
+      // Processa a resposta da API
+      if (!response.data) {
+        throw new Error('Resposta da API vazia ou inválida');
       }
 
-      const charge = response.data.charges[0];
+      // Extrai os dados da cobrança e transação
+      const charge = response.data.charges?.[0];
+      if (!charge) {
+        throw new Error('Nenhuma cobrança encontrada na resposta da API');
+      }
+
       const transaction = charge.last_transaction;
-      
       if (!transaction) {
-        throw new Error('Transação PIX não encontrada na resposta da API');
+        throw new Error('Nenhuma transação PIX encontrada na resposta da API');
       }
 
-      // Formata a resposta com os dados do PIX seguindo o formato da imagem
+      // Formata a resposta final
       const pixResponse: PixOrderResponse = {
-        // Identificadores
         id: response.data.id,
         orderId: response.data.id,
         chargeId: charge.id,
         charge_id: charge.id,
         transaction_id: transaction.id,
-        
-        // Status e valores
         status: charge.status || 'pending',
-        amount: charge.amount ? charge.amount / 100 : amount, // Converte de volta para reais
-        
-        // Dados do PIX - agora acessando os campos corretos da resposta
+        amount: charge.amount ? charge.amount / 100 : amount,
         qrCode: transaction.qr_code || '',
         qr_code: transaction.qr_code || '',
         qrCodeUrl: transaction.qr_code_url || '',
@@ -426,66 +429,56 @@ const pagarmeApi = {
         payment_url: transaction.pix_url || '',
         expiresAt: transaction.expires_at || new Date(Date.now() + (expiresIn * 1000)).toISOString(),
         expires_at: transaction.expires_at || new Date(Date.now() + (expiresIn * 1000)).toISOString(),
-        
-        // Itens do pedido (garantindo que tenham IDs)
         items: orderItems.map(item => ({
           ...item,
           id: item.id || `item_${Date.now()}_${Math.floor(Math.random() * 1000)}`
         })),
-        
-        // Dados da cobrança
         charges: [{
           ...charge,
           last_transaction: {
             ...transaction,
-            // Garante que os campos estejam presentes mesmo que vazios
             qr_code: transaction.qr_code || '',
             qr_code_url: transaction.qr_code_url || '',
             pix_url: transaction.pix_url || '',
-            expires_at: transaction.expires_at || new Date(Date.now() + (expiresIn * 1000)).toISOString(),
+            expires_at: transaction.expires_at || new Date(Date.now() + (expiresIn * 1000)).toISOString()
           }
         }],
-        
-        // Metadados
-        metadata: {
-          ...(response.data.metadata || {}),
-          order_id: orderCode,
-          created_at: new Date().toISOString(),
-          source: 'pdv-mariapass',
-        },
-        
-        // Depuração (apenas em desenvolvimento)
-        _debug: process.env.NODE_ENV === 'development' ? {
-          rawResponse: response.data,
-          requestPayload: payload
-        } : undefined
+        customer: response.data.customer,
+        metadata: response.data.metadata,
+        _debug: {
+          rawResponse: response.data
+        }
       };
       
-      console.log('Pedido PIX criado com sucesso:', pixResponse);
+      console.log('Resposta formatada do PIX:', JSON.stringify(pixResponse, null, 2));
       return pixResponse;
-    } catch (error) {
-      console.error('Erro ao criar pedido PIX:', error);
+    } catch (error: any) {
+      console.error('Erro ao criar pedido PIX:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        config: {
+          url: error.config?.url,
+          method: error.config?.method,
+          data: error.config?.data
+        },
+        stack: error.stack
+      });
       
-      // Melhora as mensagens de erro
-      if (axios.isAxiosError(error)) {
-        const axiosError = error as AxiosError<PagarmeApiError>;
-        const errorMessage = axiosError.response?.data?.message || 
-                           axiosError.response?.data?.errors?.[0]?.message || 
-                           axiosError.message;
-        
-        console.error('Error details:', {
-          status: axiosError.response?.status,
-          data: axiosError.response?.data,
-          headers: axiosError.response?.headers,
-        });
-        
-        throw new Error(`Error creating PIX order: ${errorMessage}`);
+      if (error.response) {
+        // Erro da API do Pagar.me
+        const errorMessage = error.response.data?.message || 'Erro desconhecido da API do Pagar.me';
+        const errorDetails = error.response.data?.errors?.[0]?.message || '';
+        throw new Error(`Erro ao processar pagamento PIX: ${errorMessage}${errorDetails ? ` - ${errorDetails}` : ''}`);
+      } else if (error.request) {
+        // A requisição foi feita mas não houve resposta
+        throw new Error('Não foi possível se conectar ao servidor de pagamentos. Verifique sua conexão e tente novamente.');
       } else if (error instanceof Error) {
-        console.error('Unexpected error processing PIX payment:', error);
-        throw new Error(`Unexpected error: ${error.message}`);
+        console.error('Erro inesperado ao processar pagamento PIX:', error);
+        throw new Error(`Erro inesperado: ${error.message}`);
       } else {
-        console.error('Unknown error processing PIX payment:', error);
-        throw new Error('An unknown error occurred while processing the PIX payment');
+        console.error('Erro desconhecido ao processar pagamento PIX:', error);
+        throw new Error('Ocorreu um erro desconhecido ao processar o pagamento PIX');
       }
     }
   },
