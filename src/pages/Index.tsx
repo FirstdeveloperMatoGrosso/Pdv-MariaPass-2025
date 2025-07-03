@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { CustomerData } from '@/types/payment';
+import { CustomerData, PaymentMethod } from '@/types/payment';
 import PrintSimulator from '../components/PrintSimulator';
 import BarcodeModal from '../components/BarcodeModal';
 import ProductDetailsModal from '../components/ProductDetailsModal';
@@ -468,20 +468,32 @@ const Index: React.FC = () => {
     });
   };
 
-  const handlePaymentMethodSelect = (method: 'pix' | 'dinheiro') => {
+  const handlePaymentMethodSelect = (method: PaymentMethod) => {
     setShowPaymentMethod(false);
     
     if (method === 'dinheiro') {
       setShowCashPayment(true);
-    } else {
+    } else if (method === 'pix') {
       setShowPixPayment(true);
     }
+    // Adicione aqui outras condições para outros métodos de pagamento, se necessário
   };
 
-  const handlePaymentSuccess = (paymentInfo?: { method: string; nsu?: string }) => {
+  // Função para lidar com sucesso de pagamento no Pix
+  const handlePixPaymentSuccess = (response: { method: 'pix' | 'dinheiro' } & Record<string, any>) => {
     setShowPixPayment(false);
     setShowCashPayment(false);
-    setPaymentData(paymentInfo || { method: 'PIX' });
+    setPaymentData({
+      method: response.method,
+      nsu: response.nsu || undefined
+    });
+    setShowPrintSimulator(true);
+  };
+
+  // Função para lidar com sucesso de pagamento em dinheiro
+  const handleCashPaymentSuccess = (paymentMethod: 'pix' | 'dinheiro') => {
+    setShowCashPayment(false);
+    setPaymentData({ method: paymentMethod });
     setShowPrintSimulator(true);
   };
 
@@ -851,7 +863,7 @@ const Index: React.FC = () => {
           <CashPayment
             valor={getTotalPrice()}
             recargaId={currentOrderId}
-            onPaymentSuccess={handlePaymentSuccess}
+            onPaymentSuccess={handleCashPaymentSuccess}
             onCancel={handlePaymentCancel}
           />
         </div>
@@ -863,7 +875,7 @@ const Index: React.FC = () => {
             valor={getTotalPrice()}
             recargaId={currentOrderId}
             customer={defaultCustomer}
-            onPaymentSuccess={handlePaymentSuccess}
+            onPaymentSuccess={handlePixPaymentSuccess}
             onCancel={handlePaymentCancel}
           />
         </div>

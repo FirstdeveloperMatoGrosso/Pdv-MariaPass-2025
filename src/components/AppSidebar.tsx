@@ -26,7 +26,9 @@ import {
   FileCheck2,
   Banknote,
   ScanBarcode,
-  Users
+  Users,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 
 // Adicionando as integrações requisitadas
@@ -49,7 +51,7 @@ const menuItems = [
 ];
 
 export function AppSidebar() {
-  const { state } = useSidebar();
+  const { state, toggleSidebar } = useSidebar();
   const location = useLocation();
   const currentPath = location.pathname;
 
@@ -62,7 +64,7 @@ export function AppSidebar() {
 
   return (
     <Sidebar 
-      className={`fixed left-0 top-0 bottom-0 flex flex-col border-r border-gray-200 ${isCollapsed ? 'w-14' : 'w-56'}`} 
+      className={`fixed left-0 top-0 bottom-0 flex flex-col border-r border-gray-200 ${isCollapsed ? 'w-16' : 'w-64'}`} 
       collapsible="icon"
       data-sidebar="sidebar"
       data-collapsed={isCollapsed ? 'true' : 'false'}
@@ -77,7 +79,7 @@ export function AppSidebar() {
         transition: 'width 0.2s ease-in-out'
       }}
     >
-      <div className="flex-shrink-0 bg-green-700 rounded-tr-lg">
+      <div className="flex-shrink-0 bg-green-700 rounded-tr-lg relative">
         <SidebarHeader className="border-b border-green-800 p-1.5 h-12 bg-green-700 rounded-tr-lg pt-0">
           <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'justify-start'} h-full`}>
             <img 
@@ -91,6 +93,20 @@ export function AppSidebar() {
                 <span className="font-bold text-lg text-blue-500">Pass</span>
               </div>
             )}
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleSidebar();
+              }}
+              className="absolute -right-3 top-1/2 -translate-y-1/2 bg-white rounded-full p-1 shadow-md border border-gray-200 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 z-10"
+              aria-label={isCollapsed ? 'Expandir menu' : 'Recolher menu'}
+            >
+              {isCollapsed ? (
+                <ChevronRight className="h-4 w-4 text-gray-600" />
+              ) : (
+                <ChevronLeft className="h-4 w-4 text-gray-600" />
+              )}
+            </button>
           </div>
         </SidebarHeader>
       </div>
