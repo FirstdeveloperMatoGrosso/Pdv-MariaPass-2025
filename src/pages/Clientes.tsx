@@ -84,17 +84,20 @@ const Clientes = () => {
     if (tipo === 'PF') {
       // Formatar CPF: 000.000.000-00
       return apenasNumeros
-        .replace(/(\d{3})(\d)/, '$1.$2')
-        .replace(/(\d{3})(\d)/, '$1.$2')
-        .replace(/(\d{3})(\d{1,2})/, '$1-$2')
-        .replace(/(\-\d{2})\d+?$/, '$1');
+        .replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
     } else {
       // Formatar CNPJ: 00.000.000/0000-00
-      return apenasNumeros
-        .replace(/^(\d{2})(\d)/, '$1.$2')
-        .replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3')
-        .replace(/\.(\d{3})(\d)/, '.$1/$2')
-        .replace(/(\/\d{4})(\d)/, '$1-$2');
+      if (apenasNumeros.length <= 2) {
+        return apenasNumeros;
+      } else if (apenasNumeros.length <= 5) {
+        return apenasNumeros.replace(/^(\d{2})(\d{0,3})/, '$1.$2');
+      } else if (apenasNumeros.length <= 8) {
+        return apenasNumeros.replace(/^(\d{2})(\d{3})(\d{0,3})/, '$1.$2.$3');
+      } else if (apenasNumeros.length <= 12) {
+        return apenasNumeros.replace(/^(\d{2})(\d{3})(\d{3})(\d{0,4})/, '$1.$2.$3/$4');
+      } else {
+        return apenasNumeros.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{0,2})/, '$1.$2.$3/$4-$5');
+      }
     }
   };
 

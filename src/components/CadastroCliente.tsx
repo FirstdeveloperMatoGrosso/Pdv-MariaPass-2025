@@ -121,6 +121,13 @@ const CadastroCliente: React.FC<CadastroClienteProps> = ({
           [field]: value
         }
       }));
+    } else if (name === 'documento') {
+      // Para o campo documento, apenas aceita números e não formata
+      const numeros = value.replace(/\D/g, '');
+      setFormData(prev => ({
+        ...prev,
+        [name]: numeros
+      }));
     } else {
       setFormData(prev => ({
         ...prev,
@@ -297,28 +304,12 @@ const CadastroCliente: React.FC<CadastroClienteProps> = ({
                 <Input
                   id="documento"
                   name="documento"
+                  type="text"
+                  inputMode={formData.tipo === 'PF' ? 'numeric' : 'numeric'}
                   value={formData.documento}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    const formatted = formData.tipo === 'PF'
-                      ? value.replace(/\D/g, '')
-                          .replace(/(\d{3})(\d)/, '$1.$2')
-                          .replace(/(\d{3})(\d)/, '$1.$2')
-                          .replace(/(\d{3})(\d{1,2})/, '$1-$2')
-                          .replace(/(\-\d{2})\d+?$/, '$1')
-                          .substring(0, 14)
-                      : value.replace(/\D/g, '')
-                          .replace(/^(\d{2})(\d{3})/, '$1.$2')
-                          .replace(/(\d{3})(\d{3})/, '.$1/$2')
-                          .replace(/(\d{4})(\d{1,2})/, '$1-$2')
-                          .substring(0, 18);
-                    
-                    setFormData(prev => ({
-                      ...prev,
-                      documento: formatted
-                    }));
-                  }}
-                  placeholder={formData.tipo === 'PF' ? '000.000.000-00' : '00.000.000/0000-00'}
+                  onChange={handleChange}
+                  placeholder={formData.tipo === 'PF' ? '000.000.000-00' : 'Apenas números'}
+                  maxLength={formData.tipo === 'PF' ? 14 : 16}
                   required
                 />
               </div>

@@ -1,14 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { Loader2, Plus, X, User, Mail, FileText, DollarSign, Calendar } from 'lucide-react';
-import { paymentService } from '@/services/paymentService';
-import type { BoletoPaymentData, PagarmeCustomerData } from '@/services/paymentService';
+import { Loader2, Plus, X, User, Mail, FileText, DollarSign, Calendar, Search } from 'lucide-react';
 import { format, addDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { cpf, cnpj } from 'cpf-cnpj-validator';
+import { BuscarCliente } from '@/components/BuscarCliente';
+import { paymentService } from '@/services/paymentService';
+import type { BoletoPaymentData, PagarmeCustomerData } from '@/services/paymentService';
 
 interface NovaVendaBoletoProps {
   onBoletoGerado: (boleto: any) => void;
@@ -22,10 +24,12 @@ interface NovaVendaBoletoProps {
 const NovaVendaBoleto: React.FC<NovaVendaBoletoProps> = ({ onBoletoGerado, config }) => {
   const [loading, setLoading] = useState(false);
   const [cliente, setCliente] = useState({
+    id: '',
     nome: '',
     email: '',
     documento: '',
     telefone: '',
+    tipo: 'PF' as 'PF' | 'PJ',
     endereco: {
       logradouro: '',
       numero: '',
@@ -36,7 +40,6 @@ const NovaVendaBoleto: React.FC<NovaVendaBoletoProps> = ({ onBoletoGerado, confi
       cep: ''
     }
   });
-  
   const [venda, setVenda] = useState({
     descricao: 'Venda de Produto/Serviço',
     valor: '',
@@ -44,9 +47,32 @@ const NovaVendaBoleto: React.FC<NovaVendaBoletoProps> = ({ onBoletoGerado, confi
     observacao: ''
   });
 
+  // Função para preencher os dados do cliente selecionado
+  const handleClienteSelecionado = (clienteSelecionado: any) => {
+    // Remove formatação do documento (pontos, barras e hífens)
+    const documentoLimpo = clienteSelecionado.documento.replace(/\D/g, '');
+    
+    setCliente({
+      id: clienteSelecionado.id,
+      nome: clienteSelecionado.nome,
+      email: clienteSelecionado.email || '',
+      documento: documentoLimpo, // Armazena apenas números
+      telefone: clienteSelecionado.telefone || '',
+      tipo: clienteSelecionado.tipo,
+      endereco: {
+        logradouro: clienteSelecionado.endereco?.logradouro || '',
+        numero: clienteSelecionado.endereco?.numero || '',
+        complemento: clienteSelecionado.endereco?.complemento || '',
+        bairro: clienteSelecionado.endereco?.bairro || '',
+        cidade: clienteSelecionado.endereco?.cidade || '',
+        uf: clienteSelecionado.endereco?.uf || '',
+        cep: clienteSelecionado.endereco?.cep || ''
+      }
+    });
+  };
+
   const handleClienteChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    
     if (name.startsWith('endereco.')) {
       const field = name.split('.')[1] as keyof typeof cliente.endereco;
       setCliente(prev => ({
@@ -72,36 +98,13 @@ const NovaVendaBoleto: React.FC<NovaVendaBoletoProps> = ({ onBoletoGerado, confi
     });
   };
 
-  const formatarDocumento = (documento: string) => {
-    const apenasNumeros = documento.replace(/\D/g, '');
-    
-    if (apenasNumeros.length <= 11) {
-      // CPF: 000.000.000-00
-      return apenasNumeros
-        .replace(/(\d{3})(\d)/, '$1.$2')
-        .replace(/(\d{3})(\d)/, '$1.$2')
-        .replace(/(\d{3})(\d{1,2})/, '$1-$2')
-        .replace(/(\-\d{2})\d+?$/, '$1');
-    } else {
-      // CNPJ: 00.000.000/0000-00
-      return apenasNumeros
-        .replace(/^(\d{2})(\d)/, '$1.$2')
-        .replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3')
-        .replace(/\.(\d{3})(\d)/, '.$1/$2')
-        .replace(/(\/\d{4})(\d)/, '$1-$2');
-    }
-  };
-
   const formatarTelefone = (telefone: string) => {
     const apenasNumeros = telefone.replace(/\D/g, '');
-    
     if (apenasNumeros.length <= 10) {
-      // Formato: (00) 0000-0000
       return apenasNumeros
         .replace(/^(\d{2})(\d)/g, '($1) $2')
         .replace(/(\d{4})(\d)/, '$1-$2');
     } else {
-      // Formato: (00) 00000-0000
       return apenasNumeros
         .replace(/^(\d{2})(\d)/g, '($1) $2')
         .replace(/(\d{5})(\d{4})/, '$1-$2');
@@ -119,53 +122,43 @@ const NovaVendaBoleto: React.FC<NovaVendaBoletoProps> = ({ onBoletoGerado, confi
       toast.error('Informe o nome do cliente');
       return false;
     }
-    
     if (!cliente.email.trim()) {
       toast.error('Informe o e-mail do cliente');
       return false;
     }
-    
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cliente.email)) {
       toast.error('Informe um e-mail válido');
       return false;
     }
-    
     if (!cliente.documento.trim()) {
       toast.error('Informe o CPF/CNPJ do cliente');
       return false;
     }
-    
     const documentoLimpo = cliente.documento.replace(/\D/g, '');
     if (documentoLimpo.length !== 11 && documentoLimpo.length !== 14) {
       toast.error('CPF deve ter 11 dígitos ou CNPJ 14 dígitos');
       return false;
     }
-    
     if (!venda.descricao.trim()) {
       toast.error('Informe a descrição da venda');
       return false;
     }
-    
     const valorNumerico = parseFloat(venda.valor.replace(/\./g, '').replace(',', '.'));
     if (isNaN(valorNumerico) || valorNumerico <= 0) {
       toast.error('Informe um valor válido para a venda');
       return false;
     }
-    
     return true;
   };
 
   const handleGerarBoleto = async () => {
     if (!validarDados()) return;
-    
     setLoading(true);
-    
     try {
       const documentoLimpo = cliente.documento.replace(/\D/g, '');
       const isCpf = documentoLimpo.length === 11;
       const documentType = isCpf ? 'CPF' : 'CNPJ' as const;
-      
-      // Criar objeto de endereço
+
       const enderecoCliente = {
         line_1: `${cliente.endereco.logradouro}, ${cliente.endereco.numero}`,
         line_2: cliente.endereco.complemento,
@@ -174,8 +167,7 @@ const NovaVendaBoleto: React.FC<NovaVendaBoletoProps> = ({ onBoletoGerado, confi
         state: cliente.endereco.uf,
         country: 'BR' as const
       };
-      
-      // Criar objeto de telefone
+
       const telefoneCliente = {
         mobile_phone: {
           country_code: '55',
@@ -183,14 +175,12 @@ const NovaVendaBoleto: React.FC<NovaVendaBoletoProps> = ({ onBoletoGerado, confi
           number: cliente.telefone.replace(/\D/g, '').substring(2) || '00000000'
         }
       };
-      
-      // Criar objeto de metadados do cliente
+
       const metadataCliente = {
         origem: 'pdv-integração-boleto',
         data_cadastro: new Date().toISOString()
       };
-      
-      // Criar objeto de cliente tipado corretamente
+
       const customerData: PagarmeCustomerData = {
         name: cliente.nome,
         email: cliente.email || 'email@exemplo.com',
@@ -201,25 +191,22 @@ const NovaVendaBoleto: React.FC<NovaVendaBoletoProps> = ({ onBoletoGerado, confi
         address: enderecoCliente,
         metadata: metadataCliente
       };
-      
+
       const valorNumerico = parseFloat(venda.valor.replace(/\./g, '').replace(',', '.'));
-      
-      // Criar objeto de itens da venda
+
       const itemsVenda = [{
         amount: Math.round(valorNumerico * 100),
         description: venda.descricao,
         quantity: 1
       }];
-      
-      // Montar objeto final com tipos corretos
+
       const boletoData: BoletoPaymentData = {
-        amount: Math.round(valorNumerico * 100), // Converter para centavos
+        amount: Math.round(valorNumerico * 100),
         customer: customerData,
         orderCode: `BOL-${Date.now()}`,
         dueDate: venda.dataVencimento,
         instructions: venda.observacao || 'Pagar até a data de vencimento',
         items: itemsVenda,
-        // Adicionar metadados diretamente no objeto principal
         metadata: {
           origem: 'pdv-integração-boleto',
           data_emissao: new Date().toISOString(),
@@ -227,15 +214,12 @@ const NovaVendaBoleto: React.FC<NovaVendaBoletoProps> = ({ onBoletoGerado, confi
           multa_atraso: config.multa
         }
       };
-      
+
       console.log('Dados para geração do boleto:', boletoData);
-      
       const response = await paymentService.createBoletoPayment(boletoData);
       console.log('Resposta da API:', response);
-      
       toast.success('Boleto gerado com sucesso!');
-      
-      // Formatar a resposta para exibição
+
       const boletoGerado = {
         ...response,
         boletoUrl: response.boletoUrl || response.boleto_url,
@@ -248,15 +232,17 @@ const NovaVendaBoleto: React.FC<NovaVendaBoletoProps> = ({ onBoletoGerado, confi
         dataEmissao: new Date().toISOString(),
         status: 'pending'
       };
-      
+
       onBoletoGerado(boletoGerado);
-      
+
       // Limpar formulário
       setCliente({
+        id: '',
         nome: '',
         email: '',
         documento: '',
         telefone: '',
+        tipo: 'PF',
         endereco: {
           logradouro: '',
           numero: '',
@@ -267,14 +253,12 @@ const NovaVendaBoleto: React.FC<NovaVendaBoletoProps> = ({ onBoletoGerado, confi
           cep: ''
         }
       });
-      
       setVenda({
         descricao: 'Venda de Produto/Serviço',
         valor: '',
         dataVencimento: format(addDays(new Date(), config.diasVencimento), 'yyyy-MM-dd'),
         observacao: ''
       });
-      
     } catch (error: any) {
       console.error('Erro ao gerar boleto:', error);
       const errorMessage = error?.response?.data?.message || 'Erro ao gerar boleto. Tente novamente.';
@@ -296,52 +280,60 @@ const NovaVendaBoleto: React.FC<NovaVendaBoletoProps> = ({ onBoletoGerado, confi
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Dados do Cliente */}
           <div className="space-y-4">
-            <h3 className="font-medium flex items-center gap-2">
-              <User className="w-4 h-4" />
-              Dados do Cliente
-            </h3>
-            
+            <div className="flex justify-between items-center">
+              <h3 className="font-medium flex items-center gap-2">
+                <User className="w-4 h-4" />
+                Dados do Cliente
+              </h3>
+              <BuscarCliente onSelect={handleClienteSelecionado}>
+                <Button type="button" variant="outline" size="sm" className="space-x-2">
+                  <Search className="h-4 w-4" />
+                  <span>Buscar Cliente</span>
+                </Button>
+              </BuscarCliente>
+            </div>
             <div className="space-y-2">
               <Label htmlFor="nome">Nome Completo *</Label>
-              <Input
-                id="nome"
-                name="nome"
-                value={cliente.nome}
-                onChange={(e) => setCliente({...cliente, nome: e.target.value})}
-                placeholder="Nome do cliente"
+              <Input 
+                id="nome" 
+                name="nome" 
+                value={cliente.nome} 
+                onChange={handleClienteChange} 
+                placeholder="Nome do cliente" 
+                required 
               />
             </div>
-            
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="documento">CPF/CNPJ *</Label>
+                <Label htmlFor="documento">CNPJ *</Label>
                 <Input
                   id="documento"
                   name="documento"
+                  type="number"
                   value={cliente.documento}
                   onChange={(e) => {
-                    const valorFormatado = formatarDocumento(e.target.value);
-                    setCliente({...cliente, documento: valorFormatado});
+                    // Remove qualquer caractere que não seja número
+                    const valor = e.target.value.replace(/\D/g, '').slice(0, 16);
+                    setCliente(prev => ({
+                      ...prev,
+                      documento: valor,
+                      tipo: 'PJ'
+                    }));
                   }}
-                  placeholder="000.000.000-00"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="telefone">Telefone</Label>
-                <Input
-                  id="telefone"
-                  name="telefone"
-                  value={cliente.telefone}
-                  onChange={(e) => {
-                    const valorFormatado = formatarTelefone(e.target.value);
-                    setCliente({...cliente, telefone: valorFormatado});
+                  onKeyDown={(e) => {
+                    // Permite apenas números e teclas de controle
+                    if (!/[0-9]/.test(e.key) && 
+                        !['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(e.key)) {
+                      e.preventDefault();
+                    }
                   }}
-                  placeholder="(00) 00000-0000"
+                  placeholder="Digite apenas números"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  required
                 />
               </div>
             </div>
-            
             <div className="space-y-2">
               <Label htmlFor="email">E-mail *</Label>
               <Input
@@ -353,7 +345,6 @@ const NovaVendaBoleto: React.FC<NovaVendaBoletoProps> = ({ onBoletoGerado, confi
                 placeholder="cliente@email.com"
               />
             </div>
-            
             <div className="space-y-2">
               <Label>Endereço</Label>
               <div className="grid grid-cols-2 gap-2">
@@ -379,7 +370,6 @@ const NovaVendaBoleto: React.FC<NovaVendaBoletoProps> = ({ onBoletoGerado, confi
                   className="w-16"
                 />
               </div>
-              
               <div className="grid grid-cols-3 gap-2">
                 <Input
                   name="endereco.logradouro"
@@ -395,14 +385,12 @@ const NovaVendaBoleto: React.FC<NovaVendaBoletoProps> = ({ onBoletoGerado, confi
                   placeholder="Nº"
                 />
               </div>
-              
               <Input
                 name="endereco.complemento"
                 value={cliente.endereco.complemento}
                 onChange={handleClienteChange}
                 placeholder="Complemento"
               />
-              
               <div className="grid grid-cols-2 gap-2">
                 <Input
                   name="endereco.bairro"
@@ -419,14 +407,13 @@ const NovaVendaBoleto: React.FC<NovaVendaBoletoProps> = ({ onBoletoGerado, confi
               </div>
             </div>
           </div>
-          
+
           {/* Dados da Venda */}
           <div className="space-y-4">
             <h3 className="font-medium flex items-center gap-2">
               <DollarSign className="w-4 h-4" />
               Dados da Venda
             </h3>
-            
             <div className="space-y-2">
               <Label htmlFor="descricao">Descrição *</Label>
               <Input
@@ -437,7 +424,6 @@ const NovaVendaBoleto: React.FC<NovaVendaBoletoProps> = ({ onBoletoGerado, confi
                 placeholder="Ex: Venda de produto/serviço"
               />
             </div>
-            
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-2">
                 <Label htmlFor="valor">Valor (R$) *</Label>
@@ -446,19 +432,17 @@ const NovaVendaBoleto: React.FC<NovaVendaBoletoProps> = ({ onBoletoGerado, confi
                   name="valor"
                   value={venda.valor}
                   onChange={(e) => {
-                    // Formatar valor para o formato brasileiro
                     let valor = e.target.value.replace(/\D/g, '');
                     valor = (Number(valor) / 100).toLocaleString('pt-BR', {
                       minimumFractionDigits: 2,
                       maximumFractionDigits: 2
                     });
-                    setVenda({...venda, valor});
+                    setVenda({ ...venda, valor });
                   }}
                   placeholder="0,00"
                   className="text-right"
                 />
               </div>
-              
               <div className="space-y-2">
                 <Label htmlFor="dataVencimento">Vencimento</Label>
                 <div className="relative">
@@ -475,7 +459,6 @@ const NovaVendaBoleto: React.FC<NovaVendaBoletoProps> = ({ onBoletoGerado, confi
                 </div>
               </div>
             </div>
-            
             <div className="space-y-2">
               <Label htmlFor="observacao">Instruções de Pagamento</Label>
               <textarea
@@ -488,7 +471,6 @@ const NovaVendaBoleto: React.FC<NovaVendaBoletoProps> = ({ onBoletoGerado, confi
                 rows={3}
               />
             </div>
-            
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 space-y-2">
               <h4 className="text-sm font-medium text-blue-800">Configurações do Boleto</h4>
               <ul className="text-xs text-blue-700 space-y-1">
@@ -499,7 +481,6 @@ const NovaVendaBoleto: React.FC<NovaVendaBoletoProps> = ({ onBoletoGerado, confi
             </div>
           </div>
         </div>
-        
         <div className="flex justify-end pt-2">
           <Button 
             onClick={handleGerarBoleto}
