@@ -342,7 +342,7 @@ const Estoque: React.FC = () => {
       </div>;
   }
 
-  return <div className="p-2 sm:p-3 space-y-2">
+  return <div className="pl-4 pr-4 sm:pl-6 sm:pr-6 space-y-2">
       {/* System Alerts */}
       {alerts.map((alert) => (
         <SystemAlert

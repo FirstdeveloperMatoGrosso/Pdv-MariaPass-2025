@@ -119,9 +119,10 @@ const Cancelamentos: React.FC = () => {
   }
 
   return (
-    <div className="p-4 pr-6 w-full max-w-[calc(100vw-56px)] overflow-x-auto">
-      <div className="space-y-4 min-w-[800px]">
-      <div className="flex items-center justify-between">
+    <div className="w-full flex justify-center">
+      <div className="w-[90%] max-w-[calc(100vw-56px)] overflow-x-auto">
+        <div className="space-y-4 min-w-[800px]">
+          <div className="flex items-center justify-between">
         <div className="flex items-center space-x-1">
           <XCircle className="w-5 h-5 text-red-600" />
           <h1 className="text-lg sm:text-xl font-bold text-gray-800">Cancelamentos</h1>
@@ -347,6 +348,8 @@ const Cancelamentos: React.FC = () => {
           data={comprovanteSelecionado}
         />
       )}
+          </div>
+        </div>
       </div>
     </div>
   );

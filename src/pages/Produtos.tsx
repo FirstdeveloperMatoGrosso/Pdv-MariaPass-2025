@@ -269,7 +269,7 @@ const Produtos: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen p-1 sm:p-2 space-y-1 sm:space-y-2">
+    <div className="min-h-screen pl-4 pr-4 sm:pl-6 sm:pr-6 space-y-1 sm:space-y-2">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
         <div className="flex items-center space-x-2">

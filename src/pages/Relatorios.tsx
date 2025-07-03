@@ -92,7 +92,7 @@ const Relatorios: React.FC = () => {
         </div>
       </div>;
   }
-  return <div className="min-h-screen p-1 space-y-1">
+  return <div className="min-h-screen pl-4 pr-4 sm:pl-6 sm:pr-6 space-y-1">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1">
         <div className="flex items-center space-x-1">

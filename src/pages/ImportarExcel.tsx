@@ -450,7 +450,7 @@ const ImportarExcel: React.FC = () => {
   console.log('📊 Estado atual - Produtos válidos:', validProductsCount, 'Com erro:', errorProductsCount);
 
   return (
-    <div className="p-3 space-y-4">
+    <div className="pl-4 pr-4 sm:pl-6 sm:pr-6 space-y-4">
       {/* Header */}
       <div className="flex items-center space-x-2">
         <FileSpreadsheet className="w-6 h-6 text-green-600" />

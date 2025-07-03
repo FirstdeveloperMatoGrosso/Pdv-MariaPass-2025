@@ -22,6 +22,7 @@ import {
   XCircle,
   FileText
 } from 'lucide-react';
+import { PageLayout } from '@/components/PageLayout';
 import {
   Select,
   SelectContent,
@@ -523,19 +524,18 @@ const Vendas: React.FC = () => {
   }
 
   return (
-    <div className="w-full min-w-0">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-2 px-6 py-3 w-full">
-        <div className="flex items-center space-x-2">
-          <ShoppingCart className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
-          <h1 className="text-lg sm:text-2xl font-bold text-gray-800">Vendas Realizadas</h1>
-        </div>
+    <PageLayout
+      title="Vendas Realizadas"
+      icon={<ShoppingCart className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />}
+      headerRight={
         <ExportButton 
           onExportPDF={handleExportPDF}
           onPrint={handlePrint}
           onShareWhatsApp={handleShareWhatsApp}
         />
-      </div>
+      }
+      className="space-y-4"
+    >
 
       {/* Resumo - Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 px-6 py-3 w-full">
@@ -568,15 +568,16 @@ const Vendas: React.FC = () => {
       </div>
 
       {/* Filtros */}
-      <Card className="border-0 shadow-none w-full rounded-none px-6 py-3">
-        <CardHeader className="p-2 pb-0">
-          <CardTitle className="flex items-center space-x-2 text-sm sm:text-base">
-            <Filter className="w-4 h-4 sm:w-5 sm:h-5" />
-            <span>Filtros</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-2 pt-1">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1 sm:gap-2">
+      <div className="px-4 sm:px-6">
+        <Card className="border shadow-sm w-full rounded-lg p-2">
+          <CardHeader className="p-1 pb-0">
+            <CardTitle className="flex items-center space-x-2 text-xs sm:text-sm">
+              <Filter className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span>Filtros</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-1 pt-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1 sm:gap-2">
             <div className="space-y-0.5">
               <label className="text-xs sm:text-sm font-medium text-gray-700">Período</label>
               <Select value={filtroData} onValueChange={setFiltroData}>
@@ -622,9 +623,10 @@ const Vendas: React.FC = () => {
                 />
               </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Lista de Vendas */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4 w-full px-6 py-3">
@@ -914,7 +916,7 @@ const Vendas: React.FC = () => {
           }}
         />
       )}
-    </div>
+    </PageLayout>
   );
 };
 

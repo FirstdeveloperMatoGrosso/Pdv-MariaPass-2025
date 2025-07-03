@@ -98,7 +98,7 @@ const Configuracoes: React.FC = () => {
   const TabIcon = tabs.find(tab => tab.id === activeTab)?.icon || Settings;
 
   return (
-    <div className="p-3 sm:p-4 space-y-3 sm:space-y-4">
+    <div className="pl-4 pr-4 sm:pl-6 sm:pr-6 space-y-3 sm:space-y-4">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div className="flex items-center space-x-2">
           <Settings className="w-5 h-5 text-gray-600" />

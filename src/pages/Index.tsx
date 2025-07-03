@@ -565,7 +565,7 @@ const Index: React.FC = () => {
   }
 
   return (
-    <div className="p-2 sm:p-3 space-y-2 sm:space-y-3">
+    <div className="pl-4 pr-4 sm:pl-6 sm:pr-6 space-y-2 sm:space-y-3">
       {/* Alertas são mostrados usando toast diretamente */}
       
       <div className="text-center mb-3 sm:mb-4">

@@ -38,7 +38,7 @@ const IntegracaoNotaFiscal = () => {
   };
 
   return (
-    <div className="p-1 space-y-1 min-h-screen">
+    <div className="pl-4 pr-4 sm:pl-6 sm:pr-6 space-y-1 min-h-screen">
       <div className="flex flex-col gap-1 mb-1">
         <div className="flex items-center gap-1">
           <FileText className="w-4 h-4 text-blue-600" />

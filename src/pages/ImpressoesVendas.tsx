@@ -248,7 +248,7 @@ const ImpressoesVendas: React.FC = () => {
   }
 
   return (
-    <div className="p-1 sm:p-2 space-y-1 sm:space-y-2">
+    <div className="pl-4 pr-4 sm:pl-6 sm:pr-6 space-y-1 sm:space-y-2">
       {/* Alerta de Reimpressão */}
       {showReimpressaoAlert && (
         <Alert className="border-orange-200 bg-orange-50">

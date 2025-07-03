@@ -244,7 +244,7 @@ const ProtectedLayout = ({ children }: { children: React.ReactElement }) => {
             <AppHeader />
             <SidebarInset className="flex-1 overflow-auto">
               <ProtectedRoute>
-                <div className="min-h-[calc(100vh-3.5rem)] p-0 pr-6 w-full">
+                <div className="min-h-[calc(100vh-3.5rem)] w-full">
                   {children}
                 </div>
               </ProtectedRoute>

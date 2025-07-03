@@ -214,7 +214,7 @@ const Clientes = () => {
   }
 
   return (
-    <div className="p-4 space-y-4">
+    <div className="pl-4 pr-4 sm:pl-6 sm:pr-6 space-y-4">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">

@@ -142,7 +142,7 @@ const Terminais: React.FC = () => {
   }
 
   return (
-    <div className="p-2 sm:p-3 space-y-2 sm:space-y-3 pr-4">
+    <div className="pl-4 pr-4 sm:pl-6 sm:pr-6 space-y-2 sm:space-y-3">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
         <div className="flex items-center space-x-1">

@@ -562,7 +562,7 @@ const VendaProduto = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="pl-4 pr-4 sm:pl-6 sm:pr-6 space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Venda de Produtos</h1>
         <div className="flex items-center space-x-4">
