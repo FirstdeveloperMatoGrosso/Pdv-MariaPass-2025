@@ -191,6 +191,39 @@ const Sidebar = React.forwardRef<
     ref
   ) => {
     const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
+    const [isMounted, setIsMounted] = React.useState(false)
+
+    // Efeito para lidar com o evento de fechar a sidebar no mobile
+    React.useEffect(() => {
+      setIsMounted(true)
+      
+      if (isMobile && collapsible !== "none") {
+        const handleCloseMobileSidebar = () => {
+          setOpenMobile(false);
+        };
+
+        const sidebar = document.querySelector('[data-sidebar="sidebar"]');
+        if (sidebar) {
+          sidebar.addEventListener('close-mobile-sidebar', handleCloseMobileSidebar);
+          
+          return () => {
+            sidebar.removeEventListener('close-mobile-sidebar', handleCloseMobileSidebar);
+          };
+        }
+      }
+    }, [isMobile, setOpenMobile, collapsible]);
+
+    // Renderização condicional baseada no estado
+    if (!isMounted) {
+      // Renderização inicial vazia para evitar problemas de hidratação
+      return (
+        <div 
+          ref={ref} 
+          className={cn("hidden", className)} 
+          {...props} 
+        />
+      );
+    }
 
     if (collapsible === "none") {
       return (
@@ -208,21 +241,6 @@ const Sidebar = React.forwardRef<
     }
 
     if (isMobile) {
-      React.useEffect(() => {
-        const handleCloseMobileSidebar = () => {
-          setOpenMobile(false);
-        };
-
-        const sidebar = document.querySelector('[data-sidebar="sidebar"]');
-        if (sidebar) {
-          sidebar.addEventListener('close-mobile-sidebar', handleCloseMobileSidebar);
-          
-          return () => {
-            sidebar.removeEventListener('close-mobile-sidebar', handleCloseMobileSidebar);
-          };
-        }
-      }, [setOpenMobile]);
-
       return (
         <Sheet open={openMobile} onOpenChange={setOpenMobile} {...props}>
           <SheetContent

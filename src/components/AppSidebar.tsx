@@ -88,9 +88,9 @@ export function AppSidebar() {
               className="h-9 w-auto max-w-[32px] transition-all duration-300 drop-shadow-md"
             />
             {!isCollapsed && (
-              <div className="flex items-center ml-2">
+              <div className="flex items-center ml-2 mr-6">
                 <span className="font-bold text-lg text-pink-400">Maria</span>
-                <span className="font-bold text-lg text-blue-500">Pass</span>
+                <span className="font-bold text-lg text-blue-500 ml-0.5">Pass</span>
               </div>
             )}
             <button 
@@ -98,13 +98,13 @@ export function AppSidebar() {
                 e.stopPropagation();
                 toggleSidebar();
               }}
-              className="absolute -right-3 top-1/2 -translate-y-1/2 bg-white rounded-full p-1 shadow-md border border-gray-200 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 z-10"
+              className={`absolute ${isCollapsed ? '-right-2.5' : '-right-3.5'} top-1/2 -translate-y-1/2 bg-white rounded-full p-1 shadow-sm border border-gray-200 hover:bg-gray-100 focus:outline-none focus:ring-1 focus:ring-offset-1 focus:ring-green-400 z-10 transition-all duration-200`}
               aria-label={isCollapsed ? 'Expandir menu' : 'Recolher menu'}
             >
               {isCollapsed ? (
-                <ChevronRight className="h-4 w-4 text-gray-600" />
+                <ChevronRight className="h-3 w-3 text-gray-500" />
               ) : (
-                <ChevronLeft className="h-4 w-4 text-gray-600" />
+                <ChevronLeft className="h-3 w-3 text-gray-500" />
               )}
             </button>
           </div>

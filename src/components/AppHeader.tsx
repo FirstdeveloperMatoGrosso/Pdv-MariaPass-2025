@@ -35,11 +35,11 @@ export function AppHeader() {
   };
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-green-200 bg-green-50 px-4 shadow-sm">
+    <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-green-200 bg-green-50 pl-6 pr-4 shadow-sm">
       <div className="flex items-center space-x-4">
         <h1 className="text-lg font-semibold">
           <span className="text-pink-500">Maria</span>
-          <span className="text-blue-600">Pass</span>
+          <span className="text-blue-600 ml-0.5">Pass</span>
         </h1>
       </div>
       
