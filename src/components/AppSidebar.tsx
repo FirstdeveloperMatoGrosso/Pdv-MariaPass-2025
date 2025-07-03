@@ -77,16 +77,19 @@ export function AppSidebar() {
         transition: 'width 0.2s ease-in-out'
       }}
     >
-      <div className="flex-shrink-0">
-        <SidebarHeader className="border-b p-1.5 h-12">
+      <div className="flex-shrink-0 bg-green-700 rounded-tr-lg">
+        <SidebarHeader className="border-b border-green-800 p-1.5 h-12 bg-green-700 rounded-tr-lg pt-0">
           <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'justify-start'} h-full`}>
             <img 
               src="/file_00000000752461f89c07fa2b32ca50d32.png" 
               alt="Logo MariaPass" 
-              className="h-7 w-auto max-w-[28px]"
+              className="h-9 w-auto max-w-[32px] transition-all duration-300 drop-shadow-md"
             />
             {!isCollapsed && (
-              <span className="font-bold text-sm text-green-600 ml-2">MariaPass</span>
+              <div className="flex items-center ml-2">
+                <span className="font-bold text-lg text-pink-400">Maria</span>
+                <span className="font-bold text-lg text-blue-500">Pass</span>
+              </div>
             )}
           </div>
         </SidebarHeader>

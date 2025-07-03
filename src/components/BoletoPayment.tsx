@@ -23,7 +23,7 @@ interface BoletoPaymentProps {
   valor: number;
   recargaId: string;
   customer: CustomerData;
-  onPaymentSuccess: (paymentMethod: 'boleto') => void;
+  onPaymentSuccess: (response: { method: 'boleto' } & Record<string, any>) => void;
   onCancel: () => void;
 }
 
@@ -391,7 +391,7 @@ const BoletoPayment: React.FC<BoletoPaymentProps> = ({
             </div>
             <h3 className="text-xl font-bold text-green-600 dark:text-green-400 mb-2">Pagamento Aprovado!</h3>
             <p className="text-muted-foreground mb-6">Seu pagamento foi confirmado com sucesso.</p>
-            <Button onClick={() => onPaymentSuccess('boleto')}>
+            <Button onClick={() => onPaymentSuccess({ method: 'boleto' })}>
               Concluir
             </Button>
           </div>

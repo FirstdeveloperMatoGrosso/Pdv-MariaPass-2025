@@ -4,8 +4,8 @@
 
 /* Enhanced Sidebar and Card Styling */
 [data-sidebar="sidebar"] {
-  @apply rounded-r-xl shadow-lg border-r border-gray-200 dark:border-gray-800 transition-all duration-300 ease-in-out;
-  background-color: #f0fdf4; /* Light green background */
+  @apply rounded-r-xl shadow-lg border-r border-border/50 transition-all duration-300 ease-in-out;
+  background-color: hsl(var(--sidebar-background));
 }
 
 /* Collapsed sidebar styles */
@@ -170,13 +170,13 @@
 
 @layer base {
   :root {
-    --background: 147 50% 98%;
+    --background: 120 40% 95%; /* Verde claro suave */
     --foreground: 160 84% 15%;
 
-    --card: 0 0% 100%;
+    --card: 0 0% 100%; /* Fundo branco puro para os cards */
     --card-foreground: 160 84% 15%;
 
-    --popover: 0 0% 100%;
+    --popover: 120 30% 98%; /* Fundo ligeiramente mais claro para popovers */
     --popover-foreground: 160 84% 15%;
 
     --primary: 160 84% 39%;
@@ -185,10 +185,10 @@
     --secondary: 147 50% 45%;
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 147 30% 96%;
+    --muted: 120 30% 92%; /* Tom de verde mais suave para elementos muted */
     --muted-foreground: 160 10% 40%;
 
-    --accent: 147 50% 92%;
+    --accent: 120 40% 88%; /* Tom de verde um pouco mais forte para destaques */
     --accent-foreground: 160 84% 15%;
 
     --destructive: 0 84.2% 60.2%;
@@ -200,7 +200,7 @@
 
     --radius: 0.75rem;
 
-    --sidebar-background: 0 0% 100%;
+    --sidebar-background: 120 30% 92%; /* Fundo da sidebar um pouco mais escuro que o fundo principal */
     --sidebar-foreground: 160 84% 15%;
     --sidebar-primary: 160 84% 39%;
     --sidebar-primary-foreground: 0 0% 100%;
@@ -248,6 +248,96 @@
     --sidebar-border: 160 30% 20%;
     --sidebar-ring: 147 50% 60%;
   }
+}
+
+/* Estilos globais para fundo verde claro */
+body {
+  @apply bg-background min-h-screen;
+}
+
+/* Garante que o conteúdo principal ocupe todo o espaço disponível */
+#root {
+  @apply min-h-screen flex flex-col;
+}
+
+/* Estilo para todos os elementos que devem ter fundo verde clarinho */
+.bg-white,
+[class*="bg-white"],
+.bg-white\/90,
+.bg-white\/80,
+.card,
+[class*="card"],
+[class*="Card"],
+[class*="bg-card"],
+.\!bg-white,
+.\!bg-card {
+  background-color: hsl(120, 40%, 95%) !important; /* Verde clarinho */
+  background-image: none !important;
+}
+
+/* Estilo aprimorado para os cards com efeitos visuais */
+.card,
+[class*="card"],
+[class*="Card"] {
+  @apply border border-border/50 rounded-lg shadow-md transition-all duration-300 ease-in-out;
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
+  background-color: hsl(120, 40%, 95%) !important;
+}
+
+.card:hover {
+  @apply shadow-lg transform -translate-y-1;
+  border-color: hsl(var(--primary) / 0.3);
+}
+
+/* Efeito de brilho sutil ao passar o mouse */
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, 
+    hsl(var(--primary) / 0.8) 0%, 
+    hsl(var(--secondary) / 0.8) 100%);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.3s ease;
+  z-index: 2;
+}
+
+.card:hover::before {
+  transform: scaleX(1);
+}
+
+/* Efeito de gradiente sutil */
+.card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, 
+    hsl(120, 40%, 95% / 0.9) 0%, 
+    hsl(120, 35%, 92% / 0.8) 100%);
+  z-index: -1;
+  opacity: 0;
+  transition: all 0.4s ease;
+  box-shadow: 0 4px 20px -5px rgba(0, 0, 0, 0.1);
+}
+
+.card:hover::after {
+  opacity: 1;
+}
+
+/* Ajuste para inputs e outros elementos de formulário */
+input, select, textarea {
+  @apply bg-card border border-border/50;
+}
+
+/* Ajuste para a sidebar */
+[data-sidebar="sidebar"] {
+  background-color: hsl(var(--sidebar-background));
 }
 
 @layer components {

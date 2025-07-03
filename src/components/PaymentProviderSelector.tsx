@@ -12,14 +12,14 @@ import {
 import PixPayment from './PixPayment';
 import CashPayment from './CashPayment';
 import BoletoPayment from './BoletoPayment';
-import { CustomerData } from '@/types/payment';
+import { CustomerData, PaymentMethod, PaymentResponse } from '@/types/payment';
 
 interface PaymentProviderSelectorProps {
   valor: number;
   recargaId: string;
-  onPaymentSuccess: (paymentMethod: 'pix' | 'dinheiro' | 'boleto') => void;
+  onPaymentSuccess: (response: PaymentResponse) => void;
   onCancel: () => void;
-  customer?: CustomerData; // Adicionando prop opcional para o cliente
+  customer?: CustomerData;
 }
 
 // Cliente padrão para pagamentos PIX
@@ -56,11 +56,11 @@ const PaymentProviderSelector: React.FC<PaymentProviderSelectorProps> = ({
   onCancel,
   customer = DEFAULT_CUSTOMER // Usa o cliente padrão se não for fornecido
 }) => {
-  const [selectedProvider, setSelectedProvider] = useState<'pix' | 'cash' | 'boleto' | null>(null);
+  const [selectedProvider, setSelectedProvider] = useState<PaymentMethod | null>(null);
 
   const providers = [
     {
-      id: 'cash' as const,
+      id: 'dinheiro' as const,
       name: 'Dinheiro',
       description: 'Pagamento em espécie',
       icon: Banknote,
@@ -85,7 +85,16 @@ const PaymentProviderSelector: React.FC<PaymentProviderSelectorProps> = ({
     }
   ];
 
-  if (selectedProvider === 'cash') {
+  const createSuccessResponse = (method: PaymentMethod, additionalData: Partial<PaymentResponse> = {}): PaymentResponse => ({
+    success: true,
+    status: 'paid',
+    method,
+    amount: valor,
+    orderId: recargaId,
+    ...additionalData
+  });
+
+  if (selectedProvider === 'dinheiro') {
     return (
       <div className="space-y-3">
         <Button 
@@ -100,7 +109,7 @@ const PaymentProviderSelector: React.FC<PaymentProviderSelectorProps> = ({
         <CashPayment 
           valor={valor}
           recargaId={recargaId}
-          onPaymentSuccess={() => onPaymentSuccess('dinheiro')}
+          onPaymentSuccess={() => onPaymentSuccess(createSuccessResponse('dinheiro'))}
           onCancel={onCancel}
         />
       </div>
@@ -123,7 +132,9 @@ const PaymentProviderSelector: React.FC<PaymentProviderSelectorProps> = ({
           valor={valor}
           recargaId={recargaId}
           customer={customer}
-          onPaymentSuccess={() => onPaymentSuccess('pix')}
+          onPaymentSuccess={(response) => onPaymentSuccess(
+            createSuccessResponse('pix', response as Partial<PaymentResponse>)
+          )}
           onCancel={onCancel}
         />
       </div>
@@ -146,7 +157,9 @@ const PaymentProviderSelector: React.FC<PaymentProviderSelectorProps> = ({
           valor={valor}
           recargaId={recargaId}
           customer={customer}
-          onPaymentSuccess={() => onPaymentSuccess('boleto')}
+          onPaymentSuccess={(response) => onPaymentSuccess(
+            createSuccessResponse('boleto', response as Partial<PaymentResponse>)
+          )}
           onCancel={onCancel}
         />
       </div>

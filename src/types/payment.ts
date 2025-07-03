@@ -1,3 +1,20 @@
+export type PaymentMethod = 'pix' | 'dinheiro' | 'boleto';
+
+export interface PaymentResponse {
+  success: boolean;
+  status: 'pending' | 'paid' | 'failed' | 'canceled' | 'processing' | 'authorized';
+  method: PaymentMethod;
+  nsu?: string;
+  amount: number;
+  orderId?: string;
+  error?: {
+    message: string;
+    code?: string;
+    details?: Array<{ message: string; [key: string]: any }>;
+  };
+  [key: string]: any;
+}
+
 export interface CustomerData {
   name: string;
   email: string;

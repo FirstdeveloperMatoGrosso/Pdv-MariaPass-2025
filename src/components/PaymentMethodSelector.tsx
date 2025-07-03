@@ -3,9 +3,10 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { CreditCard, X, Banknote, FileText } from 'lucide-react';
+import { PaymentMethod } from '@/types/payment';
 
 interface PaymentMethodSelectorProps {
-  onSelectMethod: (method: 'pix' | 'dinheiro' | 'boleto') => void;
+  onSelectMethod: (method: PaymentMethod) => void;
   onCancel: () => void;
 }
 
