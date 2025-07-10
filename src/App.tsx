@@ -244,7 +244,7 @@ const ProtectedLayout = ({ children }: { children: React.ReactElement }) => {
             <AppHeader />
             <SidebarInset className="flex-1 overflow-auto">
               <ProtectedRoute>
-                <div className="min-h-[calc(100vh-3.5rem)] w-full">
+                <div className="min-h-[calc(100vh-3.5rem)] w-full p-4">
                   {children}
                 </div>
               </ProtectedRoute>
@@ -259,10 +259,13 @@ const ProtectedLayout = ({ children }: { children: React.ReactElement }) => {
 const App = () => {
   console.log('App component loaded');
   
-  // Efeito para lidar com mensagens de toast personalizadas
   useEffect(() => {
+    // Verificar variáveis de ambiente no console
+    checkEnvVars();
+
+    // Configurar o manipulador de eventos para notificações
     const handleToast = (event: Event) => {
-      const customEvent = event as CustomEvent<{ message: string; type: 'success' | 'error' | 'info' }>;
+      const customEvent = event as CustomEvent;
       const { message, type = 'info' } = customEvent.detail || {};
       
       if (message) {
@@ -282,34 +285,32 @@ const App = () => {
       window.removeEventListener('show-toast', handleToast as EventListener);
     };
   }, []);
-  
+
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
+      <BrowserRouter>
+        <TooltipProvider>
           <Routes>
+            {/* Rota de login com layout limpo */}
             <Route path="/login" element={
               <div className="min-h-screen w-full">
                 <Login />
               </div>
             } />
-            <Route 
-              path="/*" 
-              element={
-                <SidebarProvider>
-                  <ProtectedLayout>
-                    <AppRoutes />
-                  </ProtectedLayout>
-                </SidebarProvider>
-              } 
-            />
+            
+            {/* Rotas protegidas com sidebar e header */}
+            <Route path="/*" element={
+              <ProtectedLayout>
+                <AppRoutes />
+              </ProtectedLayout>
+            } />
           </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
+          <Toaster />
+          <Sonner />
+        </TooltipProvider>
+      </BrowserRouter>
     </QueryClientProvider>
   );
-};
+}
 
 export default App;

@@ -81,7 +81,7 @@ export function Login() {
   };
 
   return (
-    <div className="min-h-screen h-screen bg-gradient-to-b from-green-50 to-green-100 flex flex-col lg:flex-row overflow-hidden">
+    <div className="min-h-screen w-full bg-gradient-to-b from-green-50 to-green-100 flex flex-col lg:flex-row overflow-x-hidden">
       {/* Cabeçalho Mobile */}
       <div className="lg:hidden flex items-center justify-between p-4 bg-gradient-to-r from-green-600 to-green-700">
         <div className="flex items-center">
@@ -98,7 +98,7 @@ export function Login() {
       </div>
 
       {/* Coluna 1 - Mensagem de Boas-vindas */}
-      <div className="hidden lg:flex flex-col w-full lg:w-1/3 bg-gradient-to-b from-green-600 to-green-700 text-white overflow-y-auto">
+      <div className="hidden lg:flex flex-col w-full lg:w-1/3 bg-gradient-to-b from-green-600 to-green-700 text-white min-h-screen">
         <div className="flex flex-col items-center p-4 sm:p-6 w-full max-w-md mx-auto text-center">
           <div className="mb-6">
             <svg className="h-14 w-14 mx-auto mb-3 text-green-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -148,10 +148,10 @@ export function Login() {
       </div>
 
       {/* Coluna 2 - Formulário de login */}
-      <div className="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8 bg-green-50 border-x border-gray-100 w-full lg:w-1/3">
-        <div className="w-full max-w-xs sm:max-w-md">
-          <div className="flex flex-col items-center justify-center mb-10">
-            <div className="-mt-16 mb-4">
+      <div className="w-full lg:w-1/3 bg-green-50 border-x border-gray-100 min-h-screen flex items-center justify-center p-4 sm:p-6 lg:p-8 overflow-y-auto">
+        <div className="w-full max-w-xs sm:max-w-md my-8">
+          <div className="flex flex-col items-center justify-center w-full">
+            <div className="mb-6">
               <img 
                 src="/file_00000000752461f89c07fa2b32ca50d32.png" 
                 alt="MariaPass" 
@@ -173,7 +173,7 @@ export function Login() {
                 id="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500 focus:outline-none focus:ring-green-200"
                 placeholder="seu@email.com"
                 required
               />
@@ -185,7 +185,7 @@ export function Login() {
                 id="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500 focus:outline-none focus:ring-green-200"
                 placeholder="••••••••"
                 required
               />
@@ -222,7 +222,7 @@ export function Login() {
       </div>
       
       {/* Coluna 3 - Parcerias */}
-      <div className="hidden lg:flex flex-col w-full lg:w-1/3 bg-gradient-to-b from-green-700 to-green-800 text-white overflow-hidden">
+      <div className="hidden lg:flex flex-col w-full lg:w-1/3 bg-gradient-to-b from-green-700 to-green-800 text-white min-h-screen">
         <div className="sticky top-0 bg-gradient-to-b from-green-700 to-green-800 py-4 z-10 px-4 sm:px-6">
           <h2 className="text-lg sm:text-xl font-bold text-center">PARCEIRO OFICIAL</h2>
         </div>
