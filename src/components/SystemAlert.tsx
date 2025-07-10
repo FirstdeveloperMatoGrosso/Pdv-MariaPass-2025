@@ -58,30 +58,33 @@ const SystemAlert: React.FC<SystemAlertProps> = ({
   };
 
   const sizeClasses = {
-    sm: 'max-w-xs',
-    md: 'max-w-md',
-    lg: 'max-w-2xl',
-    xl: 'max-w-4xl',
+    sm: 'w-[calc(100%-2rem)] sm:max-w-xs',
+    md: 'w-[calc(100%-2rem)] sm:max-w-md',
+    lg: 'w-[calc(100%-2rem)] sm:max-w-2xl',
+    xl: 'w-[calc(100%-2rem)] sm:max-w-4xl',
   };
 
   const alertSize = size || 'md';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50 backdrop-blur-sm">
-      <div className={cn(
-        'w-full mx-auto overflow-hidden rounded-lg shadow-xl transition-all duration-300',
-        sizeClasses[alertSize],
-        className
-      )}>
-        <Alert variant={getVariant()} className="relative p-0">
-          <div className="flex flex-col md:flex-row">
+    <div className="fixed inset-0 z-50 flex items-start md:items-center justify-center p-2 sm:p-4 bg-black bg-opacity-50 backdrop-blur-sm overflow-y-auto">
+      <div 
+        className={cn(
+          'w-full mx-auto overflow-hidden rounded-lg shadow-xl transition-all duration-300 bg-background',
+          sizeClasses[alertSize],
+          className
+        )}
+      >
+        <Alert variant={getVariant()} className="relative p-0 h-full">
+          <div className="flex flex-col md:flex-row h-full">
             {imageUrl && (
-              <div className="w-full md:w-1/3 bg-gray-100 dark:bg-gray-800 flex items-center justify-center p-4">
-                <div className="relative w-full h-48 md:h-auto md:min-h-[200px] flex items-center justify-center">
+              <div className="w-full md:w-2/5 lg:w-1/3 bg-gray-100 dark:bg-gray-800 flex items-center justify-center p-2 sm:p-4">
+                <div className="relative w-full h-40 sm:h-48 md:h-full md:min-h-[200px] flex items-center justify-center">
                   <img
                     src={imageUrl}
                     alt="Product"
                     className="max-h-full max-w-full object-contain"
+                    loading="lazy"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
                       target.onerror = null;
@@ -92,48 +95,54 @@ const SystemAlert: React.FC<SystemAlertProps> = ({
               </div>
             )}
 
-            <div className="flex-1 p-6">
-              <div className="flex items-start justify-between">
+            <div className="flex-1 p-4 sm:p-6 overflow-y-auto max-h-[80vh] md:max-h-[90vh]">
+              <div className="flex items-start justify-between gap-2">
                 {title && (
-                  <AlertTitle className="text-lg font-semibold mb-2">
+                  <AlertTitle className="text-base sm:text-lg font-semibold mb-2 break-words">
                     {title}
                   </AlertTitle>
                 )}
-                {showCloseButton !== false && onClose && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={onClose}
-                    className="absolute right-2 top-2 h-8 w-8 p-0 text-muted-foreground hover:bg-transparent hover:text-foreground"
-                  >
-                    <X className="h-4 w-4" />
-                    <span className="sr-only">Fechar</span>
-                  </Button>
-                )}
+                <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
+                  {showCloseButton && onClose && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 sm:h-8 sm:w-8 p-0 text-muted-foreground hover:text-foreground"
+                      onClick={onClose}
+                    >
+                      <X className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                      <span className="sr-only">Fechar</span>
+                    </Button>
+                  )}
+                </div>
               </div>
 
               {message && (
-                <AlertDescription className="mt-2 text-sm text-muted-foreground">
+                <AlertDescription className="mt-2 text-sm text-muted-foreground break-words">
                   {typeof message === 'string' ? (
-                    <div className="whitespace-pre-line">{message}</div>
+                    <div className="overflow-auto max-h-[50vh] pr-2">
+                      <p className="whitespace-pre-line">{message}</p>
+                    </div>
                   ) : (
-                    message
+                    <div className="overflow-auto max-h-[50vh] pr-2">
+                      {message}
+                    </div>
                   )}
                 </AlertDescription>
               )}
 
               {actions && actions.length > 0 && (
-                <div className="mt-6 flex flex-wrap gap-2">
+                <div className="mt-4 flex flex-wrap gap-2">
                   {actions.map((action, index) => (
                     <Button
                       key={index}
-                      size="sm"
                       variant={action.variant || 'default'}
+                      size="sm"
+                      className="text-xs sm:text-sm flex-1 sm:flex-initial min-w-[100px]"
                       onClick={action.onClick}
-                      className="flex items-center gap-2"
                     >
-                      {action.icon}
-                      {action.label}
+                      {action.icon && <span className="mr-1">{action.icon}</span>}
+                      <span className="truncate">{action.label}</span>
                     </Button>
                   ))}
                 </div>

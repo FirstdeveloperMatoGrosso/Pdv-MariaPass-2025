@@ -17,7 +17,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
-import { Upload, Link } from 'lucide-react';
+import { Upload, Link, Image as ImageIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
@@ -245,11 +245,15 @@ const ProductEditForm: React.FC<ProductEditFormProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="text-sm">Editar Produto</DialogTitle>
+      <DialogContent className="max-w-4xl w-[95vw] max-h-[95vh] p-0 overflow-hidden">
+        <DialogHeader className="border-b px-6 py-3 bg-gray-50">
+          <DialogTitle className="text-sm font-medium">Editar Produto</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-3">
+        <form onSubmit={handleSubmit} className="flex flex-col h-full">
+          <div className="flex-1 overflow-y-auto p-4 md:p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Coluna Esquerda - Campos do Formulário */}
+              <div className="space-y-3">
           <div className="space-y-1">
             <Label htmlFor="nome" className="text-xs">Nome do Produto *</Label>
             <Input
@@ -341,83 +345,102 @@ const ProductEditForm: React.FC<ProductEditFormProps> = ({
             </Select>
           </div>
 
-          {/* Seção de Imagem Melhorada */}
-          <div className="space-y-2">
-            <Label className="text-xs">Imagem do Produto</Label>
-            <div className="flex gap-1">
-              <Button
-                type="button"
-                variant={imageType === 'url' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setImageType('url')}
-                className="h-6 text-xs px-2"
-              >
-                <Link className="w-3 h-3 mr-1" />
-                URL
-              </Button>
-              <Button
-                type="button"
-                variant={imageType === 'upload' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setImageType('upload')}
-                className="h-6 text-xs px-2"
-              >
-                <Upload className="w-3 h-3 mr-1" />
-                Upload
-              </Button>
-            </div>
 
-            {imageType === 'url' ? (
-              <Input
-                placeholder="Cole a URL da imagem aqui"
-                value={formData.imagem_url}
-                onChange={(e) => handleUrlChange(e.target.value)}
-                className="h-7 text-xs"
-              />
-            ) : (
-              <Input
-                type="file"
-                accept="image/*"
-                onChange={handleFileChange}
-                className="h-7 text-xs"
-              />
-            )}
 
-            {/* Preview da Imagem Responsivo */}
-            {previewUrl && (
-              <div className="w-full">
-                <AspectRatio ratio={4/3} className="bg-muted rounded-md overflow-hidden">
-                  <img 
-                    src={previewUrl} 
-                    alt="Preview do produto" 
-                    className="w-full h-full object-contain bg-white"
-                    onError={(e) => {
-                      e.currentTarget.src = '/placeholder.svg';
-                    }}
-                  />
-                </AspectRatio>
-                <p className="text-xs text-gray-500 mt-1 text-center">
-                  Preview da imagem do produto
-                </p>
               </div>
-            )}
-          </div>
+              
+              {/* Coluna Direita - Imagem */}
+              <div className="space-y-3">
+                {/* Seção de Imagem */}
+                <div className="space-y-2">
+                  <Label className="text-xs font-medium">Imagem do Produto</Label>
+                  <div className="flex gap-2 mb-2">
+                    <Button
+                      type="button"
+                      variant={imageType === 'url' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setImageType('url')}
+                      className="h-7 text-xs px-2 flex-1"
+                    >
+                      <Link className="w-3 h-3 mr-1" />
+                      URL
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={imageType === 'upload' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setImageType('upload')}
+                      className="h-7 text-xs px-2 flex-1"
+                    >
+                      <Upload className="w-3 h-3 mr-1" />
+                      Upload
+                    </Button>
+                  </div>
 
-          <div className="flex justify-end space-x-2 pt-2">
+                  {imageType === 'url' ? (
+                    <Input
+                      placeholder="Cole a URL da imagem aqui"
+                      value={formData.imagem_url}
+                      onChange={(e) => handleUrlChange(e.target.value)}
+                      className="h-8 text-xs mb-2"
+                    />
+                  ) : (
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileChange}
+                      className="h-8 text-xs mb-2"
+                    />
+                  )}
+
+                  {/* Preview da Imagem */}
+                  {previewUrl ? (
+                    <div className="border rounded-md p-2 bg-white">
+                      <div className="relative aspect-square max-h-64 mx-auto">
+                        <img 
+                          src={previewUrl} 
+                          alt="Preview do produto" 
+                          className="w-full h-full object-contain"
+                          onError={(e) => {
+                            e.currentTarget.src = '/placeholder.svg';
+                          }}
+                        />
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1 text-center">
+                        Visualização da imagem
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="border-2 border-dashed rounded-md p-4 flex flex-col items-center justify-center bg-gray-50 aspect-square">
+                      <ImageIcon className="w-10 h-10 text-gray-300 mb-2" />
+                      <p className="text-xs text-gray-500 text-center">
+                        {imageType === 'url' 
+                          ? 'Nenhuma imagem carregada' 
+                          : 'Nenhum arquivo selecionado'}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Rodapé com botões */}
+          <div className="border-t bg-gray-50 px-4 py-3 flex justify-end space-x-2">
             <Button 
               type="button" 
               variant="outline" 
               onClick={onClose}
-              className="h-7 text-xs"
+              className="h-8 text-xs"
             >
               Cancelar
             </Button>
             <Button 
               type="submit" 
               disabled={updateProductMutation.isPending}
-              className="h-7 text-xs"
+              className="h-8 text-xs px-4"
             >
-              {updateProductMutation.isPending ? 'Salvando...' : 'Salvar'}
+              {updateProductMutation.isPending ? 'Salvando...' : 'Salvar Alterações'}
             </Button>
           </div>
         </form>

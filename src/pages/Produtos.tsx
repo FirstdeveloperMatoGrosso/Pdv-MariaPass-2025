@@ -167,7 +167,8 @@ const Produtos: React.FC = () => {
         descricao: (currentProduct as any).descricao || '',
         imagem_url: currentProduct.imagem_url || null,
         tipo_venda: (currentProduct as any).tipo_venda || 'unidade',
-        unidades_por_caixa: (currentProduct as any).unidades_por_caixa || null
+        unidades_por_caixa: (currentProduct as any).unidades_por_caixa || null,
+        estoque_atual: currentProduct.estoque // Adicionando estoque_atual com o valor de estoque
       } as TotemProduct;
       setSelectedProduct(productToEdit);
       setShowEditForm(true);
@@ -314,9 +315,9 @@ const Produtos: React.FC = () => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="todas">Todas as categorias</SelectItem>
+                  <SelectItem key="todas-categorias" value="todas">Todas as categorias</SelectItem>
                   {categorias.map((categoria: Categoria) => (
-                    <SelectItem key={categoria.id} value={categoria.nome}>
+                    <SelectItem key={`categoria-${categoria.id}`} value={categoria.nome}>
                       {categoria.nome}
                     </SelectItem>
                   ))}
@@ -331,10 +332,10 @@ const Produtos: React.FC = () => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="todos">Todos os status</SelectItem>
-                  <SelectItem value="ativo">Ativo</SelectItem>
-                  <SelectItem value="inativo">Inativo</SelectItem>
-                  <SelectItem value="descontinuado">Descontinuado</SelectItem>
+                  <SelectItem key="todos-status" value="todos">Todos os status</SelectItem>
+                  <SelectItem key="status-ativo" value="ativo">Ativo</SelectItem>
+                  <SelectItem key="status-inativo" value="inativo">Inativo</SelectItem>
+                  <SelectItem key="status-descontinuado" value="descontinuado">Descontinuado</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -342,8 +343,8 @@ const Produtos: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Products Grid - Cards menores */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2 sm:gap-3">
+      {/* Products Grid - Cards responsivos */}
+      <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-2 sm:gap-3">
         {isLoading ? (
           Array.from({ length: 16 }).map((_, index) => (
             <Card key={index} className="animate-pulse">
@@ -361,13 +362,14 @@ const Produtos: React.FC = () => {
           </div>
         ) : (
           filteredProducts.map((product) => (
-            <Card key={product.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-              <div className="aspect-square bg-gray-50 flex items-center justify-center h-16">
+            <Card key={product.id} className="overflow-hidden hover:shadow-lg transition-shadow h-full flex flex-col">
+              <div className="aspect-square bg-gray-50 flex items-center justify-center h-16 sm:h-20 md:h-24">
                 {product.imagem_url ? (
                   <img 
                     src={product.imagem_url} 
                     alt={product.nome}
                     className="w-full h-full object-cover"
+                    loading="lazy"
                     onError={(e) => {
                       e.currentTarget.src = '/placeholder.svg';
                     }}
@@ -377,56 +379,59 @@ const Produtos: React.FC = () => {
                 )}
               </div>
               
-              <CardContent className="p-2">
-                <div className="space-y-1">
-                  <div>
-                    <h3 className="font-semibold text-xs truncate" title={product.nome}>
+              <CardContent className="p-2 flex-1 flex flex-col">
+                <div className="space-y-1 flex-1">
+                  <div className="min-h-[40px]">
+                    <h3 className="font-semibold text-xs xs:text-[11px] sm:text-xs truncate" title={product.nome}>
                       {product.nome}
                     </h3>
-                    <p className="text-xs text-gray-600 truncate">
+                    <p className="text-[10px] xs:text-xs text-gray-600 truncate">
                       {product.categoria}
                     </p>
                   </div>
                   
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm font-bold text-green-600">
+                  <div className="flex items-center justify-between mt-1">
+                    <div className="text-xs xs:text-sm font-bold text-green-600 whitespace-nowrap">
                       {formatCurrency(product.preco)}
                     </div>
-                    <Badge className={`text-xs px-1 py-0 ${getStatusBadge(product.status)}`}>
+                    <Badge className={`text-[10px] xs:text-xs px-1 py-0 ${getStatusBadge(product.status)}`}>
                       {product.status}
                     </Badge>
                   </div>
                   
-                  <div className="text-xs text-gray-600">
-                    Est: {product.estoque}
+                  <div className="text-[10px] xs:text-xs text-gray-600">
+                    Estoque: {product.estoque}
                   </div>
-                  
-                  <div className="flex space-x-1">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleViewDetails(product)}
-                      className="flex-1 text-xs h-6 px-1"
-                    >
-                      <Eye className="w-3 h-3" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleEdit(product)}
-                      className="h-6 px-1"
-                    >
-                      <Edit className="w-3 h-3" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleDelete(product.id)}
-                      className="text-red-600 hover:text-red-700 h-6 px-1"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </Button>
-                  </div>
+                </div>
+                
+                <div className="flex space-x-1 mt-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleViewDetails(product)}
+                    className="flex-1 text-xs h-6 px-1 min-w-0"
+                    title="Ver detalhes"
+                  >
+                    <Eye className="w-3 h-3" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleEdit(product)}
+                    className="h-6 px-1 min-w-0"
+                    title="Editar"
+                  >
+                    <Edit className="w-3 h-3" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleDelete(product.id)}
+                    className="text-red-600 hover:text-red-700 h-6 px-1 min-w-0"
+                    title="Excluir"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </Button>
                 </div>
               </CardContent>
             </Card>
