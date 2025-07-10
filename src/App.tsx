@@ -289,21 +289,23 @@ const App = () => {
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <SidebarProvider>
-            <div className="min-h-screen flex w-full">
-              <Routes>
-                <Route path="/login" element={<Login />} />
-                <Route 
-                  path="/*" 
-                  element={
-                    <ProtectedLayout>
-                      <AppRoutes />
-                    </ProtectedLayout>
-                  } 
-                />
-              </Routes>
-            </div>
-          </SidebarProvider>
+          <Routes>
+            <Route path="/login" element={
+              <div className="min-h-screen w-full">
+                <Login />
+              </div>
+            } />
+            <Route 
+              path="/*" 
+              element={
+                <SidebarProvider>
+                  <ProtectedLayout>
+                    <AppRoutes />
+                  </ProtectedLayout>
+                </SidebarProvider>
+              } 
+            />
+          </Routes>
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>

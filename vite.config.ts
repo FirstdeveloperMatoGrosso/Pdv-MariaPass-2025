@@ -179,31 +179,31 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
-      // Usando a versão ESM do SDK que é mais adequada para o navegador
-      'pagarme': path.resolve(__dirname, '../dist/esm/index.js'),
+      // Usando o caminho correto para o módulo pagarme
+      'pagarme': path.resolve(__dirname, 'node_modules/pagarme/dist/pagarme.js'),
     },
     // Garante que as extensões .js sejam resolvidas corretamente
     extensions: ['.mjs', '.js', '.ts', '.jsx', '.tsx', '.json'],
   },
   define: {
-    'process.env': {},
+    'process.env': {
+      VITE_SUPABASE_URL: JSON.stringify(process.env.VITE_SUPABASE_URL),
+      VITE_SUPABASE_ANON_KEY: JSON.stringify(process.env.VITE_SUPABASE_ANON_KEY)
+    },
     global: 'window',
   },
   optimizeDeps: {
+    include: ["react/jsx-dev-runtime"],
     esbuildOptions: {
-      // Configurações para o esbuild
       target: 'es2020',
-      // Habilita suporte a CommonJS
-      mainFields: ['module', 'main'],
-      // Configura o loader para arquivos .js
-      loader: { '.js': 'jsx' },
-      // Define variáveis de ambiente
-      define: {
-        'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development'),
+      loader: { 
+        '.js': 'jsx' 
       },
+      define: {
+        global: 'globalThis',
+      },
+      jsx: 'automatic',
     },
-    // Força a inclusão do SDK nos bundles otimizados
-    include: ['pagarme'],
   },
   build: {
     commonjsOptions: {
@@ -216,14 +216,7 @@ export default defineConfig({
     },
     // Configurações de rollup
     rollupOptions: {
-      // Externaliza o SDK para evitar duplicação
-      external: ['pagarme'],
-      output: {
-        // Define o nome global para o SDK
-        globals: {
-          pagarme: 'pagarme',
-        },
-      },
+      // Configurações de rollup
     },
     // Aumenta o limite de tamanho dos chunks
     chunkSizeWarningLimit: 2000,

@@ -1,28 +1,37 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Verifica se as variáveis de ambiente estão configuradas
-const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL || '').trim();
-const supabaseAnonKey = (import.meta.env.VITE_SUPABASE_ANON_KEY || '').trim();
+// Carrega as variáveis de ambiente de forma compatível com Vite
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error(
-    'Variáveis de ambiente do Supabase não encontradas. Por favor, configure VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY no arquivo .env'
-  );
+// Função para validar URL
+const isValidUrl = (url: string) => {
+  try {
+    new URL(url);
+    return true;
+  } catch (e) {
+    return false;
+  }
+};
+
+// Valores padrão para desenvolvimento
+const defaultSupabaseUrl = 'https://dummy-url.supabase.co';
+const defaultAnonKey = 'dummy-key';
+
+// Verifica se as credenciais são válidas
+const hasValidCredentials = supabaseUrl && supabaseAnonKey && isValidUrl(supabaseUrl);
+
+if (!hasValidCredentials) {
+  console.warn('Atenção: Credenciais do Supabase não configuradas ou inválidas. Usando valores padrão.');
+  console.log('VITE_SUPABASE_URL:', supabaseUrl || 'não definido');
+  console.log('VITE_SUPABASE_ANON_KEY:', supabaseAnonKey ? '***' : 'não definido');
 }
 
 // Remove a barra final da URL, se existir
-const formattedUrl = supabaseUrl.endsWith('/') 
-  ? supabaseUrl.slice(0, -1) 
-  : supabaseUrl;
+const formattedUrl = (hasValidCredentials ? supabaseUrl : defaultSupabaseUrl).replace(/\/+$/, '');
 
-// Valida o formato da URL
-try {
-  new URL(formattedUrl);
-} catch (error) {
-  throw new Error(`URL do Supabase inválida: ${formattedUrl}. Exemplo de formato correto: https://seu-projeto.supabase.co`);
-}
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+// Cria o cliente Supabase
+export const supabase = createClient(formattedUrl, hasValidCredentials ? supabaseAnonKey : defaultAnonKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
