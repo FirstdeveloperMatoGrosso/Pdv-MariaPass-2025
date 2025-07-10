@@ -203,12 +203,29 @@ const CadastroCliente: React.FC<CadastroClienteProps> = ({
     try {
       setLoading(true);
       
+      // Obtém a sessão atual do usuário
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError || !user) {
+        console.error('Erro ao obter usuário:', userError);
+        throw new Error('Usuário não autenticado. Por favor, faça login novamente.');
+      }
+      
+      console.log('Usuário autenticado:', user);
+      
       const dadosCliente: NovoCliente = {
         ...formData,
         documento: formData.documento.replace(/\D/g, ''), // Remove formatação
         telefone: formData.telefone ? formData.telefone.replace(/\D/g, '') : null,
-        endereco: formData.endereco?.cep ? formData.endereco : null
+        endereco: formData.endereco?.cep ? formData.endereco : null,
+        user_id: user.id, // Usa o ID do usuário autenticado
+        ativo: formData.ativo ?? true, // Garante que o cliente seja ativado por padrão
+        data_cadastro: new Date().toISOString() // Adiciona a data atual
       };
+      
+      console.log('Dados do cliente a serem salvos:', dadosCliente);
+      
+      console.log('Dados do cliente a serem salvos:', dadosCliente);
       
       if (clienteId) {
         // Atualizar cliente existente

@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 
 export function Login() {
   const [email, setEmail] = useState('');
@@ -31,22 +32,13 @@ export function Login() {
     setIsLoading(true);
     
     try {
-      // Simulando uma requisição de login
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Autenticação real com o Supabase
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
       
-      // Aqui você faria a autenticação real com o Supabase
-      // const { data, error } = await supabase.auth.signInWithPassword({
-      //   email,
-      //   password,
-      // });
-      // 
-      // if (error) throw error;
-      
-      // Simulando um token de autenticação
-      const mockToken = 'mock-jwt-token';
-      localStorage.setItem('auth_token', mockToken);
-      // Salva o email do usuário no localStorage
-      localStorage.setItem('user_email', email);
+      if (error) throw error;
       
       // Dispara um evento para atualizar o cabeçalho
       window.dispatchEvent(new Event('storage'));
@@ -64,13 +56,22 @@ export function Login() {
       });
       window.dispatchEvent(event);
       
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao fazer login:', error);
+      
+      // Mensagem de erro mais específica
+      let errorMessage = 'Credenciais inválidas. Tente novamente.';
+      
+      if (error.message.includes('Invalid login credentials')) {
+        errorMessage = 'E-mail ou senha incorretos.';
+      } else if (error.message.includes('Email not confirmed')) {
+        errorMessage = 'Por favor, verifique seu e-mail para confirmar sua conta.';
+      }
       
       // Mostra mensagem de erro
       const event = new CustomEvent('show-toast', { 
         detail: { 
-          message: 'Credenciais inválidas. Tente novamente.',
+          message: errorMessage,
           type: 'error'
         } 
       });

@@ -4,7 +4,7 @@ import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
 import type { ServerResponse, IncomingMessage } from 'http';
-import express from 'express';
+import { Buffer } from 'buffer';
 
 // Configuração do Vite
 export default defineConfig(({ mode }) => {
@@ -75,48 +75,121 @@ export default defineConfig(({ mode }) => {
           });
           
           // Intercepta a requisição para adicionar headers
-          proxy.on('proxyReq', (proxyReq, req: IncomingMessage) => {
-            const url = req.url || 'unknown';
-            console.log('Sending Request to Pagar.me:', req.method, url);
-            
-            // Usa a chave de teste do Pagar.me diretamente (apenas para desenvolvimento)
-            const apiKey = 'sk_test_bb42e0672450489fb186dd88a72d4b3c';
-            const auth = Buffer.from(`${apiKey}:`).toString('base64');
-            
-            // Remove headers antigos para evitar duplicação
-            proxyReq.removeHeader('authorization');
-            
-            // Adiciona os headers necessários
-            proxyReq.setHeader('Authorization', `Basic ${auth}`);
-            proxyReq.setHeader('Content-Type', 'application/json');
-            proxyReq.setHeader('Accept', 'application/json');
-            
-            // Adiciona um ID de requisição para rastreamento
-            const requestId = `req-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-            if (req.headers) {
-              req.headers['x-request-id'] = requestId;
+          proxy.on('proxyReq', (proxyReq, req: IncomingMessage, res: ServerResponse) => {
+            try {
+              const url = req.url || 'unknown';
+              const requestId = `req-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+              
+              // Log detalhado da requisição
+              console.log(`[${new Date().toISOString()}] [${requestId}] Request to Pagar.me:`, {
+                method: req.method,
+                url,
+                headers: {
+                  ...req.headers,
+                  authorization: req.headers.authorization ? '***' : undefined
+                }
+              });
+              
+              // Usa a chave de teste do Pagar.me diretamente (apenas para desenvolvimento)
+              const apiKey = 'sk_test_bb42e0672450489fb186dd88a72d4b3c';
+              const auth = Buffer.from(`${apiKey}:`).toString('base64');
+              
+              // Remove headers antigos para evitar duplicação
+              proxyReq.removeHeader('authorization');
+              
+              // Adiciona os headers necessários
+              proxyReq.setHeader('Authorization', `Basic ${auth}`);
+              proxyReq.setHeader('Content-Type', 'application/json');
+              proxyReq.setHeader('Accept', 'application/json');
+              proxyReq.setHeader('X-Request-ID', requestId);
+              
+              // Log do payload da requisição (se houver)
+              if (req.method === 'POST' || req.method === 'PUT') {
+                let body = [];
+                proxyReq.on('data', (chunk) => {
+                  body.push(chunk);
+                });
+                
+                proxyReq.on('end', () => {
+                  if (body.length > 0) {
+                    const requestBody = Buffer.concat(body).toString();
+                    console.log(`[${new Date().toISOString()}] [${requestId}] Request Body:`, requestBody);
+                    
+                    // Reconstruir o body para o proxy
+                    proxyReq.write(requestBody);
+                    proxyReq.end();
+                  }
+                });
+              }
+              
+              // Log dos headers finais
+              console.log(`[${new Date().toISOString()}] [${requestId}] Final Request Headers:`, {
+                ...proxyReq.getHeaders(),
+                authorization: '***'
+              });
+              
+            } catch (proxyReqError) {
+              console.error('Error in proxyReq handler:', proxyReqError);
+              if (!res.headersSent) {
+                res.writeHead(500, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({
+                  error: 'Proxy Request Error',
+                  message: proxyReqError.message,
+                  stack: process.env.NODE_ENV === 'development' ? proxyReqError.stack : undefined
+                }));
+              }
             }
+          });
+          
+          // Intercepta a resposta da API
+          proxy.on('proxyRes', (proxyRes, req, res) => {
+            const requestId = proxyRes.req.getHeader('x-request-id') || 'unknown';
+            const chunks: Buffer[] = [];
             
-            // Log dos headers para debug (sem expor a chave)
-            console.log('Request headers:', {
-              'Authorization': `Basic ${'*'.repeat(10)}`,
-              'Content-Type': 'application/json',
-              'Accept': 'application/json',
-              'X-Request-ID': requestId
+            console.log(`[${new Date().toISOString()}] [${requestId}] Response from Pagar.me:`, {
+              statusCode: proxyRes.statusCode,
+              statusMessage: proxyRes.statusMessage,
+              headers: {
+                ...proxyRes.headers,
+                'set-cookie': proxyRes.headers['set-cookie'] ? '***' : undefined,
+                'authorization': proxyRes.headers['authorization'] ? '***' : undefined,
+              }
             });
             
-            // Log do corpo da requisição para debug
+            // Captura o corpo da resposta
+            proxyRes.on('data', (chunk) => {
+              chunks.push(chunk);
+            });
+            
+            proxyRes.on('end', () => {
+              if (chunks.length > 0) {
+                try {
+                  const body = Buffer.concat(chunks).toString('utf8');
+                  console.log(`[${new Date().toISOString()}] [${requestId}] Response Body:`, body);
+                } catch (error) {
+                  console.error(`[${new Date().toISOString()}] [${requestId}] Error parsing response body:`, error);
+                }
+              }
+            });
+            
+            proxyRes.on('error', (error) => {
+              console.error(`[${new Date().toISOString()}] [${requestId}] Error in proxy response:`, error);
+            });
+          });  
+          // Configuração de log para o corpo da requisição
+          proxy.on('proxyReq', (proxyReq, req) => {
             if (req.method === 'POST' || req.method === 'PUT') {
-              const chunks: Buffer[] = [];
+              const body: any[] = [];
+              
               req.on('data', (chunk) => {
-                chunks.push(chunk);
+                body.push(chunk);
               });
               
               req.on('end', () => {
-                if (chunks.length > 0) {
+                if (body.length > 0) {
                   try {
-                    const body = Buffer.concat(chunks).toString();
-                    console.log('Request body:', body);
+                    const requestBody = Buffer.concat(body).toString('utf8');
+                    console.log('Request body:', requestBody);
                   } catch (e) {
                     console.error('Error parsing request body:', e);
                   }

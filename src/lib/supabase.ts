@@ -100,6 +100,7 @@ export type Tables = {
       } | null;
       data_cadastro: string;
       ativo: boolean;
+      user_id: string;
       created_at: string;
       updated_at: string;
     };
@@ -121,6 +122,7 @@ export type Tables = {
       } | null;
       data_cadastro?: string;
       ativo?: boolean;
+      user_id?: string;
     };
     Update: {
       nome?: string;
@@ -138,6 +140,7 @@ export type Tables = {
         uf?: string;
       } | null;
       ativo?: boolean;
+      user_id?: string;
       updated_at?: string;
     };
   };

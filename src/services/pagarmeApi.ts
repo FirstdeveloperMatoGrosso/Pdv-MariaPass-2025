@@ -1,4 +1,4 @@
-import axios, { AxiosError, AxiosResponse, AxiosRequestConfig } from 'axios';
+import axios, { AxiosInstance, AxiosRequestConfig, AxiosHeaders, AxiosError } from 'axios';
 import { config } from '../config/env';
 
 // Type declarations
@@ -189,14 +189,58 @@ const api = axios.create({
 // Não adicionamos o header de autorização aqui, pois será adicionado pelo proxy
 // Isso evita que a chave da API seja exposta no cliente
 
-// Add request interceptor para log
+// Add request interceptor para adicionar a chave de API
 api.interceptors.request.use(
   (config) => {
-    console.log('Enviando requisição para:', config.url);
-    return config;
+    try {
+      const apiKey = config.pagarmeApiKey || config.params?.api_key;
+      
+      if (!apiKey) {
+        console.warn('Nenhuma chave de API fornecida na requisição');
+      } else {
+        // Adiciona a chave de API como parâmetro de consulta
+        config.params = {
+          ...config.params,
+          api_key: apiKey,
+        };
+        
+        // Adiciona o cabeçalho de autorização
+        const authHeader = `Basic ${base64Encode(`${apiKey}:`)}`;
+        
+        // Garante que config.headers existe e está no formato correto
+        if (!config.headers) {
+          config.headers = new AxiosHeaders();
+        } else if (!(config.headers instanceof AxiosHeaders)) {
+          // Se for um objeto simples, converte para AxiosHeaders
+          config.headers = new AxiosHeaders(config.headers);
+        }
+        
+        // Adiciona os headers necessários
+        config.headers.set('Authorization', authHeader);
+        config.headers.set('Content-Type', 'application/json');
+        config.headers.set('Accept', 'application/json');
+        
+        console.log('Enviando requisição para:', {
+          url: config.url,
+          method: config.method,
+          headers: {
+            ...config.headers,
+            'Authorization': '***', // Não logar o token real
+          },
+          params: config.params,
+          data: config.data ? JSON.parse(config.data) : undefined
+        });
+      }
+      
+      return config;
+      
+    } catch (error) {
+      console.error('Erro no interceptor de requisição:', error);
+      return Promise.reject(error);
+    }
   },
   (error) => {
-    console.error('Erro na requisição:', error);
+    console.error('Erro no interceptor de requisição (onRejected):', error);
     return Promise.reject(error);
   }
 );
@@ -204,24 +248,74 @@ api.interceptors.request.use(
 // Add response interceptor para tratamento de erros
 api.interceptors.response.use(
   (response) => {
-    console.log('Resposta recebida:', response.config.url, response.status);
+    console.log('Resposta recebida:', {
+      url: response.config.url,
+      status: response.status,
+      method: response.config.method,
+      data: response.data
+    });
     return response;
   },
   (error) => {
+    const errorInfo: any = {
+      message: error.message,
+      config: {
+        url: error.config?.url,
+        method: error.config?.method,
+        headers: {
+          ...error.config?.headers,
+          authorization: error.config?.headers?.authorization ? '***' : undefined
+        },
+        data: error.config?.data ? JSON.parse(error.config.data) : undefined
+      }
+    };
+
     if (error.response) {
       // A requisição foi feita e o servidor respondeu com um status fora do range 2xx
-      console.error('Erro na resposta:', {
+      errorInfo.response = {
         status: error.response.status,
-        data: error.response.data,
+        statusText: error.response.statusText,
         headers: error.response.headers,
-      });
+        data: error.response.data
+      };
+      
+      console.error('Erro na resposta da API:', errorInfo);
+      
+      // Melhorar mensagem de erro com base no status
+      if (error.response.status === 401) {
+        error.message = 'Não autorizado. Verifique sua chave de API.';
+      } else if (error.response.status === 403) {
+        error.message = 'Acesso negado. Verifique as permissões da sua conta.';
+      } else if (error.response.status === 404) {
+        error.message = 'Recurso não encontrado.';
+      } else if (error.response.status >= 500) {
+        error.message = 'Erro interno no servidor. Tente novamente mais tarde.';
+      }
+      
+      // Adicionar mensagem de erro da API, se disponível
+      if (error.response.data?.message) {
+        error.message += ` Detalhes: ${error.response.data.message}`;
+      } else if (error.response.data?.errors?.[0]?.message) {
+        error.message += ` Detalhes: ${error.response.data.errors[0].message}`;
+      }
+      
     } else if (error.request) {
       // A requisição foi feita mas não houve resposta
-      console.error('Sem resposta do servidor:', error.request);
+      errorInfo.request = {
+        status: error.request.status,
+        responseText: error.request.responseText,
+        responseURL: error.request.responseURL
+      };
+      console.error('Sem resposta do servidor:', errorInfo);
+      error.message = 'Não foi possível conectar ao servidor. Verifique sua conexão com a internet.';
     } else {
       // Algo aconteceu ao configurar a requisição
-      console.error('Erro ao configurar a requisição:', error.message);
+      console.error('Erro ao configurar a requisição:', errorInfo);
+      error.message = `Erro ao configurar a requisição: ${error.message}`;
     }
+    
+    // Adicionar informações adicionais ao erro
+    error.details = errorInfo;
     
     return Promise.reject(error);
   }
@@ -247,43 +341,196 @@ function validateCustomerData(customer: CustomerData): void {
 
 // Payment service
 const pagarmeApi = {
-  // Find customer by email
+  /**
+   * Busca um cliente por e-mail na API do Pagar.me
+   * @param email E-mail do cliente a ser buscado
+   * @returns Dados do cliente ou null se não encontrado
+   */
   async findCustomerByEmail(email: string) {
-    try {
-      const response = await api.get(`/customers?email=${encodeURIComponent(email)}`, {
-        pagarmeApiKey: config.pagarme.apiKey,
-      });
+    if (!email || typeof email !== 'string') {
+      throw new Error('E-mail inválido para busca de cliente');
+    }
 
-      if (response.data && response.data.data && response.data.data.length > 0) {
-        return response.data.data[0];
+    console.log(`[Pagar.me] Buscando cliente por e-mail: ${email}`);
+    
+    try {
+      const url = `/customers?email=${encodeURIComponent(email)}`;
+      
+      console.log('[Pagar.me] Enviando requisição para:', url);
+      
+      const response = await api.get(url, {
+        pagarmeApiKey: config.pagarme.apiKey,
+        params: {
+          _t: Date.now(),
+          email: encodeURIComponent(email)
+        },
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+          'Accept': 'application/json'
+        }
+      });
+      
+      const hasData = response.data?.data?.length > 0;
+      
+      console.log(`[Pagar.me] Resposta da busca por cliente (${response.status}):`, {
+        hasData,
+        customerId: hasData ? response.data.data[0].id : 'não encontrado'
+      });
+      
+      // Retorna o primeiro cliente encontrado ou null se não houver resultados
+      return hasData ? response.data.data[0] : null;
+      
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || error.message || 'Erro desconhecido';
+      
+      // Log detalhado do erro
+      console.error('[Pagar.me] Erro ao buscar cliente:', {
+        email,
+        status: error.response?.status,
+        message: errorMessage,
+        url: error.config?.url,
+        method: error.config?.method,
+        responseData: error.response?.data
+      });
+      
+      // Se for um erro 404 (não encontrado), retorna null
+      if (error.response?.status === 404) {
+        console.log('[Pagar.me] Cliente não encontrado (404)');
+        return null;
       }
-      return null;
-    } catch (error) {
-      console.error('Error finding customer by email:', error);
-      throw error;
+      
+      // Se for um erro 500, tenta extrair mais informações
+      if (error.response?.status === 500) {
+        const errorDetails = error.response?.data?.errors?.[0]?.message || 
+                           error.response?.data?.message || 
+                           'Erro interno no servidor';
+        throw new Error(`Falha na busca do cliente: ${errorDetails}`);
+      }
+      
+      // Para outros erros, lança uma exceção com a mensagem de erro
+      throw new Error(`Erro ao buscar cliente: ${errorMessage}`);
     }
   },
 
-  // Create a new customer
+  /**
+   * Cria um novo cliente na API do Pagar.me
+   * @param customerData Dados do cliente a ser criado
+   * @returns Dados do cliente criado
+   */
   async createCustomer(customerData: Omit<CustomerData, 'metadata'>) {
+    console.log('Iniciando criação de cliente...');
+    
+    // Declare customerPayload in the function scope so it's available in catch block
+    let customerPayload;
+    
     try {
-      validateCustomerData(customerData as CustomerData);
+      // Validar dados do cliente
+      if (!customerData.name || !customerData.email || !customerData.document) {
+        throw new Error('Nome, e-mail e documento são obrigatórios');
+      }
+
+      customerPayload = {
+        name: customerData.name.trim(),
+        email: customerData.email.trim().toLowerCase(),
+        document: customerData.document.replace(/\D/g, ''), // Remove caracteres não numéricos
+        document_type: customerData.document.replace(/\D/g, '').length <= 11 ? 'CPF' : 'CNPJ',
+        type: customerData.type || 'individual',
+        address: {
+          ...customerData.address,
+          zip_code: customerData.address.zip_code.replace(/\D/g, ''),
+          line_1: (customerData.address.line_1 || 'Não informado').trim(),
+          line_2: (customerData.address.line_2 || '').trim(),
+          city: (customerData.address.city || 'São Paulo').trim(),
+          state: (customerData.address.state || 'SP').trim().substring(0, 2).toUpperCase(),
+          country: 'BR'
+        },
+        phones: customerData.phones || {
+          mobile_phone: {
+            country_code: '55', // Código do Brasil
+            area_code: '11', // Código de área padrão
+            number: '999999999' // Número padrão
+          }
+        },
+        metadata: {
+          created_via: 'pdv-mariapass',
+          created_at: new Date().toISOString()
+        }
+      };
+
+      console.log('[Pagar.me] Payload para criação de cliente:', JSON.stringify(customerPayload, null, 2));
+      console.log('[Pagar.me] Enviando requisição para API...');
 
       const response = await api.post(
         '/customers',
-        {
-          ...customerData,
-          code: customerData.document.replace(/\D/g, ''), // Remove non-numeric characters
-        },
+        customerPayload,
         {
           pagarmeApiKey: config.pagarme.apiKey,
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          validateStatus: (status) => status < 500 // Não rejeitar para códigos 4xx
         }
       );
 
+      console.log('[Pagar.me] Resposta da API (status:', response.status, '):', response.data);
+
+      if (response.status >= 400) {
+        const errorMessage = response.data?.message || 
+                          response.data?.errors?.[0]?.message || 
+                          `Erro ${response.status} ao criar cliente`;
+                           response.data?.errors?.[0]?.message || 
+                           `Erro ${response.status} ao criar cliente`;
+        
+        console.error('Erro na API do Pagar.me:', {
+          status: response.status,
+          message: errorMessage,
+          errors: response.data?.errors,
+          requestData: customerPayload
+        });
+        
+        throw new Error(`Erro ao criar cliente: ${errorMessage}`);
+      }
+
+      console.log('Cliente criado com sucesso:', response.data.id);
       return response.data;
-    } catch (error) {
-      console.error('Error creating customer:', error);
-      throw error;
+      
+    } catch (error: any) {
+      console.error('Erro ao criar cliente:', {
+        message: error.message,
+        stack: error.stack,
+        response: error.response?.data,
+        request: error.config?.data ? JSON.parse(error.config.data) : null
+      });
+      
+      if (error.response?.data) {
+        const apiError = error.response.data;
+        const errorMessage = apiError.message || 
+                           apiError.errors?.[0]?.message || 
+                           'Erro ao processar a requisição';
+        
+        // Log detalhado do erro
+        const errorDetails = [
+          apiError.message,
+          ...(apiError.errors || []).map((e: any) => e.message)
+        ].filter(Boolean);
+        
+        const errorContext = {
+          status: error.response.status,
+          error: errorMessage,
+          validationErrors: apiError.errors,
+          requestData: customerPayload || 'Não disponível',
+          errorDetails: errorDetails
+        };
+        
+        console.error('Detalhes do erro da API:', errorContext);
+        
+        throw new Error(`Erro ao criar cliente: ${errorDetails.join('. ')}`);
+      }
+      
+      throw new Error(`Erro ao processar criação de cliente: ${error.message}`);
     }
   },
 
@@ -488,6 +735,18 @@ const pagarmeApi = {
    * @param orderParams Order and payment data
    * @returns Generated boleto data
    */
+  /**
+   * Cria um novo pedido com pagamento por boleto
+   * @param orderParams Dados do pedido e pagamento
+   * @returns Dados do boleto gerado
+   * @throws {Error} Em caso de erro na criação do boleto
+   */
+  /**
+   * Cria um novo pedido com pagamento por boleto
+   * @param orderParams Dados do pedido e pagamento
+   * @returns Dados do boleto gerado
+   * @throws {Error} Em caso de erro na criação do boleto
+   */
   async createBoletoOrder(orderParams: {
     customer: CustomerData;
     amount: number;
@@ -502,75 +761,181 @@ const pagarmeApi = {
       code?: string;
     }>;
   }): Promise<BoletoOrderResponse> {
+    console.log('[Pagar.me] Iniciando criação de pedido de boleto...');
+    
+    // Validar parâmetros iniciais
+    if (!orderParams || typeof orderParams !== 'object') {
+      throw new Error('Parâmetros de pedido inválidos');
+    }
+    
+    const { customer, amount, orderCode, dueDate, instructions, items = [] } = orderParams;
+    
+    // Validar dados obrigatórios
+    if (!customer) throw new Error('Dados do cliente são obrigatórios');
+    if (!amount || amount <= 0) throw new Error('Valor do pedido deve ser maior que zero');
+    if (!dueDate) throw new Error('Data de vencimento é obrigatória');
+    if (!instructions) throw new Error('Instruções de pagamento são obrigatórias');
+    
     try {
-      const { customer, amount, orderCode, dueDate, instructions, items = [] } = orderParams;
-
-      // Validate customer data
+      // Validar dados do cliente
+      console.log('[Pagar.me] Validando dados do cliente...');
       validateCustomerData(customer);
-
-      // Find or create customer
-      let customerId = customer.id;
-      if (!customerId) {
-        const existingCustomer = await this.findCustomerByEmail(customer.email);
-        if (existingCustomer) {
-          customerId = existingCustomer.id;
-        } else {
-          const newCustomer = await this.createCustomer(customer);
-          customerId = newCustomer.id;
+      
+      // Validar itens do pedido
+      if (items && items.length > 0) {
+        for (const [index, item] of items.entries()) {
+          if (!item.description || !item.amount || item.amount <= 0) {
+            throw new Error(`Item ${index + 1} inválido: descrição e valor são obrigatórios`);
+          }
         }
       }
-
-      // Prepare order items
+      
+      // Validar data de vencimento
+      console.log('[Pagar.me] Validando data de vencimento...');
+      const minDueDate = new Date();
+      minDueDate.setDate(minDueDate.getDate() + 1);
+      minDueDate.setHours(0, 0, 0, 0); // Zerar hora para comparar apenas a data
+      
+      const dueDateObj = new Date(dueDate);
+      if (isNaN(dueDateObj.getTime())) {
+        throw new Error('Data de vencimento inválida');
+      }
+      
+      dueDateObj.setHours(0, 0, 0, 0); // Zerar hora para comparar apenas a data
+      
+      if (dueDateObj < minDueDate) {
+        throw new Error('A data de vencimento deve ser pelo menos 1 dia no futuro');
+      }
+      
+      // Formatar data para o padrão YYYY-MM-DD
+      const formattedDueDate = dueDateObj.toISOString().split('T')[0];
+      
+      // Preparar itens do pedido
       const orderItems = items.length > 0 ? items : [
         {
-          amount,
-          description: 'Product or service',
+          amount: Math.round(amount * 100), // Converter para centavos
+          description: 'Produto/Serviço',
           quantity: 1,
+          code: orderCode || `item_${Date.now()}`
         },
       ];
-
-      // Build request payload
+      
+      // Preparar dados do cliente para o payload
+      const customerPayload = {
+        name: customer.name.trim(),
+        email: customer.email.trim().toLowerCase(),
+        document: customer.document.replace(/\D/g, ''), // Remove caracteres não numéricos
+        document_type: customer.document.replace(/\D/g, '').length <= 11 ? 'CPF' : 'CNPJ',
+        type: 'individual',
+        address: {
+          ...customer.address,
+          zip_code: customer.address.zip_code.replace(/\D/g, ''),
+          line_1: (customer.address.line_1 || 'Não informado').trim(),
+          line_2: (customer.address.line_2 || '').trim(),
+          city: (customer.address.city || 'São Paulo').trim(),
+          state: (customer.address.state || 'SP').trim().substring(0, 2).toUpperCase(),
+          country: 'BR'
+        },
+        phones: customer.phones || {
+          mobile_phone: {
+            country_code: '55',
+            area_code: '11',
+            number: '999999999'
+          }
+        }
+      };
+      
+      // Validar dados formatados
+      if (!customerPayload.document || customerPayload.document.length < 11) {
+        throw new Error('Documento do cliente inválido');
+      }
+      
+      // Construir payload final
       const payload = {
-        customer_id: customerId,
-        items: orderItems,
+        customer: customerPayload,
+        code: orderCode || `order_${Date.now()}`,
+        items: orderItems.map(item => ({
+          amount: Math.round(item.amount), // Já deve estar em centavos
+          description: (item.description || 'Produto/Serviço').substring(0, 100),
+          quantity: item.quantity || 1,
+          code: item.code || `item_${Date.now()}_${Math.floor(Math.random() * 1000)}`
+        })),
         payments: [
           {
             payment_method: 'boleto',
             boleto: {
-              due_date: dueDate,
-              instructions: instructions,
-              customer: {
-                name: customer.name,
-                email: customer.email,
-                document: customer.document,
-                type: customer.type,
-                address: customer.address,
-                phones: customer.phones,
-              },
-            },
-          },
+              due_date: formattedDueDate,
+              instructions: (instructions || 'Pagar até a data de vencimento').substring(0, 255),
+              type: 'DM', // Duplicata Mercantil
+              document_number: `BOL${Date.now()}`
+            }
+          }
         ],
+        metadata: {
+          platform: 'pdv-mariapass',
+          created_at: new Date().toISOString(),
+          order_code: orderCode
+        }
       };
+      
+      // Validar payload
+      if (!payload.payments[0].boleto.due_date) {
+        throw new Error('Data de vencimento é obrigatória');
+      }
 
-      // Make API request to create order
+      console.log('Enviando requisição para API do Pagar.me...');
+      console.log('Endpoint:', '/orders');
+      console.log('Payload:', JSON.stringify(payload, null, 2));
+
+      // Fazer requisição para a API
       const response = await api.post('/orders', payload, {
         pagarmeApiKey: config.pagarme.apiKey,
+      }).catch(error => {
+        console.error('Erro na requisição para API do Pagar.me:', {
+          status: error.response?.status,
+          data: error.response?.data,
+          headers: error.response?.headers,
+          config: {
+            url: error.config?.url,
+            method: error.config?.method,
+            headers: error.config?.headers ? {
+              ...error.config.headers,
+              authorization: error.config.headers.authorization ? '***' : undefined
+            } : undefined,
+            data: error.config?.data
+          }
+        });
+        throw error;
       });
 
-      // Check if response contains boleto data
+      console.log('Resposta da API recebida:', {
+        status: response.status,
+        data: response.data
+      });
+
+      // Verificar se a resposta contém dados de cobrança
       if (!response.data.charges || response.data.charges.length === 0) {
-        throw new Error('API response does not contain charge data');
+        console.error('Resposta da API não contém dados de cobrança:', response.data);
+        throw new Error('A resposta da API não contém dados de cobrança');
       }
 
       const charge = response.data.charges[0];
       const boletoData = charge.last_transaction;
 
       if (!boletoData) {
-        throw new Error('Boleto data not found in API response');
+        console.error('Dados do boleto não encontrados na resposta:', response.data);
+        throw new Error('Dados do boleto não encontrados na resposta da API');
       }
 
-      // Format response to expected format
-      return {
+      console.log('Boleto gerado com sucesso:', {
+        boletoId: boletoData.id,
+        barcode: boletoData.barcode,
+        dueDate: boletoData.due_date || dueDate,
+        amount: charge.amount / 100 // Converter de centavos para reais
+      });
+
+      // Formatar resposta no formato esperado
+      const responseData = {
         id: charge.id,
         code: response.data.code,
         status: charge.status,
@@ -586,29 +951,47 @@ const pagarmeApi = {
         },
         charges: response.data.charges,
       };
+
+      return responseData;
     } catch (error) {
-      console.error('Error generating boleto:', error);
+      console.error('Erro ao gerar boleto:', error);
       
-      // Improve error handling with more descriptive messages
+      // Melhorar tratamento de erros com mensagens mais descritivas
       if (axios.isAxiosError(error)) {
         const axiosError = error as AxiosError<PagarmeApiError>;
         const errorMessage = axiosError.response?.data?.message || 
-                           axiosError.response?.data?.errors?.[0]?.message || 
+                           (axiosError.response?.data as any)?.errors?.[0]?.message || 
                            axiosError.message;
         
-        console.error('Error details:', {
+        const errorDetails = {
           status: axiosError.response?.status,
-          data: axiosError.response?.data,
-          headers: axiosError.response?.headers,
-        });
+          statusText: axiosError.response?.statusText,
+          url: axiosError.config?.url,
+          method: axiosError.config?.method,
+          requestData: axiosError.config?.data ? JSON.parse(axiosError.config.data) : undefined,
+          responseData: axiosError.response?.data,
+          responseHeaders: axiosError.response?.headers,
+        };
         
-        throw new Error(`Error generating boleto: ${errorMessage}`);
+        console.error('Detalhes do erro:', errorDetails);
+        
+        // Mensagens de erro mais amigáveis
+        let userMessage = 'Erro ao gerar boleto';
+        if (axiosError.response?.status === 401) {
+          userMessage = 'Falha na autenticação com o gateway de pagamento';
+        } else if (axiosError.response?.status === 400) {
+          userMessage = 'Dados inválidos para geração do boleto';
+        } else if (axiosError.response?.status === 500) {
+          userMessage = 'Erro interno no servidor de pagamentos';
+        }
+        
+        throw new Error(`${userMessage}: ${errorMessage}`);
       } else if (error instanceof Error) {
-        console.error('Error processing boleto:', error);
-        throw new Error(`Error processing boleto: ${error.message}`);
+        console.error('Erro ao processar boleto:', error);
+        throw new Error(`Erro ao processar boleto: ${error.message}`);
       } else {
-        console.error('Unknown error processing boleto:', error);
-        throw new Error('An unexpected error occurred while processing the boleto');
+        console.error('Erro desconhecido ao processar boleto:', error);
+        throw new Error('Ocorreu um erro inesperado ao processar o boleto');
       }
     }
   }

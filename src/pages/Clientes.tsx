@@ -3,6 +3,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -39,6 +49,8 @@ const Clientes = () => {
   const itemsPerPage = 10;
   const [activeTab, setActiveTab] = useState('todos');
   const [showForm, setShowForm] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [clienteToDelete, setClienteToDelete] = useState<string | null>(null);
   const [editingCliente, setEditingCliente] = useState<Cliente | null>(null);
 
   // Carregar clientes
@@ -120,9 +132,15 @@ const Clientes = () => {
     }
   };
 
-  // Excluir cliente
-  const excluirCliente = async (id: string) => {
-    if (!confirm('Tem certeza que deseja excluir este cliente?')) return;
+  // Abrir diálogo de confirmação de exclusão
+  const confirmarExclusao = (id: string) => {
+    setClienteToDelete(id);
+    setShowDeleteDialog(true);
+  };
+
+  // Confirmar e executar a exclusão
+  const excluirCliente = async () => {
+    if (!clienteToDelete) return;
     
     try {
       setLoading(true);
@@ -130,7 +148,7 @@ const Clientes = () => {
       const { error } = await supabase
         .from('clientes')
         .delete()
-        .eq('id', id);
+        .eq('id', clienteToDelete);
         
       if (error) throw error;
       
@@ -141,6 +159,8 @@ const Clientes = () => {
       toast.error('Erro ao excluir cliente');
     } finally {
       setLoading(false);
+      setShowDeleteDialog(false);
+      setClienteToDelete(null);
     }
   };
 
@@ -368,8 +388,9 @@ const Clientes = () => {
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => excluirCliente(cliente.id)}
-                              className="h-8 w-8 text-red-600 hover:text-red-700"
+                              className="text-red-500 hover:bg-red-50 hover:text-red-600"
+                              onClick={() => confirmarExclusao(cliente.id)}
+                              disabled={loading}
                             >
                               <Trash2 className="h-4 w-4" />
                               <span className="sr-only">Excluir</span>
@@ -459,6 +480,27 @@ const Clientes = () => {
           )}
         </CardContent>
       </Card>
+      {/* Diálogo de confirmação de exclusão */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir este cliente? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={loading}>Cancelar</AlertDialogCancel>
+            <Button 
+              variant="destructive" 
+              onClick={excluirCliente}
+              disabled={loading}
+            >
+              {loading ? 'Excluindo...' : 'Excluir'}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

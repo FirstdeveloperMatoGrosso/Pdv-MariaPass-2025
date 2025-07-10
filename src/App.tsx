@@ -27,6 +27,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useEffect, useState } from 'react';
+import { supabase } from "@/lib/supabase";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "./components/AppSidebar";
 import { AppHeader } from "./components/AppHeader";
@@ -63,16 +64,42 @@ const queryClient = new QueryClient({
 // Componente para proteger rotas autenticadas
 const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const location = useLocation();
 
   useEffect(() => {
-    // Verificar se o usuário está autenticado
-    // Na implementação real, você verificaria o token JWT ou estado de autenticação
-    const token = localStorage.getItem('auth_token');
-    setIsAuthenticated(!!token);
+    // Verificar a sessão do usuário com o Supabase
+    const checkAuth = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('Erro ao verificar sessão:', error);
+          setIsAuthenticated(false);
+        } else {
+          setIsAuthenticated(!!session);
+        }
+      } catch (error) {
+        console.error('Erro inesperado ao verificar autenticação:', error);
+        setIsAuthenticated(false);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkAuth();
+
+    // Configurar listener para mudanças na autenticação
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setIsAuthenticated(!!session);
+    });
+
+    return () => {
+      subscription?.unsubscribe();
+    };
   }, [location]);
 
-  if (isAuthenticated === null) {
+  if (isLoading) {
     // Mostrar um loading enquanto verifica a autenticação
     return (
       <div className="flex items-center justify-center min-h-screen">

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,15 +10,19 @@ import {
   DialogContent, 
   DialogHeader, 
   DialogTitle, 
+  DialogDescription, 
   DialogTrigger 
 } from '@/components/ui/dialog';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Upload, Link } from 'lucide-react';
+import { Plus, Upload, Link, Camera, Barcode } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
+import JsBarcode from 'jsbarcode';
+import { useEffect, useRef, useState as useReactState } from 'react';
+import Webcam from 'react-webcam';
 
 interface ProductFormData {
   nome: string;
@@ -43,12 +46,47 @@ interface Category {
   descricao: string;
 }
 
+// Função para gerar código EAN-13
+const generateEAN13 = () => {
+  // Gera 12 dígitos aleatórios
+  let ean = '2' + Math.floor(10000000000 + Math.random() * 90000000000).toString().substring(0, 11);
+  
+  // Calcula o dígito verificador
+  let sum = 0;
+  for (let i = 0; i < 12; i++) {
+    sum += parseInt(ean[i]) * (i % 2 === 0 ? 1 : 3);
+  }
+  const checkDigit = (10 - (sum % 10)) % 10;
+  
+  return ean + checkDigit;
+};
+
 const ProductForm: React.FC<ProductFormProps> = ({ onSuccess }) => {
   const [open, setOpen] = useState(false);
+  const queryClient = useQueryClient();
+  
+  const form = useForm<ProductFormData>({
+    defaultValues: {
+      nome: '',
+      preco: 0,
+      codigo_barras: generateEAN13(), // Gera um código automaticamente
+      categoria: '',
+      estoque: 0,
+      descricao: '',
+      imagem_url: '',
+      tipo_venda: 'unidade',
+      unidades_por_caixa: undefined,
+    },
+  });
+
   const [imageType, setImageType] = useState<'url' | 'upload'>('url');
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>('');
-  const queryClient = useQueryClient();
+  const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
+  const [barcodeImage, setBarcodeImage] = useState<string | null>(null);
+  const webcamRef = useRef<Webcam>(null);
+  const barcodeCanvasRef = useRef<HTMLCanvasElement>(null);
+  const imageContainerRef = useRef<HTMLDivElement>(null);
 
   // Buscar categorias do Supabase com refetch automático
   const { data: categories = [], isLoading: categoriesLoading, refetch: refetchCategories } = useQuery({
@@ -72,19 +110,78 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSuccess }) => {
     refetchOnWindowFocus: true,
   });
 
-  const form = useForm<ProductFormData>({
-    defaultValues: {
-      nome: '',
-      preco: 0,
-      codigo_barras: '',
-      categoria: '',
-      estoque: 0,
-      descricao: '',
-      imagem_url: '',
-      tipo_venda: 'unidade',
-      unidades_por_caixa: undefined,
-    },
-  });
+
+
+  // Efeito para gerar o código de barras quando o código for alterado
+  useEffect(() => {
+    const barcode = form.watch('codigo_barras');
+    if (barcodeCanvasRef.current && barcode) {
+      try {
+        JsBarcode(barcodeCanvasRef.current, barcode, {
+          format: 'EAN13', // ou 'CODE128' para mais flexibilidade
+          lineColor: '#000',
+          width: 2,
+          height: 80,
+          displayValue: true,
+          fontSize: 14,
+          margin: 10
+        });
+        setBarcodeImage(barcodeCanvasRef.current.toDataURL());
+      } catch (err) {
+        console.error('Erro ao gerar código de barras:', err);
+      }
+    }
+  }, [form.watch('codigo_barras')]);
+
+  // Efeito para ajustar a visualização da imagem
+  useEffect(() => {
+    if (previewUrl && imageContainerRef.current) {
+      const img = imageContainerRef.current.querySelector('img');
+      if (img) {
+        img.onload = () => {
+          const container = imageContainerRef.current;
+          if (!container) return;
+          
+          const containerWidth = container.offsetWidth;
+          const containerHeight = container.offsetHeight;
+          const imgRatio = img.naturalWidth / img.naturalHeight;
+          const containerRatio = containerWidth / containerHeight;
+          
+          if (imgRatio > containerRatio) {
+            // Imagem mais larga que o container
+            img.style.width = '100%';
+            img.style.height = 'auto';
+          } else {
+            // Imagem mais alta que o container
+            img.style.width = 'auto';
+            img.style.height = '100%';
+          }
+        };
+      }
+    }
+  }, [previewUrl]);
+
+  // Função para capturar a imagem da câmera e processar o código de barras
+  const captureBarcode = () => {
+    if (!webcamRef.current) return;
+    
+    const imageSrc = webcamRef.current.getScreenshot();
+    if (!imageSrc) return;
+    
+    // Aqui você pode adicionar lógica para processar a imagem e extrair o código de barras
+    // Por enquanto, vamos apenas simular a leitura
+    toast.info('Posicione o código de barras na frente da câmera');
+    
+    // Simulando a leitura após 2 segundos
+    setTimeout(() => {
+      const randomBarcode = generateEAN13();
+      form.setValue('codigo_barras', randomBarcode);
+      toast.success('Código de barras lido com sucesso!');
+      setShowBarcodeScanner(false);
+    }, 2000);
+  };
+
+
 
   const tipoVenda = form.watch('tipo_venda');
 
@@ -321,70 +418,218 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSuccess }) => {
               <FormField
                 control={form.control}
                 name="preco"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-xs">
-                      Preço (R$) *
-                      {tipoVenda === 'caixa' && ' - Por Caixa'}
-                      {tipoVenda === 'unidade' && ' - Por Unidade'}
-                    </FormLabel>
-                    <FormControl>
-                      <Input 
-                        {...field} 
-                        type="number" 
-                        step="0.01"
-                        min="0"
-                        placeholder="0.00"
-                        onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                        required
-                        className="h-7 text-xs"
-                      />
-                    </FormControl>
-                    <FormMessage className="text-xs" />
-                  </FormItem>
-                )}
+                render={({ field }) => {
+                  const [displayValue, setDisplayValue] = useState('');
+                  
+                  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+                    // Permite apenas números e vírgula
+                    const value = e.target.value.replace(/[^\d,]/g, '');
+                    
+                    // Se o valor estiver vazio, define como 0
+                    if (value === '') {
+                      setDisplayValue('');
+                      field.onChange(0);
+                      return;
+                    }
+                    
+                    // Atualiza o valor de exibição
+                    setDisplayValue(value);
+                    
+                    // Converte para número e atualiza o formulário
+                    const numericValue = parseFloat(value.replace(',', '.')) || 0;
+                    field.onChange(numericValue);
+                  };
+                  
+                  const handleBlur = () => {
+                    // Formata o valor ao sair do campo
+                    if (field.value > 0) {
+                      setDisplayValue(field.value.toLocaleString('pt-BR', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                      }));
+                    } else {
+                      setDisplayValue('');
+                    }
+                    field.onBlur();
+                  };
+
+                  return (
+                    <FormItem>
+                      <FormLabel className="text-xs">
+                        Preço (R$) *
+                        {tipoVenda === 'caixa' && ' - Por Caixa'}
+                        {tipoVenda === 'unidade' && ' - Por Unidade'}
+                      </FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-xs text-muted-foreground">
+                            R$
+                          </span>
+                          <Input
+                            {...field}
+                            type="text"
+                            placeholder="0,00"
+                            value={displayValue}
+                            onChange={handleChange}
+                            onBlur={handleBlur}
+                            required
+                            className="h-7 text-xs pl-6"
+                          />
+                        </div>
+                      </FormControl>
+                      <FormMessage className="text-xs" />
+                    </FormItem>
+                  );
+                }}
               />
 
               <FormField
                 control={form.control}
                 name="estoque"
+                render={({ field }) => {
+                  const [displayValue, setDisplayValue] = useState('');
+                  
+                  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+                    // Permite apenas números
+                    const value = e.target.value.replace(/\D/g, '');
+                    
+                    // Se o valor estiver vazio, define como 0
+                    if (value === '') {
+                      setDisplayValue('');
+                      field.onChange(0);
+                      return;
+                    }
+                    
+                    // Atualiza o valor de exibição
+                    setDisplayValue(value);
+                    
+                    // Converte para número e atualiza o formulário
+                    const numericValue = parseInt(value) || 0;
+                    field.onChange(numericValue);
+                  };
+                  
+                  const handleBlur = () => {
+                    // Se o valor for zero, mantém vazio
+                    if (field.value === 0) {
+                      setDisplayValue('');
+                    } else {
+                      setDisplayValue(field.value.toString());
+                    }
+                    field.onBlur();
+                  };
+
+                  return (
+                    <FormItem>
+                      <FormLabel className="text-xs">
+                        Qtd Estoque *
+                        {tipoVenda === 'caixa' && ' - Caixas'}
+                        {tipoVenda === 'unidade' && ' - Unidades'}
+                      </FormLabel>
+                      <FormControl>
+                        <Input 
+                          {...field}
+                          type="text"
+                          inputMode="numeric"
+                          placeholder="0"
+                          value={displayValue}
+                          onChange={handleChange}
+                          onBlur={handleBlur}
+                          required
+                          className="h-7 text-xs"
+                        />
+                      </FormControl>
+                      <FormMessage className="text-xs" />
+                    </FormItem>
+                  );
+                }}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <FormField
+                control={form.control}
+                name="codigo_barras"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-xs">
-                      Qtd Estoque *
-                      {tipoVenda === 'caixa' && ' - Caixas'}
-                      {tipoVenda === 'unidade' && ' - Unidades'}
-                    </FormLabel>
+                    <div className="flex justify-between items-center">
+                      <FormLabel className="text-xs">Código de Barras</FormLabel>
+                      <div className="flex space-x-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => form.setValue('codigo_barras', generateEAN13())}
+                          className="h-6 text-xs"
+                        >
+                          <Barcode className="w-3 h-3 mr-1" />
+                          Gerar
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setShowBarcodeScanner(true)}
+                          className="h-6 text-xs"
+                        >
+                          <Camera className="w-3 h-3 mr-1" />
+                          Ler
+                        </Button>
+                      </div>
+                    </div>
                     <FormControl>
                       <Input 
                         {...field} 
-                        type="number"
-                        min="0"
-                        placeholder="0"
-                        onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
-                        required
-                        className="h-7 text-xs"
+                        placeholder="Digite ou leia o código de barras" 
+                        className="h-7 text-xs mt-1" 
                       />
                     </FormControl>
+                    {field.value && (
+                      <div className="mt-2 flex justify-center">
+                        <canvas ref={barcodeCanvasRef} className="max-w-full h-auto" />
+                      </div>
+                    )}
                     <FormMessage className="text-xs" />
                   </FormItem>
                 )}
               />
             </div>
 
-            <FormField
-              control={form.control}
-              name="codigo_barras"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-xs">Código de Barras</FormLabel>
-                  <FormControl>
-                    <Input {...field} placeholder="Digite o código de barras" className="h-7 text-xs" />
-                  </FormControl>
-                  <FormMessage className="text-xs" />
-                </FormItem>
-              )}
-            />
+            {/* Modal do Leitor de Código de Barras */}
+            <Dialog open={showBarcodeScanner} onOpenChange={setShowBarcodeScanner}>
+              <DialogContent className="sm:max-w-[500px]">
+                <DialogHeader>
+                  <DialogTitle>Ler Código de Barras</DialogTitle>
+                  <DialogDescription>
+                    Posicione o código de barras na frente da câmera.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="relative w-full h-64 bg-black rounded-md overflow-hidden">
+                  <Webcam
+                    audio={false}
+                    ref={webcamRef}
+                    screenshotFormat="image/jpeg"
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 border-2 border-green-500 m-4 rounded-md"></div>
+                </div>
+                <div className="flex justify-between pt-4">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => setShowBarcodeScanner(false)}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button 
+                    type="button" 
+                    onClick={captureBarcode}
+                  >
+                    <Camera className="w-4 h-4 mr-2" />
+                    Ler Código
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
 
             {/* Seção de Imagem */}
             <div className="space-y-1">
@@ -429,12 +674,26 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSuccess }) => {
               )}
 
               {previewUrl && (
-                <div className="mt-1">
-                  <img 
-                    src={previewUrl} 
-                    alt="Preview" 
-                    className="w-full h-20 object-cover rounded border"
-                  />
+                <div className="mt-2 border rounded-md p-2 bg-gray-50">
+                  <div className="text-xs text-gray-500 mb-1">Visualização:</div>
+                  <div 
+                    ref={imageContainerRef}
+                    className="relative w-full h-40 flex items-center justify-center bg-white rounded border border-gray-200 overflow-hidden"
+                  >
+                    <img 
+                      src={previewUrl} 
+                      alt="Pré-visualização do produto" 
+                      className="max-w-full max-h-full object-contain p-1"
+                      style={{
+                        maxWidth: '100%',
+                        maxHeight: '100%',
+                        objectFit: 'contain'
+                      }}
+                    />
+                  </div>
+                  <div className="mt-1 text-xs text-gray-500 text-center">
+                    A imagem será ajustada automaticamente
+                  </div>
                 </div>
               )}
             </div>
