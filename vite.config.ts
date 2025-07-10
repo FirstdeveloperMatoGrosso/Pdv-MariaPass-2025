@@ -1,15 +1,29 @@
-import { defineConfig } from "vite";
+// @ts-nocheck
+import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
 import type { ServerResponse, IncomingMessage } from 'http';
-import type { ProxyOptions } from 'vite';
+import express from 'express';
 
-export default defineConfig({
+// Configuração do Vite
+export default defineConfig(({ mode }) => {
+  // Carrega as variáveis de ambiente
+  const env = loadEnv(mode, process.cwd(), '');
+  
+  return {
   server: {
     host: "::",
     port: 8080,
+    // Configuração de proxy
     proxy: {
+      // Rota para a API local
+      '/api': {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+        secure: false,
+        ws: true,
+      },
       // Proxy para a API do Pagar.me
       '/api/pagarme': {
         target: 'https://api.pagar.me',
@@ -174,26 +188,35 @@ export default defineConfig({
   },
   plugins: [
     react(),
-    process.env.NODE_ENV === 'development' && componentTagger(),
+    mode === 'development' ? componentTagger() : null,
   ].filter(Boolean) as any[],
   resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "./src"),
-      // Usando o caminho correto para o módulo pagarme
-      'pagarme': path.resolve(__dirname, 'node_modules/pagarme/dist/pagarme.js'),
-    },
-    // Garante que as extensões .js sejam resolvidas corretamente
+    alias: [
+      {
+        find: '@',
+        replacement: path.resolve(__dirname, 'src')
+      },
+      {
+        find: 'pagarme',
+        replacement: path.resolve(__dirname, 'node_modules/pagarme/dist/pagarme.js')
+      }
+    ],
     extensions: ['.mjs', '.js', '.ts', '.jsx', '.tsx', '.json'],
   },
   define: {
     'process.env': {
-      VITE_SUPABASE_URL: JSON.stringify(process.env.VITE_SUPABASE_URL),
-      VITE_SUPABASE_ANON_KEY: JSON.stringify(process.env.VITE_SUPABASE_ANON_KEY)
+      VITE_SUPABASE_URL: JSON.stringify(env.VITE_SUPABASE_URL || ''),
+      VITE_SUPABASE_ANON_KEY: JSON.stringify(env.VITE_SUPABASE_ANON_KEY || '')
     },
     global: 'window',
   },
   optimizeDeps: {
-    include: ["react/jsx-dev-runtime"],
+    include: [
+      'react',
+      'react-dom',
+      'react-router-dom',
+      'react/jsx-dev-runtime'
+    ],
     esbuildOptions: {
       target: 'es2020',
       loader: { 
@@ -207,18 +230,24 @@ export default defineConfig({
   },
   build: {
     commonjsOptions: {
-      // Habilita a transformação de módulos CommonJS
       transformMixedEsModules: true,
-      // Configurações adicionais para CommonJS
       esmExternals: true,
-      // Desativa a transformação de requires dinâmicos
       ignoreDynamicRequires: true,
     },
-    // Configurações de rollup
     rollupOptions: {
-      // Configurações de rollup
+      output: {
+        manualChunks: {
+          react: ['react', 'react-dom', 'react-router-dom'],
+          ui: ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-slot'],
+          utils: ['date-fns', 'clsx', 'tailwind-merge']
+        }
+      }
     },
-    // Aumenta o limite de tamanho dos chunks
     chunkSizeWarningLimit: 2000,
   },
+  esbuild: {
+    target: 'es2020',
+    logOverride: { 'this-is-undefined-in-esm': 'silent' }
+  }
+  };
 });
