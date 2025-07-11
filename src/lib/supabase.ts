@@ -1,17 +1,23 @@
 import { createClient as createSupabaseClient, SupabaseClient } from '@supabase/supabase-js';
 
+// Verificação de ambiente
+const isBrowser = typeof window !== 'undefined' && typeof window.document !== 'undefined';
+
 declare module '@supabase/supabase-js' {
   interface SupabaseClient {
     secureFetch: typeof secureFetch;
   }
 }
 
-// Carrega as variáveis de ambiente de forma compatível com Vite
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+import { config } from '@/config/env';
 
-// Verificação de ambiente
-const isProduction = import.meta.env.PROD;
+// Carrega as variáveis de ambiente de forma segura
+const supabaseUrl = config.supabase.url;
+const supabaseAnonKey = config.supabase.anonKey;
+
+// Verificação de ambiente (compatível com Node.js e navegador)
+const isProduction = typeof process !== 'undefined' ? process.env.NODE_ENV === 'production' : 
+  (typeof import.meta !== 'undefined' ? import.meta.env.PROD : false);
 
 // Validação das credenciais
 if (!supabaseUrl || !supabaseAnonKey) {
@@ -54,22 +60,92 @@ let supabaseInstance: ReturnType<typeof createSupabaseClient> | null = null;
 
 const createSupabaseClientInstance = () => {
   if (!supabaseInstance) {
-    supabaseInstance = createSupabaseClient(supabaseUrl, supabaseAnonKey, {
+    // Configuração de armazenamento seguro que funciona tanto no navegador quanto no Node.js
+    const storageAdapter = {
+      getItem: (key: string) => {
+        if (!isBrowser) {
+          // No servidor, retorna null
+          return null;
+        }
+        
+        try {
+          // Tenta obter do localStorage primeiro
+          const item = localStorage.getItem(key);
+          if (item) return item;
+          
+          // Se não encontrar, tenta obter do cookie
+          const value = `; ${document.cookie}`;
+          const parts = value.split(`; ${key}=`);
+          if (parts.length === 2) return parts.pop()?.split(';').shift();
+          return null;
+        } catch (error) {
+          console.error('Erro ao acessar armazenamento local:', error);
+          return null;
+        }
+      },
+      setItem: (key: string, value: string) => {
+        if (!isBrowser) return;
+        
+        try {
+          // Salva no localStorage
+          localStorage.setItem(key, value);
+          
+          // E também em um cookie seguro
+          document.cookie = `${key}=${value}; path=/; secure; samesite=lax`;
+        } catch (error) {
+          console.error('Erro ao salvar no armazenamento local:', error);
+        }
+      },
+      removeItem: (key: string) => {
+        if (!isBrowser) return;
+        
+        try {
+          // Remove do localStorage
+          localStorage.removeItem(key);
+          
+          // Remove o cookie
+          document.cookie = `${key}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+        } catch (error) {
+          console.error('Erro ao remover do armazenamento local:', error);
+        }
+      }
+    };
+
+    const options = {
       auth: {
-        persistSession: true,
         autoRefreshToken: true,
+        persistSession: true,
         detectSessionInUrl: !isProduction,
-        flowType: 'pkce',
+        flowType: 'pkce' as const, // Garante que o tipo seja 'pkce' literal
+        storage: storageAdapter
       },
       global: {
         headers: {
           'X-Client-Info': 'mariapass-web',
         },
       },
-    });
+    };
+
+    supabaseInstance = createSupabaseClient(supabaseUrl, supabaseAnonKey, options);
 
     // Adiciona o método secureFetch à instância do Supabase
     (supabaseInstance as any).secureFetch = secureFetch;
+    
+    // Verifica a sessão ao inicializar (apenas no navegador)
+    if (isBrowser) {
+      supabaseInstance.auth.getSession().then(({ data: { session } }) => {
+        if (session) {
+          // Dispara evento de atualização de autenticação
+          window.dispatchEvent(new Event('auth:stateChange'));
+        }
+      });
+      
+      // Escuta mudanças na autenticação (apenas no navegador)
+      supabaseInstance.auth.onAuthStateChange((event, session) => {
+        // Dispara evento de atualização de autenticação
+        window.dispatchEvent(new Event('auth:stateChange'));
+      });
+    }
   }
   
   return supabaseInstance;

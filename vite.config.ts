@@ -15,6 +15,10 @@ export default defineConfig(({ mode }) => {
   server: {
     host: "::",
     port: 8080,
+    strictPort: true, // Impede que o Vite tente outras portas
+    hmr: {
+      port: 8080, // Força o HMR a usar a mesma porta
+    },
     // Configuração de proxy
     proxy: {
       // Rota para a API local
@@ -24,19 +28,59 @@ export default defineConfig(({ mode }) => {
         secure: false,
         ws: true,
       },
-      // Proxy para a API do Pagar.me
-      '/api/pagarme': {
-        target: 'https://api.pagar.me',
+      // Rota para a API do Supabase
+      '/auth/v1': {
+        target: env.VITE_SUPABASE_URL,
         changeOrigin: true,
         secure: false,
-        rewrite: (path) => path.replace(/^\/api\/pagarme/, '/core/v5'),
+        rewrite: (path) => path.replace(/^\/auth\/v1/, '/auth/v1')
+      },
+      // Rota para o Supabase Realtime
+      '/rest/v1': {
+        target: env.VITE_SUPABASE_URL,
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/rest\/v1/, '/rest/v1')
+      },
+      // Proxy para a API do Pagar.me
+      '/api/pagarme': {
+        target: 'https://api.pagar.me/core/v5',
+        changeOrigin: true,
+        secure: false,
+        pathRewrite: {
+          '^/api/pagarme': ''
+        },
+        logLevel: 'debug',
+        onProxyReq: (proxyReq, req, res) => {
+          // Adiciona headers necessários para a API do Pagar.me
+          proxyReq.setHeader('Content-Type', 'application/json');
+          proxyReq.setHeader('Accept', 'application/json');
+          
+          // Log da requisição
+          console.log('Proxy: Encaminhando requisição para:', {
+            method: req.method,
+            url: `${proxyReq.protocol}//${proxyReq.host}${proxyReq.path}`,
+            headers: proxyReq.getHeaders()
+          });
+        },
+        onProxyRes: (proxyRes, req, res) => {
+          // Log da resposta
+          console.log('Proxy: Resposta recebida com status:', proxyRes.statusCode);
+        },
+        onError: (err, req, res) => {
+          console.error('Erro no proxy:', err);
+          if (!res.headersSent) {
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+          }
+          res.end(JSON.stringify({ error: 'Erro ao conectar ao servidor de pagamentos' }));
+        },
         configure: (proxy) => {
           // Configura timeout maior para evitar erros de timeout
           (proxy as any).timeout = 60000; // 60 segundos
           
           // Tratamento de erros
           proxy.on('error', (err, req: IncomingMessage, res: ServerResponse) => {
-            console.error('Proxy error:', {
+            console.error('Erro no proxy (evento):', {
               message: err.message,
               stack: err.stack,
               code: (err as any).code,

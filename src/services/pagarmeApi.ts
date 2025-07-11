@@ -130,21 +130,37 @@ export interface BoletoOrderResponse {
   payment_method: string;
   metadata?: Record<string, any>;
   boleto: {
-    url?: string;
-    barcode?: string;
-    barcode_url?: string;
-    due_date: string;
+    url: string;
+    barcode: string;
+    barcode_formatted: string;
+    due_at: string;
+    expiration_date: string;
     instructions: string;
+    pdf: string;
+    qr_code: string;
+    qr_code_url: string;
+    type: string;
+    line: string;
+    [key: string]: any;
   };
-  charges?: Array<{
+  charges: Array<{
     id: string;
     status: string;
     amount: number;
-    last_transaction?: {
-      id?: string;
-      url?: string;
-      barcode?: string;
-      barcode_url?: string;
+    last_transaction: {
+      id: string;
+      transaction_url: string;
+      barcode: string;
+      barcode_formatted: string;
+      qr_code: string;
+      qr_code_url: string;
+      type: string;
+      due_at: string;
+      expiration_date: string;
+      pdf: string;
+      line: string;
+      url: string;
+      instructions: string;
       [key: string]: any;
     };
     [key: string]: any;
@@ -156,6 +172,9 @@ export interface BoletoOrderResponse {
 declare module 'axios' {
   interface AxiosRequestConfig {
     pagarmeApiKey?: string;
+    pagarme?: {
+      apiKey?: string;
+    };
   }
 }
 
@@ -184,51 +203,60 @@ const api = axios.create({
     'Accept': 'application/json',
   },
   timeout: 30000, // 30 segundos de timeout
+  withCredentials: false, // Importante: desabilita o envio de cookies
 });
 
-// Não adicionamos o header de autorização aqui, pois será adicionado pelo proxy
-// Isso evita que a chave da API seja exposta no cliente
+// Adiciona o interceptor para incluir a autenticação em todas as requisições
 
-// Add request interceptor para adicionar a chave de API
+// Interceptor para adicionar a chave de API
 api.interceptors.request.use(
   (config) => {
     try {
-      const apiKey = config.pagarmeApiKey || config.params?.api_key;
+      // Garante que config.headers existe e está no formato correto
+      if (!config.headers) {
+        config.headers = new AxiosHeaders();
+      } else if (!(config.headers instanceof AxiosHeaders)) {
+        // Se for um objeto simples, converte para AxiosHeaders
+        config.headers = new AxiosHeaders(config.headers as Record<string, string>);
+      }
+      
+      // Obtém a chave de API dos parâmetros de configuração
+      let apiKey = config.pagarmeApiKey || config.params?.api_key;
+      
+      // Se não encontrou a chave nos parâmetros, tenta obter do config global
+      if (!apiKey && config.pagarme?.apiKey) {
+        apiKey = config.pagarme.apiKey;
+      }
       
       if (!apiKey) {
         console.warn('Nenhuma chave de API fornecida na requisição');
-      } else {
-        // Adiciona a chave de API como parâmetro de consulta
-        config.params = {
-          ...config.params,
-          api_key: apiKey,
-        };
-        
-        // Adiciona o cabeçalho de autorização
-        const authHeader = `Basic ${base64Encode(`${apiKey}:`)}`;
-        
-        // Garante que config.headers existe e está no formato correto
-        if (!config.headers) {
-          config.headers = new AxiosHeaders();
-        } else if (!(config.headers instanceof AxiosHeaders)) {
-          // Se for um objeto simples, converte para AxiosHeaders
-          config.headers = new AxiosHeaders(config.headers);
-        }
-        
-        // Adiciona os headers necessários
-        config.headers.set('Authorization', authHeader);
-        config.headers.set('Content-Type', 'application/json');
-        config.headers.set('Accept', 'application/json');
-        
+        throw new Error('Chave de API do Pagar.me não fornecida');
+      }
+      
+      // Remove a chave dos parâmetros da URL (se existir)
+      if (config.params?.api_key) {
+        delete config.params.api_key;
+      }
+      
+      // Adiciona a autenticação usando btoa (compatível com navegador)
+      const authString = btoa(`${apiKey}:`);
+      config.headers.set('Authorization', `Basic ${authString}`);
+      
+      // Configura os headers necessários
+      config.headers.set('Content-Type', 'application/json');
+      config.headers.set('Accept', 'application/json');
+      
+      // Log da requisição (sem dados sensíveis)
+      if (process.env.NODE_ENV !== 'production') {
         console.log('Enviando requisição para:', {
           url: config.url,
           method: config.method,
           headers: {
-            ...config.headers,
+            ...config.headers.toJSON(),
             'Authorization': '***', // Não logar o token real
           },
           params: config.params,
-          data: config.data ? JSON.parse(config.data) : undefined
+          data: config.data ? (typeof config.data === 'string' ? JSON.parse(config.data) : config.data) : undefined
         });
       }
       
@@ -320,6 +348,25 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+// Interface para os dados da transação de boleto
+interface BoletoTransactionData {
+  id?: string;
+  url?: string;
+  barcode?: string;
+  barcode_formatted?: string;
+  due_at?: string;
+  due_date?: string;
+  expiration_date?: string;
+  instructions?: string;
+  pdf?: string;
+  qr_code?: string;
+  qr_code_url?: string;
+  type?: string;
+  line?: string;
+  transaction_url?: string;
+  [key: string]: any;
+}
 
 // Helper function to validate customer data
 function validateCustomerData(customer: CustomerData): void {
@@ -807,8 +854,10 @@ const pagarmeApi = {
         throw new Error('A data de vencimento deve ser pelo menos 1 dia no futuro');
       }
       
-      // Formatar data para o padrão YYYY-MM-DD
-      const formattedDueDate = dueDateObj.toISOString().split('T')[0];
+      // Formatar data para o padrão ISO 8601 (YYYY-MM-DDTHH:mm:ssZ)
+      // Definir horário para 23:59:59 do dia de vencimento
+      dueDateObj.setHours(23, 59, 59, 0);
+      const formattedDueDate = dueDateObj.toISOString();
       
       // Preparar itens do pedido
       const orderItems = items.length > 0 ? items : [
@@ -850,10 +899,11 @@ const pagarmeApi = {
         throw new Error('Documento do cliente inválido');
       }
       
-      // Construir payload final
+      // Construir payload final seguindo a documentação do Pagar.me
       const payload = {
         customer: customerPayload,
         code: orderCode || `order_${Date.now()}`,
+        closed: true, // Fecha o pedido após a criação
         items: orderItems.map(item => ({
           amount: Math.round(item.amount), // Já deve estar em centavos
           description: (item.description || 'Produto/Serviço').substring(0, 100),
@@ -864,7 +914,7 @@ const pagarmeApi = {
           {
             payment_method: 'boleto',
             boleto: {
-              due_date: formattedDueDate,
+              due_at: formattedDueDate, // Usando due_at em vez de due_date
               instructions: (instructions || 'Pagar até a data de vencimento').substring(0, 255),
               type: 'DM', // Duplicata Mercantil
               document_number: `BOL${Date.now()}`
@@ -879,80 +929,148 @@ const pagarmeApi = {
       };
       
       // Validar payload
-      if (!payload.payments[0].boleto.due_date) {
+      if (!payload.payments[0].boleto.due_at) {
         throw new Error('Data de vencimento é obrigatória');
       }
 
-      console.log('Enviando requisição para API do Pagar.me...');
+      // Log dos detalhes da requisição (sem a chave de API)
+      console.log('=== DETALHES DA REQUISIÇÃO PAGAR.ME ===');
       console.log('Endpoint:', '/orders');
+      console.log('Método:', 'POST');
+      console.log('Headers:', {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': '***'
+      });
       console.log('Payload:', JSON.stringify(payload, null, 2));
+      console.log('URL completa:', 'https://api.pagar.me/core/v5/orders');
+      console.log('======================================');
 
       // Fazer requisição para a API
-      const response = await api.post('/orders', payload, {
-        pagarmeApiKey: config.pagarme.apiKey,
-      }).catch(error => {
-        console.error('Erro na requisição para API do Pagar.me:', {
-          status: error.response?.status,
-          data: error.response?.data,
-          headers: error.response?.headers,
-          config: {
-            url: error.config?.url,
-            method: error.config?.method,
-            headers: error.config?.headers ? {
-              ...error.config.headers,
-              authorization: error.config.headers.authorization ? '***' : undefined
-            } : undefined,
-            data: error.config?.data
-          }
-        });
-        throw error;
-      });
-
-      console.log('Resposta da API recebida:', {
-        status: response.status,
-        data: response.data
-      });
-
-      // Verificar se a resposta contém dados de cobrança
-      if (!response.data.charges || response.data.charges.length === 0) {
-        console.error('Resposta da API não contém dados de cobrança:', response.data);
-        throw new Error('A resposta da API não contém dados de cobrança');
-      }
-
-      const charge = response.data.charges[0];
-      const boletoData = charge.last_transaction;
-
-      if (!boletoData) {
-        console.error('Dados do boleto não encontrados na resposta:', response.data);
-        throw new Error('Dados do boleto não encontrados na resposta da API');
-      }
-
-      console.log('Boleto gerado com sucesso:', {
-        boletoId: boletoData.id,
-        barcode: boletoData.barcode,
-        dueDate: boletoData.due_date || dueDate,
-        amount: charge.amount / 100 // Converter de centavos para reais
-      });
-
-      // Formatar resposta no formato esperado
-      const responseData = {
-        id: charge.id,
-        code: response.data.code,
-        status: charge.status,
-        amount: charge.amount,
-        customer: customer,
-        payment_method: 'boleto',
-        boleto: {
-          url: boletoData.url,
-          barcode: boletoData.barcode,
-          barcode_url: boletoData.barcode_url,
-          due_date: boletoData.due_date || dueDate,
-          instructions: boletoData.instructions || instructions,
-        },
-        charges: response.data.charges,
+      console.log('=== ENVIANDO REQUISIÇÃO PAGAR.ME ===');
+      console.log('URL:', 'https://api.pagar.me/core/v5/orders');
+      console.log('Método:', 'POST');
+      
+      // Cabeçalhos da requisição
+      const headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': 'Basic ' + btoa(config.pagarme.apiKey + ':')
       };
+      
+      console.log('Headers:', { ...headers, Authorization: '***' });
+      console.log('Payload:', JSON.stringify(payload, null, 2));
+      
+      try {
+        // Fazer a requisição diretamente com axios para evitar problemas com o interceptor
+        const apiResponse = await axios.post<BoletoOrderResponse>(
+          'https://api.pagar.me/core/v5/orders',
+          payload,
+          {
+            headers,
+            timeout: 30000 // 30 segundos de timeout
+          }
+        );
 
-      return responseData;
+        console.log('=== RESPOSTA DA API ===');
+        console.log('Status:', apiResponse.status);
+        console.log('Dados:', apiResponse.data);
+
+        // Verificar se a resposta contém dados de cobrança
+        if (!apiResponse.data.charges || apiResponse.data.charges.length === 0) {
+          console.error('Resposta da API não contém dados de cobrança:', apiResponse.data);
+          throw new Error('A resposta da API não contém dados de cobrança');
+        }
+
+        const charge = apiResponse.data.charges[0];
+        const boletoData: BoletoTransactionData = charge.last_transaction || {};
+
+        // Verificar se os dados do boleto estão presentes
+        if (!boletoData) {
+          console.error('Dados do boleto não encontrados na resposta:', apiResponse.data);
+          throw new Error('Dados do boleto não encontrados na resposta da API');
+        }
+
+        // Extrair dados do boleto da resposta
+        const boletoInfo = {
+          url: boletoData.url || '',
+          barcode: boletoData.barcode || '',
+          barcode_formatted: boletoData.barcode_formatted || boletoData.barcode || '',
+          due_at: boletoData.due_at || boletoData.due_date || '',
+          expiration_date: boletoData.expiration_date || boletoData.due_at || boletoData.due_date || '',
+          instructions: boletoData.instructions || 'Pagar até o vencimento',
+          pdf: boletoData.pdf || boletoData.url || '',
+          qr_code: boletoData.qr_code || '',
+          qr_code_url: boletoData.qr_code_url || boletoData.qr_code || boletoData.url || '',
+          type: boletoData.type || 'DM',
+          line: boletoData.line || boletoData.barcode || ''
+        };
+
+        // Criar objeto de resposta formatado
+        const formattedResponse: BoletoOrderResponse = {
+          id: apiResponse.data.id,
+          code: apiResponse.data.code,
+          amount: apiResponse.data.amount,
+          customer: apiResponse.data.customer,
+          status: apiResponse.data.status,
+          payment_method: 'boleto',
+          boleto: boletoInfo,
+          charges: [{
+            id: charge.id,
+            amount: charge.amount,
+            status: charge.status,
+            last_transaction: {
+              ...boletoInfo,
+              id: boletoData.id || `boleto_${Date.now()}`,
+              transaction_url: boletoData.url || boletoData.transaction_url || '',
+              line: boletoData.line || boletoData.barcode || ''
+            }
+          }]
+        };
+
+        return formattedResponse;
+      } catch (error: any) {
+        console.error('=== ERRO NA REQUISIÇÃO ===');
+        console.error('Mensagem:', error.message);
+        
+        if (error.response) {
+          // A requisição foi feita e o servidor respondeu com um status de erro
+          console.error('Status:', error.response.status);
+          console.error('Dados do erro:', error.response.data);
+          console.error('Headers da resposta:', error.response.headers);
+          
+          // Se tivermos dados de erro da API, mostre-os
+          if (error.response.data && typeof error.response.data === 'object') {
+            const apiError = error.response.data;
+            console.error('Erro da API:', {
+              code: apiError.code,
+              message: apiError.message,
+              errors: apiError.errors
+            });
+            
+            // Crie uma mensagem de erro mais amigável
+            const errorMessage = apiError.message || 'Erro ao processar a requisição';
+            const errorDetails = apiError.errors ? 
+              `Detalhes: ${JSON.stringify(apiError.errors, null, 2)}` : '';
+              
+            throw new Error(`${errorMessage}. ${errorDetails}`.trim());
+          }
+        } else if (error.request) {
+          // A requisição foi feita mas não houve resposta
+          console.error('Não houve resposta do servidor:', error.request);
+          throw new Error('Não foi possível conectar ao servidor de pagamentos. Verifique sua conexão e tente novamente.');
+        } else {
+          // Algum erro ocorreu ao configurar a requisição
+          console.error('Erro ao configurar a requisição:', error.message);
+          throw new Error(`Erro ao configurar a requisição: ${error.message}`);
+        }
+        
+        // Se chegou aqui, não conseguimos tratar o erro de forma específica
+        throw new Error('Ocorreu um erro inesperado ao processar o pagamento. Tente novamente mais tarde.');
+      }
+
+      // O bloco de código foi removido pois já foi tratado anteriormente
+      // e estava causando erros de variáveis não definidas (response, charge, boletoData)
     } catch (error) {
       console.error('Erro ao gerar boleto:', error);
       

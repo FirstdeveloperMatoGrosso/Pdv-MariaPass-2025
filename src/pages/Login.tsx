@@ -16,9 +16,10 @@ export function Login() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('Formulário submetido');
     
     if (!email || !password) {
-      // Usaremos o toast do sonner para mostrar mensagens
+      console.log('Campos vazios detectados');
       const event = new CustomEvent('show-toast', { 
         detail: { 
           message: 'Por favor, preencha todos os campos',
@@ -29,16 +30,32 @@ export function Login() {
       return;
     }
 
+    console.log('Iniciando processo de login...');
     setIsLoading(true);
     
     try {
-      // Autenticação real com o Supabase
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+      // Autenticação através da API
+      console.log('Fazendo requisição para o backend...');
+      const response = await fetch('http://localhost:3001/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+        credentials: 'include' // Importante para enviar/armazenar cookies
       });
+
+      const data = await response.json();
+      console.log('Resposta do servidor:', { status: response.status, data });
       
-      if (error) throw error;
+      if (!response.ok) {
+        throw new Error(data.error || 'Erro ao fazer login');
+      }
+      
+      // Salva o token de acesso no localStorage
+      if (data.access_token) {
+        localStorage.setItem('supabase.auth.token', data.access_token);
+      }
       
       // Dispara um evento para atualizar o cabeçalho
       window.dispatchEvent(new Event('storage'));
@@ -99,7 +116,7 @@ export function Login() {
       </div>
 
       {/* Coluna 1 - Mensagem de Boas-vindas */}
-      <div className="hidden lg:flex flex-col w-full lg:w-1/3 bg-gradient-to-b from-green-600 to-green-700 text-white min-h-screen">
+      <div className="hidden lg:flex flex-col w-full lg:w-1/3 bg-gradient-to-b from-green-700 to-green-800 text-white min-h-screen">
         <div className="flex flex-col items-center p-4 sm:p-6 w-full max-w-md mx-auto text-center">
           <div className="mb-6">
             <svg className="h-14 w-14 mx-auto mb-3 text-green-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
