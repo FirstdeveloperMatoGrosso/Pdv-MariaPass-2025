@@ -127,6 +127,7 @@ const SimpleBarcodeInput: React.FC<SimpleBarcodeInputProps> = ({ onProductScanne
         // Converte o produto de exemplo para o formato TotemProduct
         const totemProduct: TotemProduct = {
           ...product,
+          estoque_atual: product.estoque, // Usa o valor de estoque para estoque_atual
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         };

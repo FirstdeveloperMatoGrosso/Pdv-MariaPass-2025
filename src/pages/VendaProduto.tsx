@@ -30,6 +30,7 @@ import {
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { PaymentResponse } from '@/types/payment';
 import BarcodeReader from '@/components/BarcodeReader';
 import PaymentProviderSelector from '@/components/PaymentProviderSelector';
 
@@ -469,8 +470,11 @@ const VendaProduto = () => {
     setShowPaymentModal(true);
   };
 
-  const handlePaymentSuccess = (paymentMethod: 'pix' | 'dinheiro') => {
+  const handlePaymentSuccess = (response: PaymentResponse) => {
     if (!selectedProduto || !vendaAmount) return;
+    
+    // Extrai o método de pagamento da resposta
+    const paymentMethod = response.payment_method as 'pix' | 'dinheiro';
     
     // Atualiza o estado do método de pagamento
     setPaymentMethod(paymentMethod);
@@ -479,7 +483,7 @@ const VendaProduto = () => {
     console.log('Dados da venda:', {
       produto_id: selectedProduto.id,
       valor: vendaAmount,
-      tipo_pagamento: paymentMethod, // Usa o método de pagamento recebido
+      tipo_pagamento: paymentMethod,
       status: 'pendente',
       itens: [
         {
@@ -492,15 +496,22 @@ const VendaProduto = () => {
             nome: selectedProduto.nome || 'Produto sem nome',
             codigo_barras: selectedProduto.codigo_barras || '',
             preco: vendaAmount,
-            status: 'ativo'
+            status: 'ativo',
+            estoque: selectedProduto.estoque - 1 // Atualiza o estoque
           }
         }
-      ]
+      ],
+      // Inclui os dados adicionais da resposta de pagamento
+      payment_id: response.id,
+      status_pagamento: response.status
     });
     
     // Atualizar cache
     queryClient.invalidateQueries({ queryKey: ['vendas_produtos'] });
     queryClient.invalidateQueries({ queryKey: ['produtos_ativos'] });
+    
+    // Mostra uma mensagem de sucesso
+    toast.success('Pagamento processado com sucesso!');
   };
 
   const valorTotalVendas = useMemo(() => 

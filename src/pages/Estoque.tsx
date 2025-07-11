@@ -21,6 +21,7 @@ type EstoqueItem = {
   nome: string;
   categoria: string;
   estoque: number;
+  estoque_atual: number;
   codigo_barras: string | null;
   preco: number;
   status: string;
@@ -85,24 +86,27 @@ const Estoque: React.FC = () => {
   });
 
   // Buscar produtos para controle de estoque
-  const {
-    data: estoqueItems = [],
-    isLoading,
-    refetch
-  } = useQuery({
+  const { data: estoqueItems = [], isLoading, refetch } = useQuery({
     queryKey: ['estoque'],
     queryFn: async () => {
       const {
         data,
         error
-      } = await supabase.from('produtos').select('*').order('estoque', {
-        ascending: true
-      });
+      } = await supabase
+        .from('produtos')
+        .select('*')
+        .order('estoque', { ascending: true });
+      
       if (error) {
         console.error('Erro ao buscar estoque:', error);
         throw error;
       }
-      return data || [];
+      
+      // Garante que cada item tenha um valor para estoque_atual
+      return (data || []).map((item: any) => ({
+        ...item,
+        estoque_atual: item.estoque_atual ?? item.estoque // Usa estoque_atual se existir, senão usa estoque
+      })) as EstoqueItem[];
     }
   });
 
@@ -198,8 +202,9 @@ const Estoque: React.FC = () => {
     }
   });
 
-  const filteredItems = estoqueItems.filter((item: EstoqueItem) => {
-    const matchesSearch = item.nome.toLowerCase().includes(searchTerm.toLowerCase()) || item.codigo_barras?.includes(searchTerm);
+  const filteredItems = estoqueItems.filter((item) => {
+    const matchesSearch = item.nome.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                         item.codigo_barras?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = selectedCategory === 'all' || item.categoria === selectedCategory;
     let matchesAlert = true;
     if (alertFilter === 'baixo') {
@@ -211,9 +216,9 @@ const Estoque: React.FC = () => {
   });
 
   const totalItens = estoqueItems.length;
-  const itensZerados = estoqueItems.filter((item: EstoqueItem) => item.estoque === 0).length;
-  const itensBaixos = estoqueItems.filter((item: EstoqueItem) => item.estoque > 0 && item.estoque <= 10).length;
-  const valorTotalEstoque = estoqueItems.reduce((total: number, item: EstoqueItem) => total + item.estoque * item.preco, 0);
+  const itensZerados = estoqueItems.filter(item => item.estoque === 0).length;
+  const itensBaixos = estoqueItems.filter(item => item.estoque > 0 && item.estoque <= 10).length;
+  const valorTotalEstoque = estoqueItems.reduce((total, item) => total + (item.estoque * item.preco), 0);
 
   const adjustEstoque = (id: string, currentEstoque: number, adjustment: number) => {
     const novoEstoque = Math.max(0, currentEstoque + adjustment);
@@ -586,7 +591,7 @@ const Estoque: React.FC = () => {
               <TrendingUp className="w-4 h-4 text-green-600" />
               <div className="min-w-0">
                 <p className="text-xs text-gray-600 truncate">Valor Total</p>
-                <p className="text-lg font-bold text-green-600">R$ {valorTotalEstoque.toFixed(2)}</p>
+                <p className="text-lg font-bold text-green-600">R$ {Number(valorTotalEstoque).toFixed(2)}</p>
               </div>
             </div>
           </CardContent>
@@ -684,7 +689,7 @@ const Estoque: React.FC = () => {
                         {isEditing ? (
                           <div className="space-y-1 min-w-[120px]">
                             <div className="text-xs text-gray-600">
-                              Atual: <span className="font-semibold text-blue-600">{item.estoque} un.</span>
+                              Atual: <span className="font-semibold text-black">{item.estoque} un.</span>
                             </div>
                             <div className="flex items-center gap-1">
                               <Input
@@ -718,7 +723,7 @@ const Estoque: React.FC = () => {
                           </div>
                         ) : (
                           <div className="flex items-center gap-2">
-                            <span className="text-sm font-semibold min-w-[40px]">{item.estoque} un.</span>
+                            <span className="text-sm font-semibold min-w-[40px] text-black">{item.estoque} un.</span>
                           </div>
                         )}
                       </TableCell>
@@ -727,8 +732,8 @@ const Estoque: React.FC = () => {
                           {status.text}
                         </Badge>
                       </TableCell>
-                      <TableCell className="hidden lg:table-cell p-2 text-xs">R$ {item.preco.toFixed(2)}</TableCell>
-                      <TableCell className="hidden lg:table-cell p-2 text-xs">R$ {(item.estoque * item.preco).toFixed(2)}</TableCell>
+                      <TableCell className="hidden lg:table-cell p-2 text-xs">R$ {Number(item.preco).toFixed(2)}</TableCell>
+                      <TableCell className="hidden lg:table-cell p-2 text-xs">R$ {Number(item.estoque * item.preco).toFixed(2)}</TableCell>
                       <TableCell className="p-1">
                         <div className="flex flex-col gap-1 min-w-[70px]">
                           {!isEditing && (
@@ -789,7 +794,10 @@ const Estoque: React.FC = () => {
 
       {/* Product Details Modal */}
       <ProductDetailsModal
-        product={selectedProduct}
+        product={selectedProduct ? {
+          ...selectedProduct,
+          estoque_atual: selectedProduct.estoque_atual || selectedProduct.estoque
+        } : null}
         isOpen={showDetails}
         onClose={() => setShowDetails(false)}
       />

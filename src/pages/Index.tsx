@@ -687,7 +687,7 @@ const Index: React.FC = () => {
                       <div className="flex-shrink-0 flex flex-col items-end gap-0.5">
                         <Badge
                           variant={availableStock < 10 ? "destructive" : "secondary"}
-                          className="text-[8px] sm:text-[9px] whitespace-nowrap px-1 py-0"
+                          className="text-[8px] sm:text-[9px] whitespace-nowrap px-1 py-0 text-black"
                         >
                           {availableStock}
                         </Badge>
