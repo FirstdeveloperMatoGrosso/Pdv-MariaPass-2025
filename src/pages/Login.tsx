@@ -52,9 +52,13 @@ export function Login() {
         throw new Error(data.error || 'Erro ao fazer login');
       }
       
-      // Salva o token de acesso no localStorage
+      // Salva o token de acesso e o email no localStorage
       if (data.access_token) {
         localStorage.setItem('supabase.auth.token', data.access_token);
+        localStorage.setItem('user_email', email);
+        
+        // Dispara um evento para atualizar o cabeçalho com o email do usuário
+        window.dispatchEvent(new CustomEvent('user-email-updated', { detail: { email } }));
       }
       
       // Dispara um evento para atualizar o cabeçalho

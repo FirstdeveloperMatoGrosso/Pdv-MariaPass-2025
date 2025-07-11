@@ -11,18 +11,26 @@ export function AppHeader() {
     // Função para atualizar o email do usuário
     const updateUserEmail = () => {
       const email = localStorage.getItem('user_email');
+      console.log('Email atualizado:', email);
       setUserEmail(email);
     };
 
     // Atualiza o email quando o componente é montado
     updateUserEmail();
 
-    // Adiciona um listener para atualizar quando o localStorage mudar
+    // Adiciona listeners para atualizar quando o localStorage mudar ou quando o evento personalizado for disparado
     window.addEventListener('storage', updateUserEmail);
+    window.addEventListener('user-email-updated', ((e: CustomEvent) => {
+      if (e.detail?.email) {
+        console.log('Evento user-email-updated recebido:', e.detail.email);
+        setUserEmail(e.detail.email);
+      }
+    }) as EventListener);
 
-    // Limpa o listener quando o componente é desmontado
+    // Limpa os listeners quando o componente é desmontado
     return () => {
       window.removeEventListener('storage', updateUserEmail);
+      window.removeEventListener('user-email-updated', updateUserEmail);
     };
   }, []);
 
