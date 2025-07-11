@@ -7,10 +7,13 @@
     "dev": "vite",
     "server": "tsx watch src/server.ts",
     "dev:all": "concurrently \"npm run server\" \"vite\"",
-    "build": "vite build",
+    "build": "tsc && vite build",
+    "build:vercel": "npm run build && tsc",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "start": "node server.js",
+    "vercel-build": "npm run build:vercel"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
